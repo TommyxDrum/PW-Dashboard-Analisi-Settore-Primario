@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard KPI – Settore Primario</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Bootstrap Italia CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-italia@2.11.2/dist/css/bootstrap-italia.min.css">
+
+  <!-- (Opzionale) tuo CSS personalizzato -->
+  <link th:href="@{/css/styles.css}" rel="stylesheet">
+</head>
+<body>
+
+<header class="it-header-wrapper">
+  <div class="it-header-slim-wrapper">
+    <div class="container">
+      <div class="row">
+        <div class="col-12">
+          <div class="it-header-slim-wrapper-content">
+            <!-- Pulsante hamburger per mobile -->
+            <a class="it-opener d-lg-none" data-bs-toggle="collapse" href="#menu-principale" role="button" aria-expanded="false" aria-controls="menu-principale">
+              <span>Menu</span>
+            </a>
+
+            <div class="it-header-slim-right-zone">
+              <div class="it-access-top-wrapper d-flex gap-2">
+                <a th:href="@{/}" class="btn btn-primary btn-sm">Home</a>
+                <a th:href="@{/risorse}" class="btn btn-outline-primary btn-sm">Efficienza risorse</a>
+                <a th:href="@{/rischio}" class="btn btn-outline-primary btn-sm">Rischio climatico</a>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="container my-4">
+  <h1 class="mb-4">Dashboard KPI – Settore Primario</h1>
+
+  <!-- 🔸 Filtro -->
+  <form method="get" action="/" class="row g-3 mb-4">
+    <div class="col-md-3">
+      <label for="from" class="form-label">Da</label>
+      <input type="date" id="from" name="from" class="form-control" th:value="${from}">
+    </div>
+    <div class="col-md-3">
+      <label for="to" class="form-label">A</label>
+      <input type="date" id="to" name="to" class="form-control" th:value="${to}">
+    </div>
+    <div class="col-md-3">
+      <label for="crop" class="form-label">Coltura</label>
+      <input type="text" id="crop" name="crop" class="form-control" th:value="${crop}">
+    </div>
+    <div class="col-md-3">
+      <label for="area" class="form-label">Area</label>
+      <input type="text" id="area" name="area" class="form-control" th:value="${area}">
+    </div>
+    <div class="col-12 text-end">
+      <button type="submit" class="btn btn-primary w-100 w-md-auto">Filtra</button>
+    </div>
+  </form>
+
+  <!-- 🔸 KPI Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="it-card-wrapper">
+        <div class="it-card">
+          <div class="it-card-body text-center">
+            <div class="h6">Resa/ha</div>
+            <div class="fw-bold" th:text="${#numbers.formatDecimal(avgYieldHa,1,2)}">0.00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="it-card-wrapper">
+        <div class="it-card">
+          <div class="it-card-body text-center">
+            <div class="h6">Eff. idrica (kg/m³)</div>
+            <div class="fw-bold" th:text="${#numbers.formatDecimal(avgEff,1,2)}">0.00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="it-card-wrapper">
+        <div class="it-card">
+          <div class="it-card-body text-center">
+            <div class="h6">Costo unit. (€/t)</div>
+            <div class="fw-bold" th:text="${#numbers.formatDecimal(avgCost,1,2)}">0.00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="it-card-wrapper">
+        <div class="it-card">
+          <div class="it-card-body text-center">
+            <div class="h6">Margine unit. (€/t)</div>
+            <div class="fw-bold" th:text="${#numbers.formatDecimal(avgMargin,1,2)}">0.00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="it-card-wrapper">
+        <div class="it-card">
+          <div class="it-card-body text-center">
+            <div class="h6">Rischio climatico</div>
+            <div class="fw-bold" th:text="${#numbers.formatDecimal(avgRisk,1,2)}">0.00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🔸 Grafico -->
+  <div class="it-card-wrapper mb-4">
+    <div class="it-card">
+      <div class="it-card-body">
+        <canvas id="trendResa" height="120"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🔸 Tabella -->
+  <div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+      <thead class="table-light">
+      <tr>
+        <th>Data</th>
+        <th>Area</th>
+        <th>Campo</th>
+        <th>Coltura</th>
+        <th>Resa (t)</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="r : ${data}">
+        <td th:text="${r.date}"></td>
+        <td th:text="${r.area}"></td>
+        <td th:text="${r.field}"></td>
+        <td th:text="${r.crop}"></td>
+        <td th:text="${#numbers.formatDecimal(r.yieldT,1,2)}"></td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <footer class="mt-4 border-top pt-3">
+    <div class="d-flex flex-wrap gap-3">
+      <a th:href="@{/export.csv}" class="btn btn-outline-primary btn-sm">Export CSV</a>
+    </div>
+  </footer>
+</main>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script th:inline="javascript">
+  /*<![CDATA[*/
+  const labels = /*[[${labels}]]*/ [];
+  const yields = /*[[${yields}]]*/ [];
+  const ctx = document.getElementById('trendResa');
+  if (ctx) {
+    new Chart(ctx, {
+      type: 'line',
+      data: { labels: labels, datasets: [{ label: 'Resa (t)', data: yields }] },
+      options: { responsive: true, maintainAspectRatio: false }
+    });
+  }
+  /*]]>*/
+</script>
+
+<!-- Bootstrap Italia JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-italia@2.11.2/dist/js/bootstrap-italia.bundle.min.js"></script>
+
+</body>
+</html>

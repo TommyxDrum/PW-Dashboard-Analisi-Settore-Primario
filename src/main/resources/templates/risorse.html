@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Efficienza risorse</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Bootstrap Italia -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-italia@2.11.2/dist/css/bootstrap-italia.min.css">
+  <link th:href="@{/css/styles.css}" rel="stylesheet">
+</head>
+<body>
+
+<header class="it-header-wrapper">
+  <div class="it-header-slim-wrapper">
+    <div class="container">
+      <div class="row">
+        <div class="col-12">
+          <div class="it-header-slim-wrapper-content">
+            <!-- Pulsante hamburger per mobile -->
+            <a class="it-opener d-lg-none" data-bs-toggle="collapse" href="#menu-principale" role="button" aria-expanded="false" aria-controls="menu-principale">
+              <span>Menu</span>
+            </a>
+
+            <div class="it-header-slim-right-zone">
+              <div class="it-access-top-wrapper d-flex gap-2">
+                <a th:href="@{/}" class="btn btn-primary btn-sm">Home</a>
+                <a th:href="@{/risorse}" class="btn btn-outline-primary btn-sm">Efficienza risorse</a>
+                <a th:href="@{/rischio}" class="btn btn-outline-primary btn-sm">Rischio climatico</a>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="container my-4">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+    <h1 class="mb-0">Efficienza risorse (media per coltura)</h1>
+  </div>
+
+  <p class="text-muted mb-3">
+    Media complessiva: <strong th:text="${#numbers.formatDecimal(meanOverall, 1, 2)}">0.00</strong> kg/m³
+  </p>
+
+  <!-- Chart -->
+  <div class="it-card-wrapper mb-4">
+    <div class="it-card">
+      <div class="it-card-body">
+        <canvas id="eff" height="140" aria-label="Grafico efficienza per coltura" role="img"></canvas>
+        <p th:if="${#lists.isEmpty(labels)}" class="text-center text-muted mb-0">Nessun dato disponibile.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabella -->
+  <div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+      <caption class="text-muted">Efficienza media per coltura (kg/m³)</caption>
+      <thead class="table-light">
+      <tr><th>Coltura</th><th>Efficienza (kg/m³)</th></tr>
+      </thead>
+      <tbody>
+      <tr th:each="i, stat : ${#numbers.sequence(0, labels.size() - 1)}">
+        <td th:text="${labels[i]}">Coltura</td>
+        <td th:text="${#numbers.formatDecimal(eff[i], 1, 2)}">0.00</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script th:inline="javascript">
+  /*<![CDATA[*/
+    const labels = /*[[${labels}]]*/ [];
+    const eff    = /*[[${eff}]]*/ [];
+    if (labels.length) {
+      new Chart(document.getElementById('eff'), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{ label: 'Efficienza (kg/m³)', data: eff }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { title: { display: true, text: 'Coltura' } },
+            y: { title: { display: true, text: 'kg/m³' }, beginAtZero: true }
+          }
+        }
+      });
+    }
+  /*]]>*/
+</script>
+
+<!-- Bootstrap Italia JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-italia@2.11.2/dist/js/bootstrap-italia.bundle.min.js"></script>
+</body>
+</html>

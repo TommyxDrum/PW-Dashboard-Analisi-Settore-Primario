@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>KpiService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Agricultural Dashboard</a> &gt; <a href="index.source.html" class="el_package">it.floro.dashboard.service</a> &gt; <span class="el_source">KpiService.java</span></div><h1>KpiService.java</h1><pre class="source lang-java linenums">package it.floro.dashboard.service;
+
+import it.floro.dashboard.domain.Kpi;
+import it.floro.dashboard.domain.SampleRecord;
+
+<span class="fc" id="L6">public class KpiService {</span>
+    public Kpi compute(SampleRecord r) {
+<span class="fc" id="L8">        double yieldPerHa = safeDiv(r.yieldT(), r.surfaceHa());</span>
+<span class="fc" id="L9">        double waterEff = safeDiv(r.yieldT()*1000.0, r.waterM3());</span>
+<span class="fc" id="L10">        double unitCost = safeDiv(r.costEur(), r.yieldT());</span>
+<span class="fc" id="L11">        double unitMargin = safeDiv(r.priceEurT()*r.yieldT() - r.costEur(), r.yieldT());</span>
+        // climate risk normalized approx
+<span class="fc" id="L13">        double tempN = normalize(r.tempC(), -5, 35);</span>
+<span class="fc" id="L14">        double humN = normalize(r.humidityPct(), 20, 90);</span>
+<span class="fc" id="L15">        double rainN = normalize(r.rainMm(), 0, 30);</span>
+<span class="fc" id="L16">        double risk = 0.4*tempN + 0.3*humN + 0.3*rainN;</span>
+<span class="fc" id="L17">        return new Kpi(yieldPerHa, waterEff, unitCost, unitMargin, risk);</span>
+    }
+
+<span class="pc bpc" id="L20" title="1 of 2 branches missed.">    private double safeDiv(double a, double b) { return (b==0)? Double.NaN : a/b; }</span>
+    private double normalize(double x, double lo, double hi) {
+<span class="pc bpc" id="L22" title="1 of 2 branches missed.">        if (hi&lt;=lo) return 0;</span>
+<span class="fc" id="L23">        double v = (x - lo)/(hi - lo);</span>
+<span class="pc bpc" id="L24" title="2 of 4 branches missed.">        if (v&lt;0) v=0; if (v&gt;1) v=1;</span>
+<span class="fc" id="L25">        return v;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,8 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+Agricultural Dashboard,it.floro.dashboard.domain,Kpi,0,18,0,0,0,1,0,1,0,1
+Agricultural Dashboard,it.floro.dashboard.domain,SampleRecord,0,42,0,0,0,1,0,1,0,1
+Agricultural Dashboard,it.floro.dashboard,Application,8,0,0,0,3,0,2,0,2,0
+Agricultural Dashboard,it.floro.dashboard.simulator,DataSimulator,364,0,14,0,48,0,13,0,4,0
+Agricultural Dashboard,it.floro.dashboard.service,KpiService,8,111,4,4,0,15,4,4,0,4
+Agricultural Dashboard,it.floro.dashboard.web,DashboardController,253,0,14,0,36,0,18,0,11,0
+Agricultural Dashboard,it.floro.dashboard.web,ExportController,115,0,2,0,18,0,3,0,2,0

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DataSimulator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Agricultural Dashboard</a> &gt; <a href="index.source.html" class="el_package">it.floro.dashboard.simulator</a> &gt; <span class="el_source">DataSimulator.java</span></div><h1>DataSimulator.java</h1><pre class="source lang-java linenums">package it.floro.dashboard.simulator;
+
+import it.floro.dashboard.domain.SampleRecord;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
+public class DataSimulator {
+    private final Random rnd;
+    private final LocalDate start;
+    private final int days;
+    private final int fields;
+<span class="nc" id="L15">    private final String[] crops = {&quot;Grano duro&quot;,&quot;Mais&quot;,&quot;Olivo&quot;,&quot;Vite&quot;};</span>
+<span class="nc" id="L16">    private final String[] areas = {&quot;Nord&quot;,&quot;Centro&quot;,&quot;Sud&quot;};</span>
+
+<span class="nc" id="L18">    public DataSimulator(long seed, LocalDate start, int days, int fields) {</span>
+<span class="nc" id="L19">        this.rnd = new Random(seed);</span>
+<span class="nc" id="L20">        this.start = start;</span>
+<span class="nc" id="L21">        this.days = days;</span>
+<span class="nc" id="L22">        this.fields = fields;</span>
+<span class="nc" id="L23">    }</span>
+
+    private double sinYear(int dayShift, int day, double amp, double base) {
+<span class="nc" id="L26">        return base + amp*Math.sin(2*Math.PI*(day - dayShift)/365.0);</span>
+    }
+
+    private double gauss(double mean, double std) {
+        // Box-Muller
+<span class="nc" id="L31">        double u1 = Math.max(1e-9, rnd.nextDouble());</span>
+<span class="nc" id="L32">        double u2 = Math.max(1e-9, rnd.nextDouble());</span>
+<span class="nc" id="L33">        double z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2*Math.PI*u2);</span>
+<span class="nc" id="L34">        return mean + std*z0;</span>
+    }
+
+    public List&lt;SampleRecord&gt; generate() {
+<span class="nc" id="L38">        List&lt;SampleRecord&gt; out = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L39" title="All 2 branches missed.">        for (int d=0; d&lt;days; d++) {</span>
+<span class="nc" id="L40">            LocalDate date = start.plusDays(d);</span>
+<span class="nc" id="L41">            double temp = sinYear(30, d, 10, 12) + gauss(0,2);</span>
+<span class="nc" id="L42">            double hum = sinYear(-60, d, 15, 60) + gauss(0,5);</span>
+<span class="nc" id="L43">            double rain = Math.max(0, Math.exp(gauss(Math.log(4), 0.5)) - 1);</span>
+<span class="nc" id="L44">            double solar = Math.min(1, Math.max(0, 0.4 + 0.3*Math.sin(2*Math.PI*(d-10)/365.0) + gauss(0,0.05)));</span>
+
+<span class="nc bnc" id="L46" title="All 2 branches missed.">            for (int f=0; f&lt;fields; f++) {</span>
+<span class="nc" id="L47">                String field = &quot;A&quot; + String.format(&quot;%02d&quot;, f+1);</span>
+<span class="nc" id="L48">                String crop = crops[rnd.nextInt(crops.length)];</span>
+<span class="nc" id="L49">                String area = areas[rnd.nextInt(areas.length)];</span>
+<span class="nc" id="L50">                double surface = 1.0 + 5.0*rnd.nextDouble();</span>
+
+<span class="nc" id="L52">                double rainFactor = Math.min(rain/5.0, 1.2);</span>
+<span class="nc bnc" id="L53" title="All 4 branches missed.">                double baseYieldPerHa = switch (crop) {</span>
+<span class="nc" id="L54">                    case &quot;Grano duro&quot; -&gt; 4.5;</span>
+<span class="nc" id="L55">                    case &quot;Mais&quot; -&gt; 7.0;</span>
+<span class="nc" id="L56">                    case &quot;Olivo&quot; -&gt; 2.2;</span>
+<span class="nc" id="L57">                    default -&gt; 9.0; // Vite</span>
+                };
+<span class="nc" id="L59">                double seasonBoost = 1 + 0.25*Math.sin(2*Math.PI*(d-90)/365.0);</span>
+<span class="nc" id="L60">                double yieldPerHa = Math.max(0, gauss(baseYieldPerHa*seasonBoost*rainFactor, 0.4));</span>
+<span class="nc" id="L61">                double totalYield = yieldPerHa * surface;</span>
+<span class="nc" id="L62">                double waterM3 = Math.max(0, gauss(200*surface*(1+0.02*Math.max(temp-20,0)), 30));</span>
+<span class="nc" id="L63">                double cost = 150*surface + gauss(30*surface, 10);</span>
+<span class="nc bnc" id="L64" title="All 4 branches missed.">                double price = switch (crop) {</span>
+<span class="nc" id="L65">                    case &quot;Grano duro&quot; -&gt; 280;</span>
+<span class="nc" id="L66">                    case &quot;Mais&quot; -&gt; 250;</span>
+<span class="nc" id="L67">                    case &quot;Olivo&quot; -&gt; 450;</span>
+<span class="nc" id="L68">                    default -&gt; 600;</span>
+<span class="nc" id="L69">                } + gauss(0, 20);</span>
+
+                // outliers rari
+<span class="nc bnc" id="L72" title="All 2 branches missed.">                if (rnd.nextDouble() &lt; 0.01) {</span>
+<span class="nc" id="L73">                    totalYield *= 1.8;</span>
+<span class="nc" id="L74">                    waterM3 *= 1.5;</span>
+<span class="nc" id="L75">                    cost *= 1.6;</span>
+                }
+
+<span class="nc" id="L78">                out.add(new SampleRecord(</span>
+                        date, area, field, crop, surface, temp, hum, rain, solar,
+                        totalYield, waterM3, cost, price
+                ));
+            }
+        }
+<span class="nc" id="L84">        return out;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

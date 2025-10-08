@@ -1,0 +1,10 @@
+server:
+  port: 8080
+
+app:
+  simulation:
+    seed: 42
+    days: 365
+    fields: 8
+    seasonality: true
+    noise: gaussian
