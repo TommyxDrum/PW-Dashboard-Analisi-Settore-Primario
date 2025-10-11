@@ -8,3 +8,16 @@ app:
     fields: 8
     seasonality: true
     noise: gaussian
+
+    spring:
+      thymeleaf:
+        cache: false        # disattiva cache dei template
+      web:
+        resources:
+          cache:
+            period: 0       # 0 secondi (niente cache per le risorse statiche)
+          chain:
+            cache: false    # disattiva anche la cache della resource chain
+
+
+

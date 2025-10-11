@@ -5,8 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dashboard Agronomica - Performance e Rischio</title>
 
+  <!-- Bootstrap + Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
   <style>
@@ -15,7 +17,6 @@
       --secondary-blue:#0d6efd;
       --light-bg:#f8f9fa;
       --danger-red:#dc3545;
-      --success-accessible:#198754;
       --warning-accessible:#e09400;
       --info-color:#0dcaf0;
       --purple:#6f42c1;
@@ -24,286 +25,226 @@
     body{background-color:var(--light-bg);font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif}
     .dashboard-card{border-radius:1rem;box-shadow:0 4px 10px rgba(0,0,0,.08);background:#fff;height:100%}
 
-    /* Headers e bordi */
-    .section-header{padding-bottom:5px;margin-bottom:15px;border-bottom:2px solid}
-    .section-header.primary-border{border-color:var(--secondary-blue)}
-    .section-header.success-border{border-color:var(--primary-green)}
-    .section-header.warning-border{border-color:var(--warning-accessible)}
-
-    /* KPI */
-    .kpi-box{background:#f0fdf4;padding:15px;border-radius:.5rem;transition:.3s;border-left:5px solid}
-    .kpi-box.green-border{border-left-color:var(--primary-green)}
-    .kpi-box.blue-border{border-left-color:var(--secondary-blue)}
-    .kpi-box.yellow-border{border-left-color:var(--warning-accessible)}
-    .kpi-box.red-border{border-left-color:var(--danger-red)}
-    .kpi-box.info-border{border-left-color:var(--info-color)}
-    .kpi-box.purple-border{border-left-color:var(--purple)}
+    .section-header{padding-bottom:.25rem;margin-bottom:1rem;border-bottom:2px solid var(--secondary-blue)}
+    .kpi-box{background:#f0fdf4;padding:15px;border-radius:.5rem;border-left:5px solid var(--primary-green)}
+    .kpi-box.blue   {background:#eef6ff;border-left-color:var(--secondary-blue)}
+    .kpi-box.purple {background:#f7f2ff;border-left-color:var(--purple)}
+    .kpi-box.info   {background:#e7fbff;border-left-color:var(--info-color)}
     .kpi-value{font-size:2rem;font-weight:700}
 
-    .risk-low-color{color:var(--success-accessible)}
-    .risk-medium-color{color:var(--warning-accessible)}
-
-    /* ==== Gauge rischio (CSS) — verde -> rosso da sx a dx ==== */
-    .risk-gauge{
-      --risk:.37; --thumb:36px; --track-h:12px; --edge-offset:10px;
-      position:relative;width:100%;padding:calc(var(--thumb)/2) 16px;
-    }
-    .risk-track{
-      height:var(--track-h);border-radius:9999px;
-      background:linear-gradient(90deg,#2b8c2f 0%,#86c443 30%,#e7cd27 50%,#e09400 65%,#c13b16 85%,#8b1d13 100%);
-      position:relative;box-shadow:inset 0 1px 2px rgba(0,0,0,.15),0 2px 8px rgba(0,0,0,.12)
-    }
-    .risk-track::after{content:"";position:absolute;inset:-6px;filter:blur(3px);border-radius:9999px;background:inherit;opacity:.35;pointer-events:none}
-    .risk-thumb{
-      position:absolute;top:50%;
-      left:calc(max(var(--edge-offset),min(calc(var(--risk)*100%),calc(100% - var(--edge-offset)))));
-      transform:translate(-50%,-50%);
-      width:var(--thumb);height:var(--thumb);border-radius:50%;background:#fff;
-      display:grid;place-items:center;box-shadow:0 2px 10px rgba(0,0,0,.18),0 0 0 3px rgba(255,255,255,.85)
-    }
+    /* Gauge rischio (CSS) */
+    .risk-gauge{--risk:.37;--thumb:34px;--track-h:12px;--edge-offset:10px;position:relative;width:100%;padding:calc(var(--thumb)/2) 16px}
+    .risk-track{height:var(--track-h);border-radius:9999px;background:linear-gradient(90deg,#2b8c2f 0%,#86c443 30%,#e7cd27 50%,#e09400 65%,#c13b16 85%,#8b1d13 100%);position:relative;box-shadow:inset 0 1px 2px rgba(0,0,0,.15),0 2px 8px rgba(0,0,0,.12)}
+    .risk-thumb{position:absolute;top:50%;left:calc(max(var(--edge-offset),min(calc(var(--risk)*100%),calc(100% - var(--edge-offset)))));transform:translate(-50%,-50%);width:var(--thumb);height:var(--thumb);border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 2px 10px rgba(0,0,0,.18),0 0 0 3px rgba(255,255,255,.85)}
     .risk-value{font-weight:700;font-size:.9rem;color:#2f2f2f;line-height:1}
   </style>
 </head>
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top">
+<nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top">
   <div class="container-fluid">
-    <a class="navbar-brand d-flex align-items-center" href="/">
-      <strong class="text-primary">FLORO</strong>
-      <span class="ms-2 badge bg-success">AGRI-DASH</span>
+    <a class="navbar-brand d-flex align-items-center fw-bold text-primary" href="/">
+      FLORO <span class="badge bg-success ms-2">AGRI-DASH</span>
     </a>
     <span class="navbar-text me-auto d-none d-lg-block">Monitoraggio del Settore Primario</span>
-    <div>
-      <a href="/export.csv" class="btn btn-outline-success me-2" title="Esporta Dati CSV" aria-label="Esporta Dati in formato CSV">
-        <i class="bi bi-download"></i> Export
-      </a>
-    </div>
+    <a href="/export.csv" class="btn btn-outline-success"><i class="bi bi-download"></i> Export</a>
   </div>
 </nav>
 
 <div class="container-fluid py-4">
 
-  <!-- Filtri -->
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="dashboard-card p-3">
-        <form action="/" method="get" class="row g-3 align-items-end">
-          <div class="col-md-3">
-            <label for="dateFrom" class="form-label small text-muted">Data Inizio</label>
-            <input type="date"
-                   id="dateFrom"
-                   name="from"
-                   class="form-control"
-                   th:value="${#temporals.format(from, 'yyyy-MM-dd')}"
-                   th:attr="min=${#temporals.format(minDate,'yyyy-MM-dd')},max=${#temporals.format(maxDate,'yyyy-MM-dd')}">
-            <div class="form-text"
-                 th:text="'Seleziona dal ' + ${#temporals.format(minDate,'dd/MM/yyyy')} + ' al ' + ${#temporals.format(maxDate,'dd/MM/yyyy')}"></div>
-          </div>
-
-          <div class="col-md-3">
-            <label for="dateTo" class="form-label small text-muted">Data Fine</label>
-            <input type="date"
-                   id="dateTo"
-                   name="to"
-                   class="form-control"
-                   th:value="${#temporals.format(to, 'yyyy-MM-dd')}"
-                   th:attr="min=${#temporals.format(minDate,'yyyy-MM-dd')},max=${#temporals.format(maxDate,'yyyy-MM-dd')}">
-            <div class="form-text"
-                 th:text="'Seleziona dal ' + ${#temporals.format(minDate,'dd/MM/yyyy')} + ' al ' + ${#temporals.format(maxDate,'dd/MM/yyyy')}"></div>
-          </div>
-
-          <div class="col-md-2">
-            <label for="cropFilter" class="form-label small text-muted">Coltura</label>
-            <select id="cropFilter" name="crop" class="form-select">
-              <option value="" th:selected="${crop == null or crop.isEmpty()}">Tutte</option>
-              <option value="Grano duro" th:selected="${'Grano duro'.equals(crop)}">Grano duro</option>
-              <option value="Mais" th:selected="${'Mais'.equals(crop)}">Mais</option>
-              <option value="Olivo" th:selected="${'Olivo'.equals(crop)}">Olivo</option>
-              <option value="Vite" th:selected="${'Vite'.equals(crop)}">Vite</option>
-            </select>
-          </div>
-
-          <div class="col-md-2">
-            <label for="areaFilter" class="form-label small text-muted">Area</label>
-            <select id="areaFilter" name="area" class="form-select">
-              <option value="" th:selected="${area == null or area.isEmpty()}">Tutte</option>
-              <option value="Nord" th:selected="${'Nord'.equals(area)}">Nord</option>
-              <option value="Centro" th:selected="${'Centro'.equals(area)}">Centro</option>
-              <option value="Sud" th:selected="${'Sud'.equals(area)}">Sud</option>
-            </select>
-          </div>
-
-          <div class="col-md-2 d-grid">
-            <button type="submit" class="btn btn-primary"><i class="bi bi-funnel"></i> Applica Filtri</button>
-          </div>
-        </form>
+  <!-- FILTRI -->
+  <div class="dashboard-card p-3 mb-4">
+    <form id="filterForm" action="/" method="get" class="row g-3 align-items-end">
+      <div class="col-12">
+        <label class="form-label medium text-muted">Ricerca avanzata</label>
       </div>
-    </div>
+
+      <div class="col-6 col-md-3">
+        <label for="monthSel" class="form-label small text-muted d-md-none">Mese</label>
+        <select id="monthSel" class="form-select" aria-label="Seleziona mese">
+          <option value="1"  th:selected="${from != null and #temporals.month(from) == 1 }">Gennaio</option>
+          <option value="2"  th:selected="${from != null and #temporals.month(from) == 2 }">Febbraio</option>
+          <option value="3"  th:selected="${from != null and #temporals.month(from) == 3 }">Marzo</option>
+          <option value="4"  th:selected="${from != null and #temporals.month(from) == 4 }">Aprile</option>
+          <option value="5"  th:selected="${from != null and #temporals.month(from) == 5 }">Maggio</option>
+          <option value="6"  th:selected="${from != null and #temporals.month(from) == 6 }">Giugno</option>
+          <option value="7"  th:selected="${from != null and #temporals.month(from) == 7 }">Luglio</option>
+          <option value="8"  th:selected="${from != null and #temporals.month(from) == 8 }">Agosto</option>
+          <option value="9"  th:selected="${from != null and #temporals.month(from) == 9 }">Settembre</option>
+          <option value="10" th:selected="${from != null and #temporals.month(from) == 10}">Ottobre</option>
+          <option value="11" th:selected="${from != null and #temporals.month(from) == 11}">Novembre</option>
+          <option value="12" th:selected="${from != null and #temporals.month(from) == 12}">Dicembre</option>
+        </select>
+      </div>
+
+      <div class="col-6 col-md-2">
+        <label for="yearSel" class="form-label small text-muted d-md-none">Anno</label>
+        <select id="yearSel" class="form-select" aria-label="Seleziona anno">
+          <option th:each="y : ${#numbers.sequence(2015, 2025)}"
+                  th:value="${y}" th:text="${y}"
+                  th:selected="${from != null ? #temporals.year(from) == y : y == #temporals.year(#temporals.createNow())}">
+            2025
+          </option>
+        </select>
+      </div>
+
+      <div class="col-12 col-md-3">
+        <label for="cropSel" class="form-label small text-muted d-md-none">Coltura</label>
+        <select id="cropSel" name="crop" class="form-select" aria-label="Seleziona coltura">
+          <option value="">Tutte</option>
+          <option th:each="c : ${cropsList != null ? cropsList : {'Grano duro','Mais','Olivo','Vite'}}"
+                  th:value="${c}" th:text="${c}" th:selected="${c == crop}">
+            Coltura
+          </option>
+        </select>
+      </div>
+
+      <div class="col-12 col-md-3">
+        <label for="areaSel" class="form-label small text-muted d-md-none">Area</label>
+        <select id="areaSel" name="area" class="form-select" aria-label="Seleziona area">
+          <option value="">Tutte</option>
+          <option th:each="a : ${areasList != null ? areasList : {'Nord','Centro','Sud'}}"
+                  th:value="${a}" th:text="${a}" th:selected="${a == area}">
+            Area
+          </option>
+        </select>
+      </div>
+
+      <div class="col-12 col-md-auto ms-md-auto d-grid">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-funnel"></i> Applica Filtri
+        </button>
+      </div>
+
+      <!-- Hidden per il controller -->
+      <input type="hidden" id="from" name="from" th:value="${#temporals.format(from,'yyyy-MM-dd')}"/>
+      <input type="hidden" id="to"   name="to"   th:value="${#temporals.format(to,'yyyy-MM-dd')}"/>
+    </form>
   </div>
 
   <!-- KPI -->
   <div class="row g-4 mb-4 row-cols-1 row-cols-md-2 row-cols-lg-4 row-cols-xl-5">
     <div class="col">
-      <div class="kpi-box green-border" title="Resa media per ettaro nel periodo">
-        <p class="text-muted small mb-1"><i class="bi bi-bar-chart-line-fill text-success"></i> RESA MEDIA</p>
+      <div class="kpi-box">
+        <p class="small text-muted mb-1"><i class="bi bi-bar-chart-line-fill text-success"></i> RESA MEDIA</p>
         <div class="d-flex align-items-center">
-          <span class="kpi-value text-success" th:text="${#numbers.formatDecimal(avgYieldHa, 1, 'POINT', 2, 'COMMA')}">1,48</span>
-          <span class="ms-2 h6 text-muted">Tonnellate / Ha</span>
+          <span class="kpi-value text-success" th:text="${#numbers.formatDecimal(avgYieldHa,1,'POINT',2,'COMMA')}">0,00</span>
+          <span class="ms-2 text-muted">t/ha</span>
         </div>
       </div>
     </div>
-
     <div class="col">
-      <div class="kpi-box blue-border" title="Efficienza nell'uso dell'acqua: kg di prodotto per m³ d'acqua">
-        <p class="text-muted small mb-1"><i class="bi bi-water text-primary"></i> EFFICIENZA IDRICA</p>
+      <div class="kpi-box blue">
+        <p class="small text-muted mb-1"><i class="bi bi-water text-primary"></i> EFFICIENZA IDRICA</p>
         <div class="d-flex align-items-center">
-          <span class="kpi-value text-primary" th:text="${#numbers.formatDecimal(avgEff, 1, 'POINT', 2, 'COMMA')}">7,34</span>
-          <span class="ms-2 h6 text-muted">Kg / m³</span>
+          <span class="kpi-value text-primary" th:text="${#numbers.formatDecimal(avgEff,1,'POINT',2,'COMMA')}">0,00</span>
+          <span class="ms-2 text-muted">Kg/m³</span>
         </div>
       </div>
     </div>
-
-    <!-- KPI: COSTO UNITARIO -->
     <div class="col">
-      <div class="kpi-box purple-border" title="Costo medio per tonnellata prodotta">
-        <p class="text-muted small mb-1"><i class="bi bi-cash-coin" style="color:#6f42c1"></i> COSTO UNITARIO</p>
+      <div class="kpi-box purple">
+        <p class="small text-muted mb-1"><i class="bi bi-cash-coin" style="color:#6f42c1"></i> COSTO UNITARIO</p>
         <div class="d-flex align-items-center">
-          <span class="kpi-value" style="color:#6f42c1" th:text="${#numbers.formatDecimal(avgCost, 1, 'POINT', 2, 'COMMA')}">95,00</span>
-          <span class="ms-2 h6 text-muted">€ / Tonnellata</span>
+          <span class="kpi-value" style="color:#6f42c1" th:text="${#numbers.formatDecimal(avgCost,1,'POINT',2,'COMMA')}">0,00</span>
+          <span class="ms-2 text-muted">€/t</span>
         </div>
       </div>
     </div>
-
     <div class="col">
-      <div class="kpi-box info-border" title="Margine di profitto medio per tonnellata di prodotto">
-        <p class="text-muted small mb-1"><i class="bi bi-graph-up-arrow text-info"></i> MARGINE UNITARIO</p>
+      <div class="kpi-box info">
+        <p class="small text-muted mb-1"><i class="bi bi-graph-up-arrow text-info"></i> MARGINE UNITARIO</p>
         <div class="d-flex align-items-center">
-          <span class="kpi-value text-info" th:text="${#numbers.formatDecimal(avgMargin, 1, 'POINT', 2, 'COMMA')}">125,22</span>
-          <span class="ms-2 h6 text-muted">€ / Tonnellata</span>
+          <span class="kpi-value text-info" th:text="${#numbers.formatDecimal(avgMargin,1,'POINT',2,'COMMA')}">0,00</span>
+          <span class="ms-2 text-muted">€/t</span>
         </div>
       </div>
     </div>
-
     <div class="col">
-      <th:block th:with="
-        risk=${avgRisk},
-        riskClass=(${risk} > 0.7 ? 'text-danger' : (${risk} > 0.4 ? 'risk-medium-color' : 'risk-low-color')),
-        riskBorderClass=(${risk} > 0.7 ? 'red-border' : (${risk} > 0.4 ? 'yellow-border' : 'green-border')),
-        riskIconClass=(${risk} > 0.7 ? 'text-danger' : (${risk} > 0.4 ? 'risk-medium-color' : 'risk-low-color'))">
-        <div class="kpi-box" th:classappend="${riskBorderClass}" title="Indice normalizzato di rischio climatico (Temp, Umidità, Pioggia)">
-          <p class="text-muted small mb-1"><i class="bi bi-exclamation-triangle-fill" th:classappend="${riskIconClass}"></i> RISCHIO CLIMATICO</p>
-          <div class="d-flex align-items-center">
-            <span class="kpi-value" th:text="${#numbers.formatDecimal(risk, 1, 'POINT', 2, 'COMMA')}" th:classappend="${riskClass}">0,37</span>
-            <span class="ms-2 h6 text-muted">Indice (0-1)</span>
-          </div>
+      <div class="kpi-box" th:with="risk=${avgRisk}">
+        <p class="small text-muted mb-1"><i class="bi bi-exclamation-triangle-fill text-warning"></i> RISCHIO CLIMATICO</p>
+        <div class="d-flex align-items-center">
+          <span class="kpi-value" th:text="${#numbers.formatDecimal(risk,1,'POINT',2,'COMMA')}">0,00</span>
+          <span class="ms-2 text-muted">Indice (0-1)</span>
         </div>
-      </th:block>
+      </div>
     </div>
   </div>
 
-  <!-- Grafico Resa + Box Efficienza con tachimetro -->
+  <!-- Resa (Linear scale Min/Max) + Efficienza (POLAR AREA con unità) -->
   <div class="row g-4">
     <div class="col-lg-8">
       <div class="dashboard-card p-4">
-        <div class="d-flex justify-content-between align-items-center section-header primary-border">
-          <h2 class="h5 mb-0 text-primary fw-bold">Andamento Resa per Ettaro (T/Ha)</h2>
-          <span class="badge bg-secondary" th:text="${crop} ? ${crop} : 'Tutte le Colture'">Tutte le Colture</span>
+        <div class="d-flex justify-content-between align-items-center section-header">
+          <h2 class="h6 mb-0 fw-bold text-primary">Andamento Resa (t/ha)</h2>
+          <span class="badge bg-secondary" th:text="${crop != null ? crop : 'Tutte le Colture'}">Tutte le Colture</span>
         </div>
-        <div class="chart-container" style="height:300px"><canvas id="yieldChart"></canvas></div>
+        <div style="height:300px">
+          <canvas id="yieldMinMax" aria-label="Andamento resa con scala linear min-max"></canvas>
+        </div>
       </div>
     </div>
 
     <div class="col-lg-4">
       <div class="dashboard-card p-4">
-        <div class="d-flex justify-content-between align-items-center section-header success-border">
-          <h2 class="h5 mb-0 text-success fw-bold">Efficienza Idrica (Risorse)</h2>
+        <div class="d-flex justify-content-between align-items-center section-header" style="border-color:var(--primary-green)">
+          <h2 class="h6 mb-0 fw-bold text-success">Efficienza Idrica (Polar Area)</h2>
           <a href="/risorse" class="btn btn-sm btn-outline-success">Vai al dettaglio →</a>
         </div>
-
-        <h3 class="h6 text-muted mb-2">Media Totale</h3>
-        <p class="h4 fw-bold text-primary" th:text="${#numbers.formatDecimal(avgEff, 1, 'POINT', 2, 'COMMA')} + ' Kg/m³'">0,00 Kg/m³</p>
-
-        <!-- Tachimetro -->
-        <div style="height:250px">
-          <canvas id="effTach"></canvas>
-        </div>
-
-        <!-- Confronto per coltura (top) -->
-        <h4 class="h6 text-muted mt-3 mb-2">Confronto per Coltura</h4>
-        <div class="list-group list-group-flush small">
-          <th:block th:if="${bestEffCrop != null && bestEffValue > 0.0}">
-            <div class="list-group-item d-flex justify-content-between align-items-center">
-              <span><i class="bi bi-trophy-fill text-warning"></i> Coltura Migliore</span>
-              <span class="fw-bold text-success" th:text="${bestEffCrop + ' (' + #numbers.formatDecimal(bestEffValue, 1, 'POINT', 2, 'COMMA') + ' Kg/m³)'}">—</span>
-            </div>
-          </th:block>
-          <th:block th:each="entry : ${allCropEfficiencies}">
-            <div class="list-group-item d-flex justify-content-between align-items-center" th:if="${entry.getKey() != bestEffCrop && entry.getValue() > 0.0}">
-              <span th:text="${entry.getKey()}">Coltura</span>
-              <span class="text-muted" th:text="${#numbers.formatDecimal(entry.getValue(), 1, 'POINT', 2, 'COMMA')} + ' Kg/m³'">—</span>
-            </div>
-          </th:block>
-          <th:block th:if="${allCropEfficiencies == null || allCropEfficiencies.isEmpty()}">
-            <div class="list-group-item text-center text-muted">Nessun dato disponibile per le colture.</div>
-          </th:block>
-        </div>
+        <p class="text-muted small mb-2">Unità: <strong>Kg/m³</strong>.</p>
+        <div style="height:350px"><canvas id="effPolar"></canvas></div>
       </div>
     </div>
   </div>
 
-  <!-- ▼ NUOVA RIGA: Costo Unitario + Margine Unitario (affiancati) -->
+  <!-- Costo & Margine affiancati -->
   <div class="row g-4 mt-4">
     <div class="col-lg-6">
       <div class="dashboard-card p-4">
         <div class="d-flex justify-content-between align-items-center section-header" style="border-color:#6f42c1">
-          <h2 class="h5 mb-0" style="color:#6f42c1">Costo vs Margine (€/t)</h2>
+          <h2 class="h6 mb-0" style="color:#6f42c1">Costo vs Margine (€/t)</h2>
         </div>
-        <div style="height:260px">
-          <canvas id="costMarginStacked"></canvas>
-        </div>
+        <div style="height:260px"><canvas id="costMarginStacked"></canvas></div>
       </div>
     </div>
-
     <div class="col-lg-6">
       <div class="dashboard-card p-4">
-        <div class="d-flex justify-content-between align-items-center section-header info-border">
-          <h2 class="h5 mb-0 text-info">Prezzo → Costi → Margine</h2>
+        <div class="d-flex justify-content-between align-items-center section-header" style="border-color:var(--info-color)">
+          <h2 class="h6 mb-0 text-info">Prezzo → Costi → Margine</h2>
         </div>
-        <div style="height:260px">
-          <canvas id="marginWaterfall"></canvas>
-        </div>
+        <div style="height:260px"><canvas id="marginWaterfall"></canvas></div>
       </div>
     </div>
   </div>
 
-  <!-- Sezione Rischio con Gauge CSS -->
+  <!-- Rischio Climatico (gauge CSS) -->
   <div class="row g-4 mt-4">
     <div class="col-12">
       <div class="dashboard-card p-4">
-        <div class="d-flex justify-content-between align-items-center section-header warning-border">
-          <h2 class="h5 mb-0 risk-medium-color fw-bold">Rischio Climatico per Campo</h2>
+        <div class="d-flex justify-content-between align-items-center section-header" style="border-color:var(--warning-accessible)">
+          <h2 class="h6 mb-0 fw-bold" style="color:var(--warning-accessible)">Rischio Climatico</h2>
           <a href="/rischio" class="btn btn-sm btn-outline-warning">Analisi Mappa Rischio →</a>
         </div>
 
-        <p class="text-muted small mb-4">
-          L'indice di rischio climatico medio nel periodo selezionato è di
-          <span class="fw-bold" th:text="${#numbers.formatDecimal(avgRisk, 1, 'POINT', 2, 'COMMA')}">0,38</span>.
-          Questo valore rappresenta la media del rischio per l'area e la coltura selezionate.
+        <p class="text-muted small mb-3">
+          Indice medio nel periodo selezionato:
+          <span class="fw-bold" th:text="${#numbers.formatDecimal(avgRisk,1,'POINT',2,'COMMA')}">0,00</span>
+          (0 = basso, 1 = alto).
         </p>
 
-        <div class="risk-gauge" role="progressbar" aria-label="Indice di rischio climatico"
+        <div class="risk-gauge"
+             role="progressbar" aria-label="Indice di rischio climatico"
              aria-valuemin="0" aria-valuemax="1"
              th:attr="aria-valuenow=${avgRisk}"
              th:style="'--risk:' + ${avgRisk}">
           <div class="risk-track"></div>
-          <div class="risk-thumb">
-            <span class="risk-value" th:text="${#numbers.formatDecimal(avgRisk, 1, 'POINT', 2, 'COMMA')}">0,38</span>
-          </div>
+          <div class="risk-thumb"><span class="risk-value" th:text="${#numbers.formatDecimal(avgRisk,1,'POINT',2,'COMMA')}">0,00</span></div>
         </div>
 
         <div class="d-flex justify-content-around text-center small mt-3">
-          <span class="risk-low-color">Basso (&lt; 0,4)</span>
-          <span class="risk-medium-color">Medio (0,4 - 0,7)</span>
+          <span class="text-success">Basso (&lt; 0,4)</span>
+          <span style="color:var(--warning-accessible)">Medio (0,4 - 0,7)</span>
           <span class="text-danger">Alto (&gt; 0,7)</span>
         </div>
       </div>
@@ -314,117 +255,246 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
+<!-- Script filtri: calcola hidden from/to dal Mese/Anno -->
+<script>
+  (function(){
+    const monthSel = document.getElementById('monthSel');
+    const yearSel  = document.getElementById('yearSel');
+    const fromH    = document.getElementById('from');
+    const toH      = document.getElementById('to');
+    const form     = document.getElementById('filterForm');
+
+    function pad2(n){ return n<10 ? '0'+n : ''+n; }
+    function lastDay(y,m){ return new Date(y, m, 0).getDate(); } // m: 1..12
+
+    function refreshHidden(){
+      var y = parseInt(yearSel.value,10);
+      var m = parseInt(monthSel.value,10);
+      var dEnd = lastDay(y,m);
+      fromH.value = y + '-' + pad2(m) + '-01';
+      toH.value   = y + '-' + pad2(m) + '-' + pad2(dEnd);
+    }
+
+    (function init(){
+      var haveFrom = fromH && fromH.value && fromH.value.length === 10;
+      if (haveFrom){
+        var p = fromH.value.split('-');
+        if (p.length === 3){ monthSel.value = String(parseInt(p[1],10)); yearSel.value = p[0]; }
+      } else {
+        var today = new Date();
+        monthSel.value = (today.getMonth()+1).toString();
+        yearSel.value  = today.getFullYear().toString();
+      }
+      refreshHidden();
+    })();
+
+    monthSel.addEventListener('change', refreshHidden);
+    yearSel.addEventListener('change',  refreshHidden);
+    form.addEventListener('submit',      refreshHidden);
+  })();
+</script>
+
+<!-- Grafici -->
 <script th:inline="javascript">
   /*<![CDATA[*/
-  // ===== Resa (line chart) =====
-  const labels = [[${labels}]];
-  const yields = [[${yields}]];
-  new Chart(document.getElementById('yieldChart').getContext('2d'), {
-    type:'line',
-    data:{labels, datasets:[{label:'Resa Totale (Tonnellate)', data:yields, borderColor:'rgb(25,135,84)', backgroundColor:'rgba(25,135,84,.1)', borderWidth:2, pointRadius:0, fill:true, tension:.2}]},
-    options:{responsive:true,maintainAspectRatio:false,scales:{x:{type:'category'},y:{beginAtZero:true,title:{display:true,text:'Resa (T)'}}},plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false}},hover:{mode:'index',intersect:false}}
-  });
+    /* ===== Variabili dal controller ===== */
+    const labels     = [[${labels}]];
+    const yNord      = /*[[${yieldsNord}]]*/ [];
+    const yCentro    = /*[[${yieldsCentro}]]*/ [];
+    const ySud       = /*[[${yieldsSud}]]*/ [];
+    const areaSel    = /*[[${area}]]*/ null;
 
-  // ===== Tachimetro Efficienza (doughnut + ago) =====
-  const effVal = /*[[${avgEff}]]*/ 0;
-  const effMax = /*[[${effMaxScale}]]*/ 50;  // calcolato nel controller (p95)
-  const z1 = 0.50, z2 = 0.80;                 // soglie relative (verde, giallo, rosso)
+    const avgEff     = /*[[${avgEff}]]*/ 0;
+    const effMax     = /*[[${effMaxScale}]]*/ 50;
+    const avgCost    = /*[[${avgCost}]]*/ 0;
+    const avgMargin  = /*[[${avgMargin}]]*/ 0;
+    const unitPrice  = avgCost + avgMargin;
 
-  const needlePlugin = {
-    id:'needle',
-    afterDraw(chart){
-      const meta = chart.getDatasetMeta(0);
-      if(!meta?.data?.length) return;
-      const ctx = chart.ctx;
-      const cx = meta.data[0].x, cy = meta.data[0].y;
-      const outer = meta.data[0].outerRadius, inner = meta.data[0].innerRadius;
+    /* ===== Valori Polar Area (Kg/m³) per area ===== */
+    const effNordKgM3   = /*[[${effNordKgM3}]]*/ 0;
+    const effCentroKgM3 = /*[[${effCentroKgM3}]]*/ 0;
+    const effSudKgM3    = /*[[${effSudKgM3}]]*/ 0;
 
-      // normalizzazione 0..1 e conversione in angolo (-90°..+90°)
-      const t = Math.max(0, Math.min(effVal/effMax, 1));
-      const ang = (-0.5 + t) * Math.PI; // -90°..+90°
-      const len = (outer + inner)/2;
-      const x2 = cx + len * Math.cos(ang);
-      const y2 = cy + len * Math.sin(ang);
+    /* ===== Resa: Linear Scale Min/Max (1 o 3 serie) ===== */
+    (function(){
+      const el = document.getElementById('yieldMinMax'); if(!el) return;
 
-      ctx.save();
-      ctx.beginPath(); ctx.rect(0,0,chart.width,chart.height); ctx.clip();
-      ctx.lineWidth = 3; ctx.strokeStyle = '#333'; ctx.fillStyle = '#333';
-      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(x2, y2); ctx.stroke();
-      ctx.beginPath(); ctx.arc(cx, cy, 6, 0, 2*Math.PI); ctx.fill();
-      ctx.restore();
-    }
-  };
+      const C_NORD   = '#0d6efd';
+      const C_CENTRO = '#fd7e14';
+      const C_SUD    = '#198754';
 
-  new Chart(document.getElementById('effTach').getContext('2d'), {
-    type:'doughnut',
-    data:{
-      labels:['Scarsa','Media','Ottima'],
-      datasets:[{
-        data:[z1,(z2 - z1),(1 - z2)],
-        /* verde -> giallo -> rosso */
-        backgroundColor:['#2b8c2f','#e7cd27','#c13b16'],
-        borderWidth:0, cutout:'80%'
-      }]
-    },
-    options:{
-      rotation:-90, circumference:180,
-      responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{display:false}, tooltip:{enabled:true}}
-    },
-    plugins:[needlePlugin]
-  });
+      const allCandidates = [
+        { key: 'Nord',   label: 'Nord',   data: yNord,   color: C_NORD   },
+        { key: 'Centro', label: 'Centro', data: yCentro, color: C_CENTRO },
+        { key: 'Sud',    label: 'Sud',    data: ySud,    color: C_SUD    },
+      ];
 
-  // ===== Nuovi grafici: Costo/Margine =====
-  const avgCost   = /*[[${avgCost}]]*/ 0;
-  const avgMargin = /*[[${avgMargin}]]*/ 0;
-  const unitPrice = avgCost + avgMargin;
+      const datasetsPicked = (areaSel && areaSel.trim().length > 0)
+        ? allCandidates.filter(d => d.key.toLowerCase() === areaSel.toLowerCase())
+        : allCandidates;
 
-  // (1) Barra orizzontale impilata: Costo + Margine = Prezzo
-  new Chart(document.getElementById('costMarginStacked').getContext('2d'), {
-    type: 'bar',
-    data: {
-      labels: ['Prezzo unitario'],
-      datasets: [
-        { label: 'Costo €/t',   data: [avgCost],   backgroundColor: '#ef4444', stack: 's' },
-        { label: 'Margine €/t', data: [avgMargin], backgroundColor: '#10b981', stack: 's' }
-      ]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: c => `${c.dataset.label}: € ${c.raw.toFixed(2)}` } } },
-      scales: {
-        x: { stacked: true, title: { display: true, text: '€ / t' }, beginAtZero: true },
-        y: { stacked: true }
+      const datasetsNonEmpty = datasetsPicked.filter(d => Array.isArray(d.data) && d.data.some(v => Number.isFinite(v)));
+      if (datasetsNonEmpty.length === 0) return;
+
+      const allVals = datasetsNonEmpty.flatMap(d => d.data).filter(Number.isFinite);
+      const yMin0 = Math.min(...allVals);
+      const yMax0 = Math.max(...allVals);
+      const span  = Math.max(0, yMax0 - yMin0);
+      const pad   = span > 0 ? span * 0.10 : (yMax0 || 1) * 0.10;
+
+      new Chart(el.getContext('2d'), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: datasetsNonEmpty.map(d => ({
+            label: d.label,
+            data: d.data,
+            borderColor: d.color,
+            backgroundColor: 'transparent',
+            pointRadius: 0,
+            borderWidth: 2,
+            tension: .25,
+            fill: false
+          }))
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              type: 'linear',
+              min: Math.max(0, yMin0 - pad),
+              max: yMax0 + pad,
+              title: { display: true, text: 'Resa (T)' }
+            },
+            x: {
+              type: 'category',
+              ticks: { autoSkip: true, maxTicksLimit: 10 }
+            }
+          },
+          plugins: {
+            legend: { position: 'top' },
+            tooltip: { mode: 'index', intersect: false }
+          },
+          interaction: { mode: 'index', intersect: false }
+        }
+      });
+    })();
+
+    /* ===== Efficienza Idrica: Polar Area con unità (Kg/m³) ===== */
+    (function(){
+      const el = document.getElementById('effPolar'); if(!el) return;
+
+      const labelsAreas = ['Nord','Centro','Sud'];
+      const valuesAreas = [effNordKgM3, effCentroKgM3, effSudKgM3];
+      const colors      = ['#0d6efd','#fd7e14','#198754'];
+
+      // filtra per area se selezionata
+      let L = [], V = [], C = [];
+      if (areaSel && String(areaSel).trim().length > 0){
+        const a = String(areaSel).toLowerCase();
+        const idx = a === 'nord' ? 0 : (a === 'centro' ? 1 : (a === 'sud' ? 2 : -1));
+        if (idx >= 0){ L = [labelsAreas[idx]]; V = [valuesAreas[idx]]; C = [colors[idx]]; }
+        else { L = labelsAreas; V = valuesAreas; C = colors; }
+      } else {
+        L = labelsAreas; V = valuesAreas; C = colors;
       }
-    }
-  });
 
-  // (2) Waterfall semplificata: Prezzo → Costi → Margine
-  const wfLabels = ['Prezzo', '− Costi', 'Margine'];
-  const wfValues = [ unitPrice, -avgCost, avgMargin ];
-  new Chart(document.getElementById('marginWaterfall').getContext('2d'), {
-    type: 'bar',
-    data: {
-      labels: wfLabels,
-      datasets: [{
-        data: wfValues,
-        backgroundColor: ctx => ctx.raw >= 0 ? '#10b981' : '#ef4444',
-        borderWidth: 0
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: c => `${c.label}: € ${Math.abs(c.raw).toFixed(2)}` } }
-      },
-      scales: { y: { beginAtZero: true, title: { display: true, text: '€ / t' } } }
-    }
-  });
+      // etichetta centrale con media e unità
+      const centerLabel = {
+        id: 'centerLabel',
+        afterDraw(chart){
+          const ds = chart.data.datasets[0]?.data || [];
+          if (!ds.length) return;
+          const avg = ds.reduce((a,b)=>a+b,0)/ds.length;
+          const ctx = chart.ctx;
+          ctx.save();
+          ctx.textAlign = 'center';
+          ctx.fillStyle = '#333';
+          ctx.font = '600 13px system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
+          ctx.fillText('Media', chart.width/2, chart.height/2 - 8);
+          ctx.font = '700 18px system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
+          ctx.fillText(`${avg.toFixed(1)} Kg/m³`, chart.width/2, chart.height/2 + 16);
+          ctx.restore();
+        }
+      };
+
+      // scala massima suggerita: usa max dei valori o fallback a 100
+      const vmax = Math.max( ...V.filter(n => Number.isFinite(n)), 100 );
+
+      new Chart(el.getContext('2d'), {
+        type: 'polarArea',
+        data: {
+          labels: L,
+          datasets: [{
+            data: V,
+            backgroundColor: C,
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.label}: ${(+ctx.raw).toFixed(1)} Kg/m³`
+              }
+            }
+          },
+          scales: {
+            r: {
+              suggestedMin: 0,
+              suggestedMax: vmax,
+              ticks: {
+                stepSize: Math.max(5, Math.round(vmax/5)),
+                callback: (v) => `${v} Kg/m³`
+              },
+              pointLabels: {
+                // Non usato da polarArea (è per radar), ma lasciato neutro
+              }
+            }
+          },
+          animation: { animateRotate: true, animateScale: true }
+        },
+        plugins: [centerLabel]
+      });
+    })();
+
+    /* ===== Costo vs Margine (stacked orizzontale) ===== */
+    (function(){
+      const el = document.getElementById('costMarginStacked'); if(!el) return;
+      new Chart(el.getContext('2d'), {
+        type:'bar',
+        data:{
+          labels:['Prezzo unitario'],
+          datasets:[
+            {label:'Costo €/t',   data:[avgCost],   backgroundColor:'#ef4444', stack:'s'},
+            {label:'Margine €/t', data:[avgMargin], backgroundColor:'#10b981', stack:'s'}
+          ]
+        },
+        options:{
+          indexAxis:'y', responsive:true, maintainAspectRatio:false,
+          plugins:{legend:{position:'bottom'}, tooltip:{callbacks:{label:c=>`${c.dataset.label}: € ${(+c.raw).toFixed(2)}`}}},
+          scales:{x:{stacked:true, beginAtZero:true, title:{display:true,text:'€ / t'}}, y:{stacked:true}}
+        }
+      });
+    })();
+
+    /* ===== Waterfall semplice: Prezzo → Costi → Margine ===== */
+    (function(){
+      const el = document.getElementById('marginWaterfall'); if(!el) return;
+      const wfLabels = ['Prezzo', '− Costi', 'Margine'];
+      const wfValues = [unitPrice, -avgCost, avgMargin];
+      new Chart(el.getContext('2d'), {
+        type:'bar',
+        data:{labels:wfLabels, datasets:[{data:wfValues, backgroundColor:(ctx)=> ctx.raw>=0 ? '#10b981' : '#ef4444', borderWidth:0}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.label}: € ${Math.abs(+c.raw).toFixed(2)}`}}},scales:{y:{beginAtZero:true,title:{display:true,text:'€ / t'}}}}
+      });
+    })();
   /*]]>*/
 </script>
+
 </body>
 </html>

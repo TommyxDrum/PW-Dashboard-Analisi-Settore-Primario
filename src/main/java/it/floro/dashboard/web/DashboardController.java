@@ -24,7 +24,7 @@ public class DashboardController {
     private List<SampleRecord> cached;
     private final KpiService kpiService;
 
-    // Limiti temporali globali (10 anni fino a oggi; puoi fissare date esplicite se preferisci)
+    // Limiti temporali globali (10 anni fino a oggi)
     private static final LocalDate MAX_DATE = LocalDate.now();
     private static final LocalDate MIN_DATE = MAX_DATE.minusYears(10).withDayOfYear(1);
 
@@ -77,25 +77,42 @@ public class DashboardController {
         final String fCrop    = cropNorm;
         final String fArea    = areaNorm;
 
-        // Filtro dati
+        // Filtro dati riga/record
         List<SampleRecord> filtered = cached.stream()
                 .filter(r -> !r.date().isBefore(fFrom) && !r.date().isAfter(fTo))
                 .filter(r -> fCrop == null || fCrop.equalsIgnoreCase(r.crop()))
                 .filter(r -> fArea == null || fArea.equalsIgnoreCase(r.area()))
                 .toList();
 
-        // Serie per grafico resa
-        List<String> labels = filtered.stream().map(r -> r.date().toString()).toList();
-        List<Double> yields = filtered.stream().map(SampleRecord::yieldT).toList();
+        // === Labels: tutte le date del range (una voce per ogni giorno) ===
+        List<LocalDate> dateRange = new ArrayList<>();
+        for (LocalDate d = fromDate; !d.isAfter(toDate); d = d.plusDays(1)) {
+            dateRange.add(d);
+        }
+        List<String> labels = dateRange.stream().map(LocalDate::toString).toList();
 
-        // KPI calcolati
+        // === Serie per area: somma delle rese per giorno ===
+        Map<String, Map<LocalDate, Double>> sumByAreaDate = filtered.stream()
+                .collect(Collectors.groupingBy(
+                        SampleRecord::area,
+                        Collectors.groupingBy(
+                                SampleRecord::date,
+                                Collectors.summingDouble(SampleRecord::yieldT)
+                        )
+                ));
+
+        List<Double> yieldsNord   = seriesForArea("Nord",   dateRange, sumByAreaDate);
+        List<Double> yieldsCentro = seriesForArea("Centro", dateRange, sumByAreaDate);
+        List<Double> yieldsSud    = seriesForArea("Sud",    dateRange, sumByAreaDate);
+
+        // === KPI calcolati sui record filtrati ===
         List<Kpi> kpis = filtered.stream().map(kpiService::compute).toList();
 
-        double avgYieldHa = kpis.stream().mapToDouble(Kpi::yieldPerHa).filter(d -> !Double.isNaN(d)).average().orElse(0.0);
-        double avgEff     = kpis.stream().mapToDouble(Kpi::waterEfficiencyKgPerM3).filter(d -> !Double.isNaN(d)).average().orElse(0.0);
-        double avgCost    = kpis.stream().mapToDouble(Kpi::unitCostEurPerT).filter(d -> !Double.isNaN(d)).average().orElse(0.0);
-        double avgMargin  = kpis.stream().mapToDouble(Kpi::unitMarginEurPerT).filter(d -> !Double.isNaN(d)).average().orElse(0.0);
-        double avgRisk    = kpis.stream().mapToDouble(Kpi::climateRiskIdx).filter(d -> !Double.isNaN(d)).average().orElse(0.0);
+        double avgYieldHa = kpis.stream().mapToDouble(Kpi::yieldPerHa).filter(Double::isFinite).average().orElse(0.0);
+        double avgEff     = kpis.stream().mapToDouble(Kpi::waterEfficiencyKgPerM3).filter(Double::isFinite).average().orElse(0.0);
+        double avgCost    = kpis.stream().mapToDouble(Kpi::unitCostEurPerT).filter(Double::isFinite).average().orElse(0.0);
+        double avgMargin  = kpis.stream().mapToDouble(Kpi::unitMarginEurPerT).filter(Double::isFinite).average().orElse(0.0);
+        double avgRisk    = kpis.stream().mapToDouble(Kpi::climateRiskIdx).filter(Double::isFinite).average().orElse(0.0);
 
         // Efficienza media per coltura (per lista laterale)
         Map<String, Double> byCropEff = filtered.stream().collect(
@@ -107,7 +124,7 @@ public class DashboardController {
         );
 
         List<Map.Entry<String, Double>> effEntries = new ArrayList<>(byCropEff.entrySet());
-        effEntries.removeIf(e -> Double.isNaN(e.getValue()) || e.getValue() == 0.0);
+        effEntries.removeIf(e -> e.getValue()==null || !Double.isFinite(e.getValue()) || e.getValue() == 0.0);
         effEntries.sort((a, b) -> Double.compare(b.getValue(), a.getValue())); // desc
 
         if (!effEntries.isEmpty()) {
@@ -120,10 +137,10 @@ public class DashboardController {
             model.addAttribute("allCropEfficiencies", Collections.emptyList());
         }
 
-        // Scala robusta per tachimetro efficienza (P95)
+        // Scala robusta per tachimetro/indicatori (P95)
         List<Double> effSeries = filtered.stream()
                 .map(r -> (r.waterM3() == 0) ? Double.NaN : (r.yieldT() * 1000.0) / r.waterM3())
-                .filter(d -> !Double.isNaN(d))
+                .filter(Double::isFinite)
                 .sorted()
                 .toList();
 
@@ -131,27 +148,45 @@ public class DashboardController {
         if (!effSeries.isEmpty()) {
             int idx = (int) Math.floor(0.95 * (effSeries.size() - 1));
             double p95 = effSeries.get(idx);
-            effMaxScale = Math.max(10.0, Math.ceil((p95 * 1.10) / 5.0) * 5.0); // margine + arrotondamento
+            effMaxScale = Math.max(10.0, Math.ceil((p95 * 1.10) / 5.0) * 5.0);
         }
 
-        // Model attributes
-        model.addAttribute("data", filtered);
+        // ===== NUOVO: Efficienza media (Kg/m³) per area, per il Polar Area =====
+        Map<String, List<Double>> effListByArea = filtered.stream().collect(
+                Collectors.groupingBy(
+                        SampleRecord::area,
+                        Collectors.mapping(r -> {
+                            double v = (r.waterM3() == 0) ? Double.NaN : (r.yieldT() * 1000.0) / r.waterM3();
+                            return v;
+                        }, Collectors.toList())
+                )
+        );
+
+        double effNordKgM3   = avgFinite(effListByArea.get("Nord"));
+        double effCentroKgM3 = avgFinite(effListByArea.get("Centro"));
+        double effSudKgM3    = avgFinite(effListByArea.get("Sud"));
+
+        // ===== Model attributes per la view =====
         model.addAttribute("labels", labels);
-        model.addAttribute("yields", yields);
+        model.addAttribute("yieldsNord",   yieldsNord);
+        model.addAttribute("yieldsCentro", yieldsCentro);
+        model.addAttribute("yieldsSud",    yieldsSud);
 
         model.addAttribute("avgYieldHa", avgYieldHa);
         model.addAttribute("avgEff", avgEff);
         model.addAttribute("avgCost", avgCost);
         model.addAttribute("avgMargin", avgMargin);
         model.addAttribute("avgRisk", avgRisk);
-
         model.addAttribute("effMaxScale", effMaxScale);
 
-        // Limiti per i date-picker
+        // NUOVI attributi per il Polar Area (con unità Kg/m³)
+        model.addAttribute("effNordKgM3",   effNordKgM3);
+        model.addAttribute("effCentroKgM3", effCentroKgM3);
+        model.addAttribute("effSudKgM3",    effSudKgM3);
+
         model.addAttribute("minDate", MIN_DATE);
         model.addAttribute("maxDate", MAX_DATE);
 
-        // Echo filtri
         model.addAttribute("from", fromDate);
         model.addAttribute("to", toDate);
         model.addAttribute("crop", cropNorm);
@@ -160,13 +195,36 @@ public class DashboardController {
         return "index";
     }
 
+    /** Media dei soli valori finiti; 0.0 se lista nulla/vuota o senza valori validi. */
+    private static double avgFinite(Collection<Double> values) {
+        if (values == null || values.isEmpty()) return 0.0;
+        return values.stream()
+                .filter(Objects::nonNull)
+                .filter(Double::isFinite)
+                .mapToDouble(Double::doubleValue)
+                .average()
+                .orElse(0.0);
+    }
+
+    /** Helper: crea la serie giornaliera allineata ai labels per una specifica area. */
+    private List<Double> seriesForArea(String areaKey,
+                                       List<LocalDate> dateRange,
+                                       Map<String, Map<LocalDate, Double>> sumByAreaDate) {
+        Map<LocalDate, Double> map = sumByAreaDate.getOrDefault(areaKey, Collections.emptyMap());
+        List<Double> out = new ArrayList<>(dateRange.size());
+        for (LocalDate d : dateRange) {
+            out.add(map.getOrDefault(d, 0.0));
+        }
+        return out;
+    }
+
     @GetMapping("/risorse")
     public String risorse(Model model) {
         ensureData(42L, MIN_DATE, MAX_DATE, 8);
 
         var effPerRecord = cached.stream()
                 .map(r -> (r.waterM3() == 0) ? Double.NaN : (r.yieldT() * 1000.0) / r.waterM3())
-                .filter(d -> !Double.isNaN(d))
+                .filter(Double::isFinite)
                 .toList();
         double meanOverall = effPerRecord.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
 
@@ -179,7 +237,7 @@ public class DashboardController {
         );
 
         var entries = new ArrayList<>(byCrop.entrySet());
-        entries.removeIf(e -> Double.isNaN(e.getValue()) || e.getValue() == 0.0);
+        entries.removeIf(e -> e.getValue()==null || !Double.isFinite(e.getValue()) || e.getValue() == 0.0);
         entries.sort((a, b) -> Double.compare(b.getValue(), a.getValue())); // desc
 
         List<String> labels = entries.stream().map(Map.Entry::getKey).toList();
