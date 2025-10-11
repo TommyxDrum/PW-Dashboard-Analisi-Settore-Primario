@@ -22,12 +22,12 @@ public class ExportController {
         sb.append("date,area,field,crop,yield_t,water_m3,cost_eur\n");
         for (SampleRecord r : data) {
             sb.append(r.date()).append(',')
-              .append(r.area()).append(',')
-              .append(r.field()).append(',')
-              .append(r.crop()).append(',')
-              .append(String.format("%.2f", r.yieldT())).append(',')
-              .append(String.format("%.2f", r.waterM3())).append(',')
-              .append(String.format("%.2f", r.costEur())).append('\n');
+                    .append(r.area()).append(',')
+                    .append(r.field()).append(',')
+                    .append(r.crop()).append(',')
+                    .append(String.format("%.2f", r.yieldT())).append(',')
+                    .append(String.format("%.2f", r.waterM3())).append(',')
+                    .append(String.format("%.2f", r.costEur())).append('\n');
         }
         byte[] bytes = sb.toString().getBytes(StandardCharsets.UTF_8);
         return ResponseEntity.ok()

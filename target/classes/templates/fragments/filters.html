@@ -1,0 +1,130 @@
+<div th:fragment="filter-toolbar(filterFrom, filterTo, filterCrop, filterArea, cropsList, areasList, startDate2024, endDate2024)"
+     class="card p-3 mb-4" xmlns:th="http://www.thymeleaf.org">
+    <form id="filterForm" class="row align-items-end g-3" method="GET">
+        <input type="hidden" name="dummy" value="1"/>
+
+        <div class="col-lg-6 col-md-12">
+            <h4 class="h6 fw-bold mb-2">Filtro Temporale (Anno 2024)</h4>
+            <div class="d-flex flex-wrap align-items-center">
+
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="timeUnit" id="timeUnitYear" value="year" checked onchange="updateFilterControls()">
+                    <label class="form-check-label" for="timeUnitYear">Anno (2024)</label>
+                </div>
+
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="timeUnit" id="timeUnitQuarter" value="quarter" onchange="updateFilterControls()">
+                    <label class="form-check-label" for="timeUnitQuarter">Trimestre</label>
+                </div>
+                <div class="select-wrapper d-inline-block me-3" id="quarterControl" style="display: none;">
+                    <select class="form-select form-select-sm" name="quarter" aria-label="Seleziona Trimestre">
+                        <option value="Q1">Q1 (Gen-Mar)</option>
+                        <option value="Q2">Q2 (Apr-Giu)</option>
+                        <option value="Q3">Q3 (Lug-Set)</option>
+                        <option value="Q4">Q4 (Ott-Dic)</option>
+                    </select>
+                </div>
+
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="timeUnit" id="timeUnitMonth" value="month" onchange="updateFilterControls()">
+                    <label class="form-check-label" for="timeUnitMonth">Mese</label>
+                </div>
+                <div class="select-wrapper d-inline-block me-3" id="monthControl" style="display: none;">
+                    <select class="form-select form-select-sm" name="month" aria-label="Seleziona Mese">
+                        <option value="01">Gennaio</option><option value="02">Febbraio</option><option value="03">Marzo</option>
+                        <option value="04">Aprile</option><option value="05">Maggio</option><option value="06">Giugno</option>
+                        <option value="07">Luglio</option><option value="08">Agosto</option><option value="09">Settembre</option>
+                        <option value="10">Ottobre</option><option value="11">Novembre</option><option value="12">Dicembre</option>
+                    </select>
+                </div>
+
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="timeUnit" id="timeUnitDay" value="day" onchange="updateFilterControls()">
+                    <label class="form-check-label" for="timeUnitDay">Giorno</label>
+                </div>
+                <div class="d-inline-block me-3" id="dayControl" style="display: none;">
+                    <input type="date" class="form-control form-control-sm" name="day" aria-label="Seleziona Giorno"
+                           th:min="${startDate2024}" th:max="${endDate2024}" th:value="${filterFrom}">
+                </div>
+
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6" th:if="${filterCrop == null or filterCrop.isEmpty()}">
+            <label for="cropSelect" class="form-label small fw-bold mb-1">Coltura</label>
+            <div class="select-wrapper">
+                <select class="form-select form-select-sm" id="cropSelect" name="crop" aria-label="Filtra per Coltura">
+                    <option value="all" th:selected="${filterCrop == null or filterCrop.isEmpty()}">Tutte le Colture</option>
+                    <option th:each="crop : ${cropsList}" th:value="${crop}" th:text="${crop}" th:selected="${crop == filterCrop}">Coltura</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6" th:if="${filterCrop != null and !filterCrop.isEmpty()}">
+            <input type="hidden" name="crop" th:value="${filterCrop}">
+            <h4 class="h6 fw-bold mb-2">Coltura Fissa: <span class="badge rounded-pill bg-primary" th:text="${filterCrop}">Grano duro</span></h4>
+        </div>
+
+        <div class="col-lg-2 col-md-6" th:if="${filterArea == null or filterArea.isEmpty()}">
+            <label for="areaSelect" class="form-label small fw-bold mb-1">Zona</label>
+            <div class="select-wrapper">
+                <select class="form-select form-select-sm" id="areaSelect" name="area" aria-label="Filtra per Zona">
+                    <option value="all" th:selected="${filterArea == null or filterArea.isEmpty()}">Tutte le Zone</option>
+                    <option th:each="area : ${areasList}" th:value="${area}" th:text="${area}" th:selected="${area == filterArea}">Zona</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-6" th:if="${filterArea != null and !filterArea.isEmpty()}">
+            <input type="hidden" name="area" th:value="${filterArea}">
+            <h4 class="h6 fw-bold mb-2">Zona Fissa: <span class="badge rounded-pill bg-primary" th:text="${filterArea}">Nord</span></h4>
+        </div>
+
+
+        <div class="col-lg-1 col-md-6 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-filter-circle-fill" aria-hidden="true"></i> Applica</button>
+        </div>
+    </form>
+
+    <p class="small text-muted mt-2 mb-0">
+        Dati correnti filtrati dal <span class="fw-bold" th:text="${filterFrom}">2024-01-01</span> al <span class="fw-bold" th:text="${filterTo}">2024-12-31</span>.
+        Totale record nel periodo: <span class="fw-bold" th:text="${dataCount} ?: 0"></span>.
+    </p>
+</div>
+
+<script th:inline="javascript" th:if="${!isEmpty}" xmlns:th="http://www.thymeleaf.org">
+    function updateFilterControls() {
+        const timeUnit = document.querySelector('input[name="timeUnit"]:checked')?.value;
+        const quarterControl = document.getElementById('quarterControl');
+        const monthControl = document.getElementById('monthControl');
+        const dayControl = document.getElementById('dayControl');
+
+        // Nasconde tutti i controlli
+        quarterControl.style.display = 'none';
+        monthControl.style.display = 'none';
+        dayControl.style.display = 'none';
+
+        // Mostra il controllo selezionato
+        if (timeUnit === 'quarter') quarterControl.style.display = 'inline-block';
+        if (timeUnit === 'month') monthControl.style.display = 'inline-block';
+        if (timeUnit === 'day') dayControl.style.display = 'inline-block';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Logica per pre-selezionare il radio button al caricamento (mantenendo lo stato)
+        const filterFrom = /*[[${filterFrom}]]*/ '2024-01-01';
+        const filterTo = /*[[${filterTo}]]*/ '2024-12-31';
+
+        // Controlla se è un giorno specifico (filterFrom === filterTo) e non l'anno intero.
+        if (filterFrom === filterTo && (filterFrom !== '2024-01-01' || filterTo !== '2024-12-31')) {
+            const timeUnitDay = document.getElementById('timeUnitDay');
+            if (timeUnitDay) {
+                timeUnitDay.checked = true;
+                document.querySelector('input[name="day"]').value = filterFrom;
+            }
+        } else {
+            // Altrimenti, default su Anno intero
+            document.getElementById('timeUnitYear').checked = true;
+        }
+
+        updateFilterControls();
+    });
+</script>

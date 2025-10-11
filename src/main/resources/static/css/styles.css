@@ -1,0 +1,89 @@
+:root {
+    --primary-green: #198754;
+    --secondary-blue: #0d6efd;
+    --light-bg: #f8f9fa;
+    --danger-red: #dc3545;
+    /* Nuovi colori accessibili per il rischio */
+    --success-accessible: #198754;
+    --warning-accessible: #e09400; /* Giallo/Arancio più scuro per contrasto */
+    --info-color: #0dcaf0; /* Colore Info di Bootstrap */
+}
+
+body {
+    background-color: var(--light-bg);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.dashboard-card {
+    border-radius: 1rem;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    background-color: white;
+    height: 100%;
+}
+
+/* Headers e Bordi */
+.section-header {
+    padding-bottom: 5px;
+    margin-bottom: 15px;
+    border-bottom: 2px solid;
+}
+
+.section-header.primary-border { border-color: var(--secondary-blue); }
+.section-header.success-border { border-color: var(--primary-green); }
+.section-header.warning-border { border-color: var(--warning-accessible); }
+
+/* KPI Boxes */
+.kpi-box {
+    background-color: #f0fdf4;
+    padding: 15px;
+    border-radius: 0.5rem;
+    transition: all 0.3s;
+    border-left: 5px solid;
+}
+
+.kpi-box.green-border { border-left-color: var(--primary-green); }
+.kpi-box.blue-border { border-left-color: var(--secondary-blue); }
+.kpi-box.yellow-border { border-left-color: var(--warning-accessible); }
+.kpi-box.red-border { border-left-color: var(--danger-red); }
+.kpi-box.info-border { border-left-color: var(--info-color); }
+
+.kpi-value {
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+/* Classi Rischio per coerenza e accessibilità */
+.risk-low-color { color: var(--success-accessible); }
+.risk-medium-color { color: var(--warning-accessible); }
+
+/* Stili per la barra di rischio */
+.risk-slider-container {
+    position: relative;
+    width: 100%;
+    height: 25px;
+    background: linear-gradient(to right,
+                #dc3545 0%,    /* Rosso pericolo */
+                #e09400 50%,   /* Arancio avviso */
+                #198754 100%); /* Verde sicurezza */
+    border-radius: 12.5px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.risk-indicator {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%) translateX(-50%);
+    width: 40px;
+    height: 40px;
+    background-color: white;
+    border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: #333;
+    font-size: 0.9em;
+    border: 1px solid rgba(0,0,0,0.1);
+}

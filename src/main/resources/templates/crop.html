@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-italia@2.11.2/dist/css/bootstrap-italia.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<link rel="stylesheet" th:href="@{/css/styles.css}">
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <p class="text-muted">
+                Analisi dettagliata per la coltura di <strong th:text="${contextCrop}">Grano duro</strong>.
+                I grafici mostrano le performance e le condizioni climatiche specifiche.
+            </p>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/filters :: filter-toolbar(
+        ${filterFrom}, ${filterTo}, ${filterCrop}, ${filterArea}, ${cropsList}, ${areasList}, ${startDate2024}, ${endDate2024}
+    )}">Toolbar Filtri</div>
+
+    <div th:replace="~{fragments/cards :: kpi-cards(
+        ${avgYieldHa}, ${avgEff}, ${avgCost}, ${avgMargin}, ${avgRisk}, ${avgIpa}, ${filterCrop}, ${filterArea}
+    )}">KPI Cards</div>
+
+    <hr class="section-separator"/>
+
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card p-3 h-100">
+                <h3 class="h6 fw-bold card-title">Trend Resa Totale per <span th:text="${contextCrop}"></span> (Tonnellate)</h3>
+                <div class="chart-container">
+                    <canvas id="trendResa" role="img" th:aria-label="|Grafico a linee della Resa totale per ${contextCrop}|"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="card p-3 h-100">
+                <h3 class="h6 fw-bold card-title">Efficienza Idrica per Zona (<span th:text="${contextCrop}"></span>)</h3>
+                <div class="chart-container">
+                    <canvas id="effByArea" role="img" th:aria-label="|Grafico a barre dell'Efficienza Idrica per ${contextCrop} divisa per Zona|"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr class="section-separator"/>
+
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card p-3 h-100">
+                <h3 class="h6 fw-bold card-title">Rischio Climatico Medio per Campo (<span th:text="${contextCrop}"></span>)</h3>
+                <p class="small text-muted">Indice normalizzato 0 (basso) a 1 (alto).</p>
+                <div class="chart-container" style="height: 350px;">
+                    <canvas id="riskByField" role="img" th:aria-label="|Grafico a barre orizzontali del Rischio Climatico per Campo per ${contextCrop}|"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="card p-3 h-100">
+                <h3 class="h6 fw-bold card-title">Andamento Climatico (Media Mensile)</h3>
+                <div class="row g-2">
+                    <div class="col-6 mb-2">
+                        <h4 class="small fw-bold mb-0 text-danger"><i class="bi bi-thermometer-half" aria-hidden="true"></i> Temp. (°C)</h4>
+                        <div class="sparkline-container"><canvas id="sparklineTemp" role="img" aria-label="Sparkline Temperatura"></canvas></div>
+                    </div>
+                    <div class="col-6 mb-2">
+                        <h4 class="small fw-bold mb-0 text-info"><i class="bi bi-moisture" aria-hidden="true"></i> Umidità (%)</h4>
+                        <div class="sparkline-container"><canvas id="sparklineHumidity" role="img" aria-label="Sparkline Umidità"></canvas></div>
+                    </div>
+                    <div class="col-6 mb-2">
+                        <h4 class="small fw-bold mb-0 text-primary"><i class="bi bi-cloud-rain-heavy-fill" aria-hidden="true"></i> Pioggia (mm)</h4>
+                        <div class="sparkline-container"><canvas id="sparklineRain" role="img" aria-label="Sparkline Pioggia"></canvas></div>
+                    </div>
+                    <div class="col-6 mb-2">
+                        <h4 class="small fw-bold mb-0 text-warning"><i class="bi bi-sun-fill" aria-hidden="true"></i> Indice Solare</h4>
+                        <div class="sparkline-container"><canvas id="sparklineSolar" role="img" aria-label="Sparkline Indice Solare"></canvas></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</main-content>
+
+<th:block th:fragment="page-scripts">
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        // Dati dal modello
+        const labels = /*[[${labels}]]*/ [];
+        const yields = /*[[${yields}]]*/ [];
+        const avgEffByArea = /*[[${avgEffByArea}]]*/ {};
+        const avgRiskByField = /*[[${avgRiskByField}]]*/ {};
+        const sparklineLabels = /*[[${sparklineLabels}]]*/ [];
+        const sparklineTemp = /*[[${sparklineTemp}]]*/ [];
+        const sparklineHumidity = /*[[${sparklineHumidity}]]*/ [];
+        const sparklineRain = /*[[${sparklineRain}]]*/ [];
+        const sparklineSolar = /*[[${sparklineSolar}]]*/ [];
+        const areasList = /*[[${areasList}]]*/ [];
+        const isEmpty = /*[[${isEmpty}]]*/ false;
+
+
+        function createSparkline(elementId, data, label, color) {
+            new Chart(document.getElementById(elementId), {
+                type: 'line',
+                data: {
+                    labels: sparklineLabels,
+                    datasets: [{
+                        label: label,
+                        data: data,
+                        borderColor: color,
+                        backgroundColor: Chart.helpers.color(color).alpha(0.1).rgbString(),
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 0,
+                        borderWidth: 1.5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { mode: 'index', intersect: false }
+                    },
+                    scales: {
+                        x: { display: false },
+                        y: { display: false }
+                    },
+                    layout: { padding: { top: 5, bottom: 5, left: 0, right: 0 } }
+                }
+            });
+        }
+
+
+        if (!isEmpty) {
+            // 1. Trend Resa per Coltura (Linea)
+            new Chart(document.getElementById('trendResa'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Resa Totale (t)',
+                        data: yields,
+                        borderColor: '#33a652',
+                        backgroundColor: 'rgba(51, 166, 82, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } },
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+
+            // 2. Efficienza Idrica per Zona (Bar)
+            const areaEffLabels = areasList.filter(a => avgEffByArea[a] != null);
+            const areaEffData = areaEffLabels.map(a => avgEffByArea[a]);
+
+            new Chart(document.getElementById('effByArea'), {
+                type: 'bar',
+                data: {
+                    labels: areaEffLabels,
+                    datasets: [{
+                        label: 'Eff. Idrica (Kg/m³)',
+                        data: areaEffData,
+                        backgroundColor: '#0087a3',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } },
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+
+            // 3. Rischio Climatico per Campo (Bar Orizzontale)
+            const fieldLabels = Object.keys(avgRiskByField);
+            const riskData = Object.values(avgRiskByField);
+
+            new Chart(document.getElementById('riskByField'), {
+                type: 'bar',
+                data: {
+                    labels: fieldLabels,
+                    datasets: [{
+                        label: 'Rischio (0..1)',
+                        data: riskData,
+                        backgroundColor: '#ffb900',
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            max: 1.0,
+                            title: { display: true, text: 'Indice Rischio (0=Basso, 1=Alto)' }
+                        }
+                    },
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+
+            // 4. Sparkline Climatiche (Mini Charts)
+            createSparkline('sparklineTemp', sparklineTemp, 'Temp. Media (°C)', '#e3000f');
+            createSparkline('sparklineHumidity', sparklineHumidity, 'Umidità Media (%)', '#0087a3');
+            createSparkline('sparklineRain', sparklineRain, 'Pioggia Media (mm)', '#0066cc');
+            createSparkline('sparklineSolar', sparklineSolar, 'Indice Solare Medio', '#ffb900');
+        }
+        /*]]>*/
+    </script>
+</th:block>
+</html>

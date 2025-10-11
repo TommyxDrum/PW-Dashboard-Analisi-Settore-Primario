@@ -1,103 +1,155 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="it">
-<head>
-  <meta charset="UTF-8">
-  <title>Rischio climatico</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-italia@2.11.2/dist/css/bootstrap-italia.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<link rel="stylesheet" th:href="@{/css/styles.css}">
+      th:replace="fragments/layout :: layout(~{::main-content}, ~{::page-scripts}, ${pageTitle}, ${pageId}, ${cropsList}, ${areasList})">
 
-  <!-- Bootstrap Italia -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-italia@2.11.2/dist/css/bootstrap-italia.min.css">
-  <link th:href="@{/css/styles.css}" rel="stylesheet">
-</head>
-<body>
+<main-content th:fragment="main-content">
 
-<header class="it-header-wrapper">
-  <div class="it-header-slim-wrapper">
-    <div class="container">
-      <div class="row">
-        <div class="col-12">
-          <div class="it-header-slim-wrapper-content">
-            <!-- Pulsante hamburger per mobile -->
-            <a class="it-opener d-lg-none" data-bs-toggle="collapse" href="#menu-principale" role="button" aria-expanded="false" aria-controls="menu-principale">
-              <span>Menu</span>
-            </a>
+  <div class="row mb-4">
+    <div class="col-12">
+      <p class="text-muted">
+        Analisi del Rischio Climatico, calcolato come indice normalizzato (0 a 1) basato su temperatura, umidità e pioggia.
+        Identifica i campi e le colture più esposte.
+      </p>
+    </div>
+  </div>
 
-            <div class="it-header-slim-right-zone">
-              <div class="it-access-top-wrapper d-flex gap-2">
-                <a th:href="@{/}" class="btn btn-primary btn-sm">Home</a>
-                <a th:href="@{/risorse}" class="btn btn-outline-primary btn-sm">Efficienza risorse</a>
-                <a th:href="@{/rischio}" class="btn btn-outline-primary btn-sm">Rischio climatico</a>
-              </div>
-            </div>
+  <div th:replace="~{fragments/filters :: filter-toolbar(
+        ${filterFrom}, ${filterTo}, ${filterCrop}, ${filterArea}, ${cropsList}, ${areasList}, ${startDate2024}, ${endDate2024}
+    )}">Toolbar Filtri</div>
 
-          </div>
+  <div th:replace="~{fragments/cards :: kpi-cards(
+        ${avgYieldHa}, ${avgEff}, ${avgCost}, ${avgMargin}, ${avgRisk}, ${avgIpa}, ${filterCrop}, ${filterArea}
+    )}">KPI Cards</div>
+
+  <hr class="section-separator"/>
+
+  <div class="row">
+    <div class="col-lg-6 mb-4">
+      <div class="card p-3 h-100">
+        <h3 class="h6 fw-bold card-title">Rischio Climatico Medio per Campo</h3>
+        <p class="small text-muted">Indice normalizzato 0 (basso) a 1 (alto).</p>
+        <div class="chart-container" style="height: 400px;">
+          <canvas id="riskByField" role="img" aria-label="Grafico a barre orizzontali del Rischio Climatico per Campo"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6 mb-4">
+      <div class="card p-3 h-100">
+        <h3 class="h6 fw-bold card-title">Rischio Climatico Medio per Coltura</h3>
+        <div class="chart-container">
+          <canvas id="riskByCrop" role="img" aria-label="Grafico a barre del Rischio Climatico per Coltura"></canvas>
         </div>
       </div>
     </div>
   </div>
-</header>
 
-<main class="container my-4">
-  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-    <h1 class="mb-0">Rischio climatico (indice medio per campo)</h1>
-  </div>
+  <hr class="section-separator"/>
 
-  <!-- Chart -->
-  <div class="it-card-wrapper mb-4">
-    <div class="it-card">
-      <div class="it-card-body">
-        <canvas id="risk" height="160" aria-label="Radar indice rischio per campo" role="img"></canvas>
-        <p th:if="${#lists.isEmpty(labels)}" class="text-center text-muted mb-0">Nessun dato disponibile.</p>
+  <div class="row">
+    <div class="col-lg-6 mb-4">
+      <div class="card p-3 h-100">
+        <h3 class="h6 fw-bold card-title">Rischio Climatico Medio per Zona</h3>
+        <div class="chart-container">
+          <canvas id="riskByArea" role="img" aria-label="Grafico a barre del Rischio Climatico per Zona"></canvas>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Tabella -->
-  <div class="table-responsive">
-    <table class="table table-striped table-hover align-middle">
-      <caption class="text-muted">Indice rischio medio (0–1) ordinato dal più alto</caption>
-      <thead class="table-light">
-      <tr><th>Campo</th><th>Indice rischio medio</th></tr>
-      </thead>
-      <tbody>
-      <tr th:each="i, stat : ${#numbers.sequence(0, labels.size() - 1)}">
-        <td th:text="${labels[i]}">Field-1</td>
-        <td th:text="${#numbers.formatDecimal(risk[i], 1, 3)}">0.000</td>
-      </tr>
-      </tbody>
-    </table>
-  </div>
-</main>
+</main-content>
 
-<!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script th:inline="javascript">
-  /*<![CDATA[*/
-    const labels = /*[[${labels}]]*/ [];
-    const risk   = /*[[${risk}]]*/ [];
-    if (labels.length) {
-      new Chart(document.getElementById('risk'), {
-        type: 'radar',
-        data: {
-          labels,
-          datasets: [{
-            label: 'Indice rischio medio',
-            data: risk,
-            fill: true
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: { r: { min: 0, max: 1, ticks: { stepSize: 0.2 } } },
-          elements: { line: { tension: 0.2 } }
-        }
-      });
+<th:block th:fragment="page-scripts">
+  <script th:inline="javascript">
+    /*<![CDATA[*/
+    const avgRiskByField = /*[[${avgRiskByField}]]*/ {};
+    const avgRiskByCrop = /*[[${avgRiskByCrop}]]*/ {};
+    const avgRiskByArea = /*[[${avgRiskByArea}]]*/ {};
+    const cropsList = /*[[${cropsList}]]*/ [];
+    const areasList = /*[[${areasList}]]*/ [];
+    const isEmpty = /*[[${isEmpty}]]*/ false;
+
+
+    if (!isEmpty) {
+        // 1. Rischio Climatico per Campo (Bar Orizzontale)
+        const fieldLabels = Object.keys(avgRiskByField);
+        const riskData = Object.values(avgRiskByField);
+
+        new Chart(document.getElementById('riskByField'), {
+            type: 'bar',
+            data: {
+                labels: fieldLabels,
+                datasets: [{
+                    label: 'Rischio (0..1)',
+                    data: riskData,
+                    backgroundColor: '#ffb900',
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        max: 1.0,
+                        title: { display: true, text: 'Indice Rischio (0=Basso, 1=Alto)' }
+                    }
+                },
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+
+
+        // 2. Rischio Climatico per Coltura (Bar)
+        const cropRiskLabels = cropsList.filter(c => avgRiskByCrop[c] != null);
+        const cropRiskData = cropRiskLabels.map(c => avgRiskByCrop[c]);
+
+        new Chart(document.getElementById('riskByCrop'), {
+            type: 'bar',
+            data: {
+                labels: cropRiskLabels,
+                datasets: [{
+                    label: 'Rischio (0..1)',
+                    data: cropRiskData,
+                    backgroundColor: '#ffb900',
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, max: 1.0 } },
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+
+
+        // 3. Rischio Climatico per Zona (Bar)
+        const areaRiskLabels = areasList.filter(a => avgRiskByArea[a] != null);
+        const areaRiskData = areaRiskLabels.map(a => avgRiskByArea[a]);
+
+        new Chart(document.getElementById('riskByArea'), {
+            type: 'bar',
+            data: {
+                labels: areaRiskLabels,
+                datasets: [{
+                    label: 'Rischio (0..1)',
+                    data: areaRiskData,
+                    backgroundColor: '#ffb900',
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, max: 1.0 } },
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
     }
-  /*]]>*/
-</script>
-
-<!-- Bootstrap Italia JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap-italia@2.11.2/dist/js/bootstrap-italia.bundle.min.js"></script>
-</body>
+    /*]]>*/
+  </script>
+</th:block>
 </html>
