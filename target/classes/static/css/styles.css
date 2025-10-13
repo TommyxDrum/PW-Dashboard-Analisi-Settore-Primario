@@ -1,89 +1,639 @@
-:root {
-    --primary-green: #198754;
-    --secondary-blue: #0d6efd;
-    --light-bg: #f8f9fa;
-    --danger-red: #dc3545;
-    /* Nuovi colori accessibili per il rischio */
-    --success-accessible: #198754;
-    --warning-accessible: #e09400; /* Giallo/Arancio più scuro per contrasto */
-    --info-color: #0dcaf0; /* Colore Info di Bootstrap */
-}
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard Agronomica - Performance e Rischio</title>
 
-body {
-    background-color: var(--light-bg);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 
-.dashboard-card {
-    border-radius: 1rem;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-    background-color: white;
-    height: 100%;
-}
+  <style>
+    /*
+     * Variabili di stile per modernità e accessibilità
+     */
+    :root{
+      --primary-green:#198754;
+      --secondary-blue:#0d6efd;
+      --light-bg:#f8f9fa;
+      --danger-red:#dc3545;
+      --warning-accessible:#e09400; /* Arancio scuro per contrasto */
+      --info-color:#0dcaf0;
+      --purple:#6f42c1;
+      --focus-ring: 0 0 0 0.25rem rgba(13, 110, 253, 0.25); /* Focus coerente con Bootstrap */
+    }
 
-/* Headers e Bordi */
-.section-header {
-    padding-bottom: 5px;
-    margin-bottom: 15px;
-    border-bottom: 2px solid;
-}
+    body{background-color:var(--light-bg);font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif}
+    .dashboard-card{border-radius:1rem;box-shadow:0 4px 10px rgba(0,0,0,.08);background:#fff;height:100%}
 
-.section-header.primary-border { border-color: var(--secondary-blue); }
-.section-header.success-border { border-color: var(--primary-green); }
-.section-header.warning-border { border-color: var(--warning-accessible); }
+    .section-header{padding-bottom:.25rem;margin-bottom:1rem;border-bottom:2px solid var(--secondary-blue)}
+    .section-header.success-border { border-color: var(--primary-green); }
+    .section-header.purple-border { border-color: var(--purple); }
+    .section-header.warning-border { border-color: var(--warning-accessible); }
 
-/* KPI Boxes */
-.kpi-box {
-    background-color: #f0fdf4;
-    padding: 15px;
-    border-radius: 0.5rem;
-    transition: all 0.3s;
-    border-left: 5px solid;
-}
+    /* Migliorie KPI Box */
+    .kpi-box{
+      background:#f0fdf4;padding:15px;border-radius:.5rem;border-left:5px solid var(--primary-green);
+      transition: box-shadow 0.2s;
+    }
+    .kpi-box:focus-within { box-shadow: 0 0 0 2px var(--secondary-blue); outline: none; }
+    .kpi-box.blue   {background:#eef6ff;border-left-color:var(--secondary-blue)}
+    .kpi-box.purple {background:#f7f2ff;border-left-color:var(--purple)}
+    .kpi-box.info   {background:#e7fbff;border-left-color:var(--info-color)}
+    .kpi-box.risk   {background:#fff8e7;border-left-color:var(--warning-accessible)}
+    .kpi-value{font-size:2rem;font-weight:700}
 
-.kpi-box.green-border { border-left-color: var(--primary-green); }
-.kpi-box.blue-border { border-left-color: var(--secondary-blue); }
-.kpi-box.yellow-border { border-left-color: var(--warning-accessible); }
-.kpi-box.red-border { border-left-color: var(--danger-red); }
-.kpi-box.info-border { border-left-color: var(--info-color); }
+    /* Utilità per accessibilità */
+    .visually-hidden {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
 
-.kpi-value {
-    font-size: 2rem;
-    font-weight: bold;
-}
+    /* Gauge rischio (CSS) */
+    .risk-gauge{--risk:.37;--thumb:34px;--track-h:12px;--edge-offset:10px;position:relative;width:100%;padding:calc(var(--thumb)/2) 16px}
+    .risk-track{
+      height:var(--track-h);border-radius:9999px;
+      background:linear-gradient(90deg,var(--primary-green) 0%,#86c443 30%,#e7cd27 50%,var(--warning-accessible) 65%,var(--danger-red) 100%);
+      position:relative;box-shadow:inset 0 1px 2px rgba(0,0,0,.15),0 2px 8px rgba(0,0,0,.12)}
+    .risk-thumb{position:absolute;top:50%;left:calc(max(var(--edge-offset),min(calc(var(--risk)*100%),calc(100% - var(--edge-offset)))));transform:translate(-50%,-50%);width:var(--thumb);height:var(--thumb);border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 2px 10px rgba(0,0,0,.18),0 0 0 3px rgba(255,255,255,.85)}
+    .risk-value{font-weight:700;font-size:.9rem;color:#2f2f2f;line-height:1}
 
-/* Classi Rischio per coerenza e accessibilità */
-.risk-low-color { color: var(--success-accessible); }
-.risk-medium-color { color: var(--warning-accessible); }
+    /* Focus visibile per i campi */
+    .form-select:focus, .btn:focus {
+        box-shadow: var(--focus-ring);
+    }
 
-/* Stili per la barra di rischio */
-.risk-slider-container {
-    position: relative;
-    width: 100%;
-    height: 25px;
-    background: linear-gradient(to right,
-                #dc3545 0%,    /* Rosso pericolo */
-                #e09400 50%,   /* Arancio avviso */
-                #198754 100%); /* Verde sicurezza */
-    border-radius: 12.5px;
-    margin-top: 20px;
-    margin-bottom: 20px;
-}
+    /* Stile per l'icona del menu: Sfondo bianco e bordi */
+    .menu-toggle {
+        position: fixed;
+        top: 15px;
+        left: 15px;
+        z-index: 1050;
+        background-color: white !important; /* Sfondo bianco richiesto */
+        color: #333 !important; /* Icona scura per contrasto */
+        border: 1px solid #ccc;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        padding: 0.5rem 0.75rem;
+    }
 
-.risk-indicator {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%) translateX(-50%);
-    width: 40px;
-    height: 40px;
-    background-color: white;
-    border-radius: 50%;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    color: #333;
-    font-size: 0.9em;
-    border: 1px solid rgba(0,0,0,0.1);
-}
+    /* Miglioramento accessibilità link menu */
+    .nav-link {
+        transition: background-color 0.2s;
+    }
+  </style>
+</head>
+<body>
+
+<button class="btn menu-toggle" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasWithBothOptions" aria-controls="offcanvasWithBothOptions" aria-label="Apri Menu KPI">
+  <i class="bi bi-list fs-4"></i> </button>
+
+<div class="offcanvas offcanvas-start" data-bs-scroll="true" tabindex="-1" id="offcanvasWithBothOptions" aria-labelledby="offcanvasWithBothOptionsLabel">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title" id="offcanvasWithBothOptionsLabel">Menu KPI</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Chiudi Menu"></button>
+  </div>
+  <div class="offcanvas-body">
+    <nav aria-label="Navigazione sezioni Dashboard">
+      <ul class="nav nav-pills flex-column mb-auto">
+        <li class="nav-item">
+          <a href="/resa" class="nav-link link-dark d-flex align-items-center" aria-current="page"><i class="bi bi-graph-up-arrow me-2"></i> Andamento Resa</a>
+        </li>
+        <li class="nav-item">
+          <a href="/risorse" class="nav-link link-dark d-flex align-items-center"><i class="bi bi-droplet-fill me-2"></i> Efficienza Idrica</a>
+        </li>
+        <li class="nav-item">
+          <a href="/margine" class="nav-link link-dark d-flex align-items-center"><i class="bi bi-currency-euro me-2"></i> Margini</a>
+        </li>
+        <li class="nav-item">
+          <a href="/costi" class="nav-link link-dark d-flex align-items-center"><i class="bi bi-tag-fill me-2"></i> Costi</a>
+        </li>
+        <li class="nav-item">
+          <a href="/rischio" class="nav-link link-dark d-flex align-items-center"><i class="bi bi-cloud-lightning-fill me-2"></i> Rischio climatico</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</div>
+
+<div class="container-fluid py-4">
+
+  <div class="dashboard-card p-3 mb-4">
+    <form id="filterForm" action="/" method="get" class="row g-3 align-items-end" aria-label="Filtri avanzati per la dashboard">
+      <div class="col-12">
+        <label class="h6 mb-0 fw-bold text-primary">Ricerca avanzata</label>
+      </div>
+
+      <div class="col-6 col-md-2">
+        <label for="monthSel" class="form-label small text-muted">Mese</label>
+        <select id="monthSel" class="form-select" aria-label="Seleziona mese">
+          <option value="1"  th:selected="${from != null and #temporals.month(from) == 1 }">Gennaio</option>
+          <option value="2"  th:selected="${from != null and #temporals.month(from) == 2 }">Febbraio</option>
+          <option value="3"  th:selected="${from != null and #temporals.month(from) == 3 }">Marzo</option>
+          <option value="4"  th:selected="${from != null and #temporals.month(from) == 4 }">Aprile</option>
+          <option value="5"  th:selected="${from != null and #temporals.month(from) == 5 }">Maggio</option>
+          <option value="6"  th:selected="${from != null and #temporals.month(from) == 6 }">Giugno</option>
+          <option value="7"  th:selected="${from != null and #temporals.month(from) == 7 }">Luglio</option>
+          <option value="8"  th:selected="${from != null and #temporals.month(from) == 8 }">Agosto</option>
+          <option value="9"  th:selected="${from != null and #temporals.month(from) == 9 }">Settembre</option>
+          <option value="10" th:selected="${from != null and #temporals.month(from) == 10}">Ottobre</option>
+          <option value="11" th:selected="${from != null and #temporals.month(from) == 11}">Novembre</option>
+          <option value="12" th:selected="${from != null and #temporals.month(from) == 12}">Dicembre</option>
+        </select>
+      </div>
+
+      <div class="col-6 col-md-2">
+        <label for="yearSel" class="form-label small text-muted">Anno</label>
+        <select id="yearSel" class="form-select" aria-label="Seleziona anno">
+          <option th:each="y : ${#numbers.sequence(2015, 2025)}"
+                  th:value="${y}" th:text="${y}"
+                  th:selected="${from != null ? #temporals.year(from) == y : y == #temporals.year(#temporals.createNow())}">
+            2025
+          </option>
+        </select>
+      </div>
+
+      <div class="col-12 col-md-3">
+        <label for="cropSel" class="form-label small text-muted">Coltura</label>
+        <select id="cropSel" name="crop" class="form-select" aria-label="Seleziona coltura">
+          <option value="">Tutte</option>
+          <option th:each="c : ${cropsList != null ? cropsList : {'Grano duro','Mais','Olivo','Vite'}}"
+                  th:value="${c}" th:text="${c}" th:selected="${c == crop}">
+            Coltura
+          </option>
+        </select>
+      </div>
+
+      <div class="col-12 col-md-3">
+        <label for="areaSel" class="form-label small text-muted">Area</label>
+        <select id="areaSel" name="area" class="form-select" aria-label="Seleziona area geografica">
+          <option value="">Tutte</option>
+          <option th:each="a : ${areasList != null ? areasList : {'Nord','Centro','Sud'}}"
+                  th:value="${a}" th:text="${a}" th:selected="${a == area}">
+            Area
+          </option>
+        </select>
+      </div>
+
+      <div class="col-12 col-md-2 d-grid">
+        <button type="submit" class="btn btn-primary" aria-live="polite">
+          <i class="bi bi-funnel"></i> Applica Filtri
+        </button>
+      </div>
+
+      <input type="hidden" id="from" name="from" th:value="${#temporals.format(from,'yyyy-MM-dd')}"/>
+      <input type="hidden" id="to"   name="to"   th:value="${#temporals.format(to,'yyyy-MM-dd')}"/>
+    </form>
+  </div>
+
+  <div class="row g-4 mb-4 row-cols-1 row-cols-md-2 row-cols-lg-4 row-cols-xl-5">
+    <div class="col" role="region" aria-label="Key Performance Indicator: Resa Media">
+      <div class="kpi-box">
+        <h2 class="visually-hidden">Resa Media</h2>
+        <p class="small text-muted mb-1"><i class="bi bi-bar-chart-line-fill text-success"></i> RESA MEDIA</p>
+        <div class="d-flex align-items-center">
+          <span class="kpi-value text-success" th:text="${#numbers.formatDecimal(avgYieldHa,1,'POINT',2,'COMMA')}">0,00</span>
+          <span class="ms-2 text-muted">t/ha</span>
+        </div>
+      </div>
+    </div>
+    <div class="col" role="region" aria-label="Key Performance Indicator: Efficienza Idrica">
+      <div class="kpi-box blue">
+        <h2 class="visually-hidden">Efficienza Idrica</h2>
+        <p class="small text-muted mb-1"><i class="bi bi-water text-primary"></i> EFFICIENZA IDRICA</p>
+        <div class="d-flex align-items-center">
+          <span class="kpi-value text-primary" th:text="${#numbers.formatDecimal(avgEff,1,'POINT',2,'COMMA')}">0,00</span>
+          <span class="ms-2 text-muted">Kg/m³</span>
+        </div>
+      </div>
+    </div>
+    <div class="col" role="region" aria-label="Key Performance Indicator: Costo Unitario">
+      <div class="kpi-box purple">
+        <h2 class="visually-hidden">Costo Unitario</h2>
+        <p class="small text-muted mb-1"><i class="bi bi-cash-coin" style="color:var(--purple)"></i> COSTO UNITARIO</p>
+        <div class="d-flex align-items-center">
+          <span class="kpi-value" style="color:var(--purple)" th:text="${#numbers.formatDecimal(avgCost,1,'POINT',2,'COMMA')}">0,00</span>
+          <span class="ms-2 text-muted">€/t</span>
+        </div>
+      </div>
+    </div>
+    <div class="col" role="region" aria-label="Key Performance Indicator: Margine Unitario">
+      <div class="kpi-box info">
+        <h2 class="visually-hidden">Margine Unitario</h2>
+        <p class="small text-muted mb-1"><i class="bi bi-graph-up-arrow text-info"></i> MARGINE UNITARIO</p>
+        <div class="d-flex align-items-center">
+          <span class="kpi-value text-info" th:text="${#numbers.formatDecimal(avgMargin,1,'POINT',2,'COMMA')}">0,00</span>
+          <span class="ms-2 text-muted">€/t</span>
+        </div>
+      </div>
+    </div>
+    <div class="col" role="region" aria-label="Key Performance Indicator: Rischio Climatico">
+      <div class="kpi-box risk" th:with="risk=${avgRisk}">
+        <h2 class="visually-hidden">Rischio Climatico</h2>
+        <p class="small text-muted mb-1"><i class="bi bi-exclamation-triangle-fill" style="color:var(--warning-accessible)"></i> RISCHIO CLIMATICO</p>
+        <div class="d-flex align-items-center">
+          <span class="kpi-value" style="color:var(--warning-accessible)" th:text="${#numbers.formatDecimal(risk,1,'POINT',2,'COMMA')}">0,00</span>
+          <span class="ms-2 text-muted">Indice (0-1)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="dashboard-card p-4">
+        <div class="d-flex justify-content-between align-items-center section-header success-border">
+          <h2 class="h6 mb-0 fw-bold text-success">Andamento Resa (t/ha)</h2>
+          <span class="badge bg-secondary" th:text="${crop != null ? crop : 'Tutte le Colture'}">Tutte le Colture</span>
+          <a href="/resa" class="btn btn-sm btn-outline-success" aria-label="Vai al dettaglio Resa">Vai al dettaglio</a>
+        </div>
+        <div style="height:300px" role="img" aria-label="Grafico a linee che mostra l'andamento della resa per ettaro nel tempo.">
+          <canvas id="yieldMinMax"></canvas>
+        </div>
+        <table class="visually-hidden" summary="Tabella dati Resa (t/ha)">
+          <thead><tr><th>Periodo</th><th>Nord</th><th>Centro</th><th>Sud</th></tr></thead>
+          <tbody>
+            </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="dashboard-card p-4">
+        <div class="d-flex justify-content-between align-items-center section-header success-border">
+          <h2 class="h6 mb-0 fw-bold text-success">Efficienza Idrica (Kg/m³)</h2>
+          <span class="badge bg-secondary" th:text="${crop != null ? crop : 'Tutte le Colture'}">Tutte le Colture</span>
+          <a href="/risorse" class="btn btn-sm btn-outline-success" aria-label="Vai al dettaglio Risorse Idriche">Vai al dettaglio</a>
+        </div>
+        <div style="height:350px" role="img" aria-label="Grafico ad area polare che confronta l'efficienza idrica (Kg per metro cubo) tra le aree Nord, Centro e Sud.">
+            <canvas id="effPolar"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mt-4">
+    <div class="col-lg-6">
+      <div class="dashboard-card p-4">
+        <div class="d-flex justify-content-between align-items-center section-header"> <h2 class="h6 mb-0 fw-bold text-primary">Margine (€/t)</h2>
+          <a href="/margine" class="btn btn-sm btn-outline-primary" aria-label="Vai al dettaglio Margine">Vai al dettaglio</a>
+        </div>
+        <div id="echMargin" style="height:320px;" role="img" aria-label="Grafico a barre che mostra il Margine unitario medio per area geografica in euro per tonnellata."></div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="dashboard-card p-4">
+        <div class="d-flex justify-content-between align-items-center section-header purple-border">
+          <h2 class="h6 mb-0 fw-bold" style="color:var(--purple)">Costi (€/t)</h2>
+          <a href="/costi" class="btn btn-sm btn-outline-secondary" style="--bs-btn-color: var(--purple); --bs-btn-border-color: var(--purple);" aria-label="Vai al dettaglio Costi">Vai al dettaglio</a>
+        </div>
+        <div id="echCost" style="height:320px;" role="img" aria-label="Grafico a barre che mostra il Costo unitario medio per area geografica in euro per tonnellata."></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rischio Climatico per area (gauge CSS, dinamico in base al filtro Area) -->
+  <div class="row g-4 mt-4">
+    <div class="col-12">
+      <div class="dashboard-card p-4" role="region" aria-label="Indicatori di Rischio Climatico per Area">
+        <div class="d-flex justify-content-between align-items-center section-header warning-border">
+          <h2 class="h6 mb-0 fw-bold" style="color:var(--warning-accessible)">Rischio climatico per area</h2>
+          <a href="/rischio" class="btn btn-sm btn-outline-warning" style="--bs-btn-color: var(--warning-accessible); --bs-btn-border-color: var(--warning-accessible);" aria-label="Vai al dettaglio Rischio Climatico">Vai al dettaglio</a>
+        </div>
+
+        <div id="riskGauges" class="row g-4"></div>
+
+        <div class="d-flex justify-content-around text-center small mt-3">
+          <span class="text-success">Basso (&lt; 0,4)</span>
+          <span style="color:var(--warning-accessible)">Medio (0,4 - 0,7)</span>
+          <span class="text-danger">Alto (&gt; 0,7)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  (function(){
+    const monthSel = document.getElementById('monthSel');
+    const yearSel  = document.getElementById('yearSel');
+    const fromH    = document.getElementById('from');
+    const toH      = document.getElementById('to');
+    const form     = document.getElementById('filterForm');
+
+    function pad2(n){ return n<10 ? '0'+n : ''+n; }
+    function lastDay(y,m){ return new Date(y, m, 0).getDate(); } // m: 1..12
+
+    function refreshHidden(){
+      var y = parseInt(yearSel.value,10);
+      var m = parseInt(monthSel.value,10);
+      var dEnd = lastDay(y,m);
+      fromH.value = y + '-' + pad2(m) + '-01';
+      toH.value   = y + '-' + pad2(m) + '-' + pad2(dEnd);
+    }
+
+    (function init(){
+      var haveFrom = fromH && fromH.value && fromH.value.length === 10;
+      if (haveFrom){
+      } else {
+        var today = new Date();
+        if (!monthSel.value) monthSel.value = (today.getMonth()+1).toString();
+        var currentYear = today.getFullYear().toString();
+        var yearOption = Array.from(yearSel.options).find(opt => opt.value === currentYear);
+        if (yearOption) {
+            yearSel.value = currentYear;
+        }
+      }
+      refreshHidden();
+    })();
+
+    monthSel.addEventListener('change', refreshHidden);
+    yearSel.addEventListener('change',  refreshHidden);
+    form.addEventListener('submit', function(e) {
+      refreshHidden();
+    });
+  })();
+</script>
+
+<script th:inline="javascript">
+  /*<![CDATA[*/
+  /* ===== Variabili dal controller ===== */
+  const labels     = [[${labels}]];
+  const yNord      = /*[[${yieldsNord}]]*/ [];
+  const yCentro    = /*[[${yieldsCentro}]]*/ [];
+  const ySud       = /*[[${yieldsSud}]]*/ [];
+  const areaSel    = /*[[${area}]]*/ null;
+
+  const avgEff     = /*[[${avgEff}]]*/ 0;
+  const effMax     = /*[[${effMaxScale}]]*/ 50;
+  const avgCost    = /*[[${avgCost}]]*/ 0;
+  const avgMargin  = /*[[${avgMargin}]]*/ 0;
+
+  /* Polar Area (Kg/m³) per area */
+  const effNordKgM3   = /*[[${effNordKgM3}]]*/ 0;
+  const effCentroKgM3 = /*[[${effCentroKgM3}]]*/ 0;
+  const effSudKgM3    = /*[[${effSudKgM3}]]*/ 0;
+
+  /* NUOVI: Costi/Margini medi per area (€/t) */
+  const costNord   = /*[[${costNord}]]*/ 0;
+  const costCentro = /*[[${costCentro}]]*/ 0;
+  const costSud    = /*[[${costSud}]]*/ 0;
+  const marginNord   = /*[[${marginNord}]]*/ 0;
+  const marginCentro = /*[[${marginCentro}]]*/ 0;
+  const marginSud    = /*[[${marginSud}]]*/ 0;
+
+  /* NUOVI: Rischio per area (0..1). Se non presenti lato server, default 0. */
+  const riskNord   = /*[[${riskNord}]]*/ 0;
+  const riskCentro = /*[[${riskCentro}]]*/ 0;
+  const riskSud    = /*[[${riskSud}]]*/ 0;
+
+  // Colori unificati
+  const C_NORD   = '#0d6efd';
+  const C_CENTRO = '#fd7e14';
+  const C_SUD    = '#10b981';
+  const colorsAll = [C_NORD, C_CENTRO, C_SUD];
+
+  /* ===== Resa: Linear Scale Min/Max ===== */
+  (function(){
+    const el = document.getElementById('yieldMinMax'); if(!el) return;
+
+    const allCandidates = [
+      { key: 'Nord',   label: 'Nord',   data: yNord,   color: C_NORD   },
+      { key: 'Centro', label: 'Centro', data: yCentro, color: C_CENTRO },
+      { key: 'Sud',    label: 'Sud',    data: ySud,    color: C_SUD    },
+    ];
+
+    const datasetsPicked = (areaSel && areaSel.trim().length > 0)
+      ? allCandidates.filter(d => d.key.toLowerCase() === areaSel.toLowerCase())
+      : allCandidates;
+
+    const datasetsNonEmpty = datasetsPicked.filter(d => Array.isArray(d.data) && d.data.some(v => Number.isFinite(v)));
+    if (datasetsNonEmpty.length === 0) return;
+
+    const allVals = datasetsNonEmpty.flatMap(d => d.data).filter(Number.isFinite);
+    const yMin0 = Math.min(...allVals);
+    const yMax0 = Math.max(...allVals);
+    const span  = Math.max(0, yMax0 - yMin0);
+    const pad   = span > 0 ? span * 0.10 : (yMax0 || 1) * 0.10;
+
+    new Chart(el.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: datasetsNonEmpty.map(d => ({
+          label: d.label,
+          data: d.data,
+          borderColor: d.color,
+          backgroundColor: d.color + '33',
+          pointBackgroundColor: d.color,
+          pointBorderColor: d.color,
+          pointRadius: 3,
+          borderWidth: 2,
+          tension: .25,
+          fill: false
+        }))
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            type: 'linear',
+            min: Math.max(0, yMin0 - pad),
+            max: yMax0 + pad,
+            title: { display: true, text: 'Resa (T)' }
+          },
+          x: {
+            type: 'category',
+            ticks: { autoSkip: true, maxTicksLimit: 12 }
+          }
+        },
+        plugins: {
+          legend: { position: 'top' },
+          tooltip: { mode: 'index', intersect: false, callbacks: {
+            label: (ctx) => `${ctx.dataset.label}: ${(+ctx.raw).toFixed(2)} t/ha`
+          }}
+        },
+        interaction: { mode: 'index', intersect: false }
+      }
+    });
+  })();
+
+  /* ===== Efficienza Idrica: Polar Area (Kg/m³) ===== */
+  (function(){
+    const el = document.getElementById('effPolar'); if(!el) return;
+
+    const labelsAreas = ['Nord','Centro','Sud'];
+    const valuesAreas = [effNordKgM3, effCentroKgM3, effSudKgM3];
+    const colors      = colorsAll;
+
+    let L = [], V = [], C = [];
+    if (areaSel && String(areaSel).trim().length > 0){
+      const a = String(areaSel).toLowerCase();
+      const idx = a === 'nord' ? 0 : (a === 'centro' ? 1 : (a === 'sud' ? 2 : -1));
+      if (idx >= 0){ L = [labelsAreas[idx]]; V = [valuesAreas[idx]]; C = [colors[idx]]; }
+      else { L = labelsAreas; V = valuesAreas; C = colors; }
+    } else {
+      L = labelsAreas; V = valuesAreas; C = colors;
+    }
+
+    const vmax = Math.max( ...V.filter(n => Number.isFinite(n)), 100 );
+
+    new Chart(el.getContext('2d'), {
+      type: 'polarArea',
+      data: { labels: L, datasets: [{ data: V, backgroundColor: C, borderWidth: 1 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { usePointStyle:false, boxWidth:20, boxHeight:12, font:{size:12} }
+          },
+          tooltip: { callbacks: {
+            label: (ctx) => `${ctx.label}: ${(+ctx.raw).toFixed(2)} Kg/m³`
+          } }
+        },
+        scales: {
+          r: {
+            suggestedMin: 0,
+            suggestedMax: vmax * 1.1,
+            ticks: { stepSize: Math.max(5, Math.round(vmax/5)), callback: (v) => `${v} Kg/m³` }
+          }
+        },
+        animation: { animateRotate:true, animateScale:true }
+      }
+    });
+  })();
+
+  /* ===== ECharts: Margine (sx) e Costi (dx) ===== */
+  (function(){
+    const C_NORD   = '#0d6efd';
+    const C_CENTRO = '#fd7e14';
+    const C_SUD    = '#10b981';
+
+    // Dati per aree
+    const areasAll   = ['Nord','Centro','Sud'];
+    const marginVals = [marginNord, marginCentro, marginSud];
+    const costVals   = [costNord,   costCentro,   costSud];
+
+    // Se c'è un filtro area, mostra solo quella
+    const sel = (areaSel && String(areaSel).trim().length>0) ? String(areaSel).toLowerCase() : null;
+    function filtered(names, values){
+      if(!sel) return {names, values};
+      const idx = sel==='nord'?0: sel==='centro'?1: sel==='sud'?2:-1;
+      if(idx<0) return {names, values};
+      return {names:[names[idx]], values:[values[idx]]};
+    }
+
+    const M = filtered(areasAll, marginVals);
+    const C = filtered(areasAll, costVals);
+
+    // helper colore per area
+    function colorByName(name){
+      const k = String(name).toLowerCase();
+      if(k==='nord') return C_NORD;
+      if(k==='centro') return C_CENTRO;
+      if(k==='sud') return C_SUD;
+      return '#999';
+    }
+
+    function buildOption(titleText, cats, vals, mainColor){
+      return {
+        title: { text: titleText, left: 'center', top: 0, textStyle:{ fontSize: 12, fontWeight: 600 } },
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, valueFormatter: (v)=> `€ ${Number(v).toFixed(2)}/t` },
+        grid: { left: 40, right: 20, top: 40, bottom: 30, containLabel: true },
+        xAxis: { type: 'category', data: cats, axisTick:{alignWithLabel:true} },
+        yAxis: { type: 'value', name: '€/t', nameGap: 10, axisLabel: { formatter: '€ {value}' } },
+        series: [{
+          type: 'bar',
+          name: titleText,
+          universalTransition: true,
+          barWidth: '60%',
+          itemStyle: {
+            color: cats.length > 1 ? (p) => colorByName(p.name) : mainColor,
+            borderRadius: [4,4,0,0]
+          },
+          data: vals
+        }]
+      };
+    }
+
+    const echMargin = echarts.init(document.getElementById('echMargin'));
+    const echCost   = echarts.init(document.getElementById('echCost'));
+
+    echMargin.setOption(buildOption('Margine medio (€/t)', M.names, M.values, C_SUD));
+    echCost.setOption(buildOption('Costo medio (€/t)', C.names, C.values, 'var(--purple)'));
+
+    window.addEventListener('resize', () => {
+      echMargin.resize();
+      echCost.resize();
+    });
+  })();
+
+  /* ===== Rischio Climatico per area: 1–3 gauge CSS dinamici ===== */
+  (function(){
+    const container = document.getElementById('riskGauges'); if(!container) return;
+
+    const areas = [
+      { key:'Nord',   color:'#0d6efd', value: riskNord   },
+      { key:'Centro', color:'#fd7e14', value: riskCentro },
+      { key:'Sud',    color:'#10b981', value: riskSud    },
+    ];
+
+    // Filtra in base all'area selezionata
+    let set = areas;
+    if (areaSel && String(areaSel).trim().length>0){
+      const a = String(areaSel).toLowerCase();
+      set = areas.filter(x => x.key.toLowerCase() === a);
+      if (set.length === 0) set = areas; // fallback
+    }
+
+    // Helper per etichetta livello
+    function levelText(v){
+      if (v > 0.7) return '<span class="text-danger">ALTO</span>';
+      if (v >= 0.4) return '<span style="color:var(--warning-accessible)">MEDIO</span>';
+      return '<span class="text-success">BASSO</span>';
+    }
+
+    // Render card per ogni area
+    container.innerHTML = set.map(a => `
+      <div class="${set.length===1 ? 'col-12' : (set.length===2 ? 'col-md-6' : 'col-lg-4')}">
+        <div class="p-3 border rounded-3 h-100">
+          <div class="d-flex justify-content-between align-items-center mb-2" style="border-bottom:2px solid ${a.color}">
+            <h3 class="h6 mb-0" style="color:${a.color}">Rischio — ${a.key}</h3>
+            <span class="badge" style="background-color:${a.color}20;color:${a.color}">
+              ${levelText(a.value)}
+            </span>
+          </div>
+
+          <p class="text-muted small mb-2">
+            Indice area ${a.key}:
+            <span class="fw-bold" style="color:${a.color}">${(Number(a.value)||0).toFixed(2)}</span>
+            (0 = basso, 1 = alto).
+          </p>
+
+          <div class="risk-gauge"
+               role="progressbar" aria-label="Indice di rischio climatico ${a.key}"
+               aria-valuemin="0" aria-valuemax="1" aria-valuenow="${(Number(a.value)||0).toFixed(2)}"
+               style="--risk:${Number.isFinite(a.value)? a.value : 0}">
+            <div class="risk-track"></div>
+            <div class="risk-thumb"><span class="risk-value">${(Number(a.value)||0).toFixed(2)}</span></div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  })();
+  /*]]>*/
+</script>
+
+</body>
+</html>
