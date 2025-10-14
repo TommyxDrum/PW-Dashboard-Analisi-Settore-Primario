@@ -1,7 +1,0 @@
-it\floro\dashboard\Application.class
-it\floro\dashboard\simulator\DataSimulator.class
-it\floro\dashboard\web\DashboardController.class
-it\floro\dashboard\domain\SampleRecord.class
-it\floro\dashboard\web\ExportController.class
-it\floro\dashboard\service\KpiService.class
-it\floro\dashboard\domain\Kpi.class

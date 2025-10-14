@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Resa per Area • Dashboard Agronomica</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+
+    <style>
+        :root{
+          --primary-green:#198754;
+          --secondary-blue:#0d6efd;
+          --light-bg:#f8f9fa;
+          --danger-red:#dc3545;
+          --warning-accessible:#e09400;
+          --info-color:#0dcaf0;
+          --purple:#6f42c1;
+          --focus-ring: 0 0 0 0.25rem rgba(13,110,253,.25);
+          --control-h: 44px;
+
+          /* colori aree */
+          --area-nord:#0d6efd;   /* blu */
+          --area-centro:#fd7e14; /* arancio */
+          --area-sud:#10b981;    /* verde */
+
+          /* colori GRAFICO A TORTA (categorie, NON aree) */
+          --pie-prod:#800080;   /* viola */
+          --pie-surf:#ffdead;   /* sabbia */
+          --pie-resa:#6c757d;   /* grigio */
+        }
+
+        body{background-color:var(--light-bg);font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; padding-top:70px;}
+        .dashboard-card{border-radius:1rem;box-shadow:0 4px 10px rgba(0,0,0,.08);background:#fff;height:100%}
+
+        .header-bar{position:fixed;top:0;left:0;right:0;z-index:1040;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.05);padding:.5rem 1rem;display:flex;align-items:center;gap:1rem}
+        .header-logo{font-weight:600;color:var(--primary-green);line-height:1;margin:0}
+
+        .filters-bar{display:flex;flex-wrap:nowrap;align-items:flex-end;gap:.5rem;width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:.25rem}
+        .filters-bar .form-group{flex:1 1 0;min-width:140px}
+        .filters-bar .form-select{height:var(--control-h);line-height:var(--control-h);padding:0 2.25rem 0 .75rem;background-position:right .75rem center}
+        .filters-bar .btn-primary{height:var(--control-h);display:inline-flex;align-items:center;justify-content:center;padding:0 14px;flex:0 0 auto}
+        .form-select:focus,.btn:focus{box-shadow:var(--focus-ring)}
+        .min-200{min-width:200px}
+
+        .section-header{padding-bottom:.25rem;margin-bottom:1rem;border-bottom:2px solid var(--secondary-blue)}
+        .section-header.success-border{border-color:var(--primary-green)}
+
+        .chartjs-like-legend{display:flex;gap:24px;align-items:center}
+        .chartjs-like-legend .item{display:inline-flex;align-items:center;gap:8px;font-size:.875rem;color:#6c757d}
+        .chartjs-like-legend .swatch{width:36px;height:12px;border-radius:3px;border:3px solid transparent;background-clip:padding-box}
+        .legend-nord  .swatch{border-color:var(--area-nord);  background-color:#0d6efd33}
+        .legend-centro .swatch{border-color:var(--area-centro);background-color:#fd7e1433}
+        .legend-sud   .swatch{border-color:var(--area-sud);   background-color:#10b98133}
+
+        /* Tipografia uniforme per testi esplicativi */
+        .subtitle{color: var(--bs-secondary-color, #6c757d); font-size:.9375rem; line-height:1.4}
+        .caption{color: var(--bs-tertiary-color, #8a8f94); font-size:.8125rem}
+    </style>
+</head>
+<body>
+
+<header class="header-bar">
+    <a href="/" class="btn btn-outline-secondary" aria-label="Torna alla Dashboard"><i class="bi bi-arrow-left"></i></a>
+    <h1 class="header-logo display-6 fs-4 mb-0">Resa per Area</h1>
+    <a href="/export.csv" class="btn btn-outline-success ms-auto"><i class="bi bi-download"></i> Export</a>
+</header>
+
+<div class="container-fluid py-4">
+
+    <div class="dashboard-card p-3 mb-4">
+        <form id="filterForm" action="/resa" method="get" class="filters-bar" role="group" aria-label="Filtri resa">
+            <div class="form-group d-flex flex-column">
+                <label class="form-label small text-muted mb-1" for="monthSel">Mese</label>
+                <select id="monthSel" class="form-select">
+                    <option th:each="m : ${#numbers.sequence(1,12)}"
+                            th:value="${m}"
+                            th:text="${#temporals.format(
+                              #temporals.create(
+                                (from != null ? #temporals.year(from) : #temporals.year(#temporals.createNow())),
+                                m, 1
+                              ),
+                            'MMMM')}"
+                            th:selected="${from != null and #temporals.month(from) == m}">
+                    </option>
+                </select>
+            </div>
+
+            <div class="form-group d-flex flex-column">
+                <label class="form-label small text-muted mb-1" for="yearSel">Anno</label>
+                <select id="yearSel" class="form-select">
+                    <!-- limitato a 2025 -->
+                    <option th:each="y : ${#numbers.sequence(2015, 2025)}"
+                            th:value="${y}"
+                            th:text="${y}"
+                            th:selected="${from != null ? #temporals.year(from) == y : y == #temporals.year(#temporals.createNow())}">
+                    </option>
+                </select>
+            </div>
+
+            <div class="form-group d-flex flex-column min-200">
+                <label class="form-label small text-muted mb-1" for="cropSel">Coltura</label>
+                <select id="cropSel" name="crop" class="form-select">
+                    <option value="">Tutte</option>
+                    <option th:each="c : ${cropsList}" th:value="${c}" th:text="${c}" th:selected="${c == crop}"></option>
+                </select>
+            </div>
+
+            <div class="form-group d-flex flex-column min-200">
+                <label class="form-label small text-muted mb-1" for="areaSel">Area</label>
+                <select id="areaSel" name="area" class="form-select">
+                    <option value="">Tutte</option>
+                    <option th:each="a : ${areasList}" th:value="${a}" th:text="${a}" th:selected="${a == area}"></option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-funnel me-1"></i>Applica Filtri
+            </button>
+
+            <input type="hidden" id="from" name="from"
+                   th:value="${from != null ? #temporals.format(from,'yyyy-MM-dd') : ''}"/>
+            <input type="hidden" id="to" name="to"
+                   th:value="${to != null ? #temporals.format(to,'yyyy-MM-dd') : ''}"/>
+        </form>
+    </div>
+
+    <div class="dashboard-card p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center section-header success-border">
+            <h2 class="h6 mb-0 fw-bold text-success">Resa media per Area (t/ha)</h2>
+            <div class="chartjs-like-legend" aria-hidden="true">
+                <span class="item legend-nord"><span class="swatch"></span>Nord</span>
+                <span class="item legend-centro"><span class="swatch"></span>Centro</span>
+                <span class="item legend-sud"><span class="swatch"></span>Sud</span>
+            </div>
+        </div>
+
+        <!-- Testo esplicativo del grafico BAR+PIE -->
+        <p class="subtitle mb-3">
+            Le barre mostrano la <strong>resa media (t/ha)</strong> per Nord, Centro e Sud nel periodo filtrato.
+            L’asse verticale riporta il valore della resa; le etichette in cima alle barre sono arrotondate a due decimali.
+            La torta a destra riassume i <em>totali</em>: <span class="fw-semibold">Produzione (t)</span>,
+            <span class="fw-semibold">Superficie (ha)</span> e <span class="fw-semibold">Resa (t/ha)</span>.
+        </p>
+
+        <div id="echResaByArea" style="height:360px; position:relative;">
+          <span class="visually-hidden">
+            Grafico colonne con resa media per area e grafico a torta con distribuzione dei totali di produzione, superficie e resa.
+          </span>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="dashboard-card p-4">
+                <div class="d-flex justify-content-between align-items-center section-header success-border">
+                    <h3 class="h6 mb-0 fw-bold text-success">Produzione totale (t)</h3>
+                    <div class="chartjs-like-legend" aria-hidden="true">
+                        <span class="item legend-nord"><span class="swatch"></span>Nord</span>
+                        <span class="item legend-centro"><span class="swatch"></span>Centro</span>
+                        <span class="item legend-sud"><span class="swatch"></span>Sud</span>
+                    </div>
+                </div>
+
+                <!-- Testo esplicativo del GAUGE Produzione -->
+                <p class="subtitle mb-3">
+                    Il quadrante mostra la <strong>produzione complessiva</strong> in tonnellate. Le tre lancette indicano
+                    rispettivamente <span class="text-primary">Nord</span>, <span style="color:#fd7e14;">Centro</span> e
+                    <span style="color:#10b981;">Sud</span>. La scala si adatta automaticamente al valore più alto; i dati
+                    sono mostrati <strong>senza decimali</strong>.
+                </p>
+
+                <div id="echGaugeYield" style="height:320px; position:relative;">
+                  <span class="visually-hidden">
+                    Grafico a quadrante con tre lancette (Nord, Centro, Sud) che indicano la produzione totale in tonnellate.
+                  </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="dashboard-card p-4">
+                <div class="d-flex justify-content-between align-items-center section-header success-border">
+                    <h3 class="h6 mb-0 fw-bold text-success">Superficie totale (ha)</h3>
+                    <div class="chartjs-like-legend" aria-hidden="true">
+                        <span class="item legend-nord"><span class="swatch"></span>Nord</span>
+                        <span class="item legend-centro"><span class="swatch"></span>Centro</span>
+                        <span class="item legend-sud"><span class="swatch"></span>Sud</span>
+                    </div>
+                </div>
+
+                <!-- Testo esplicativo del GAUGE Superficie -->
+                <p class="subtitle mb-3">
+                    Anche qui le tre lancette rappresentano <strong>Nord, Centro e Sud</strong>. Il valore riportato è la
+                    <strong>superficie totale</strong> in ettari, <strong>arrotondata</strong> all’unità. La scala del
+                    quadrante si estende leggermente oltre il massimo per facilitare il confronto visivo.
+                </p>
+
+                <div id="echGaugeSurface" style="height:320px; position:relative;">
+                  <span class="visually-hidden">
+                    Grafico a quadrante con tre lancette (Nord, Centro, Sud) che indicano la superficie totale in ettari.
+                  </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-card p-4 mt-4">
+        <h2 class="h6 mb-3 fw-bold text-success">Dettaglio dati selezionati</h2>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead class="table-light">
+                <tr>
+                    <th>Area</th>
+                    <th class="text-end">Produzione (t)</th>
+                    <th class="text-end">Superficie (ha)</th>
+                    <th class="text-end">Resa (t/ha)</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="r : ${resaRows}">
+                    <td th:text="${r.area}">Nord</td>
+                    <td class="text-end" th:text="${#numbers.formatDecimal(r.yieldT,1,'POINT',2,'COMMA')}">0,00</td>
+                    <td class="text-end" th:text="${#numbers.formatDecimal(r.surfaceHa,1,'POINT',2,'COMMA')}">0,00</td>
+                    <td class="text-end" th:text="${#numbers.formatDecimal(r.resa,1,'POINT',2,'COMMA')}">0,00</td>
+                </tr>
+                </tbody>
+                <tfoot class="table-light">
+                <tr>
+                    <th>Totale</th>
+                    <th class="text-end" th:text="${#numbers.formatDecimal(totalYieldT,1,'POINT',2,'COMMA')}">0,00</th>
+                    <th class="text-end" th:text="${#numbers.formatDecimal(totalSurfaceHa,1,'POINT',2,'COMMA')}">0,00</th>
+                    <th class="text-end" th:text="${#numbers.formatDecimal(totalResa,1,'POINT',2,'COMMA')}">0,00</th>
+                </tr>
+                </tfoot>
+            </table>
+            <p class="caption mt-2">
+                Nota: le cifre in tabella sono aggregate in base a filtri data/coltura/area e possono differire per arrotondamenti.
+            </p>
+        </div>
+    </div>
+
+    <footer class="text-center py-3 mt-5 border-top text-muted small">
+        &copy; [[${#temporals.year(#temporals.createNow())}]] AgrItalia S.p.A. | Dashboard Agronomica
+    </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    (function(){
+      const monthSel=document.getElementById('monthSel');
+      const yearSel=document.getElementById('yearSel');
+      const fromH=document.getElementById('from');
+      const toH=document.getElementById('to');
+      const form=document.getElementById('filterForm');
+
+      function pad2(n){return n<10?'0'+n:''+n;}
+      function lastDay(y,m){return new Date(y,m,0).getDate();}
+
+      function refresh(){
+        const y=parseInt(yearSel.value||new Date().getFullYear(),10);
+        const m=parseInt(monthSel.value||new Date().getMonth()+1,10);
+        const dEnd=lastDay(y,m);
+        fromH.value=y+'-'+pad2(m)+'-01';
+        toH.value=y+'-'+pad2(m)+'-'+pad2(dEnd);
+      }
+      refresh();
+      monthSel.addEventListener('change',refresh);
+      yearSel.addEventListener('change',refresh);
+      form && form.addEventListener('submit',refresh);
+    })();
+</script>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    function cssVar(n){const v=getComputedStyle(document.documentElement).getPropertyValue(n);return (v&&v.trim())||n;}
+    const C_NORD=cssVar('--area-nord'),C_CENTRO=cssVar('--area-centro'),C_SUD=cssVar('--area-sud');
+    const C_PIE_PROD=cssVar('--pie-prod'), C_PIE_SURF=cssVar('--pie-surf'), C_PIE_RESA=cssVar('--pie-resa');
+
+    function getAreaColor(name){const n=(''+(name||'')).toLowerCase();if(n.includes('nord'))return C_NORD;if(n.includes('centro'))return C_CENTRO;if(n.includes('sud'))return C_SUD;return C_NORD;}
+    const nf2 = new Intl.NumberFormat('it-IT',{maximumFractionDigits:2,minimumFractionDigits:2});
+    const nf0 = new Intl.NumberFormat('it-IT',{maximumFractionDigits:0});
+    const nfCompact = new Intl.NumberFormat('it-IT',{notation:'compact',maximumFractionDigits:1});
+
+    function normAreaKey(s){return (s||'').toString().trim().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'');}
+    function toNum(v){if(v==null) return 0;if(typeof v==='number') return isFinite(v)?v:0;const s=String(v).trim().replace(/\./g,'').replace(',', '.');const n=Number(s);return isFinite(n)?n:0;}
+
+    const chartDataRaw   = /*[[${chartData}]]*/ [];
+    const yieldNordT     = /*[[${yieldNordT}]]*/ 0;
+    const yieldCentroT   = /*[[${yieldCentroT}]]*/ 0;
+    const yieldSudT      = /*[[${yieldSudT}]]*/ 0;
+    const surfNordHa     = /*[[${surfNordHa}]]*/ 0;
+    const surfCentroHa   = /*[[${surfCentroHa}]]*/ 0;
+    const surfSudHa      = /*[[${surfSudHa}]]*/ 0;
+    const totalYieldT    = /*[[${totalYieldT}]]*/ 0;
+    const totalSurfaceHa = /*[[${totalSurfaceHa}]]*/ 0;
+    const totalResa      = /*[[${totalResa}]]*/ 0;
+
+    /* ===== BAR + PIE (Resa per area + totali) ===== */
+    (function() {
+      const el = document.getElementById('echResaByArea');
+      if (!el) return;
+      const myChart = echarts.init(el);
+
+      const AREAS = ['Nord','Centro','Sud'];
+      const resaByKey = { nord:null, centro:null, sud:null };
+
+      if(Array.isArray(chartDataRaw) && chartDataRaw.length){
+        if(Array.isArray(chartDataRaw[0])){
+          const headers = chartDataRaw[0].map(h=>String(h||'').trim());
+          const idxProduct=headers.indexOf('product');
+          const idxResa=headers.indexOf('Resa (t/ha)');
+          const idxYieldCol=headers.indexOf('Yield (t)');
+          const idxProdTCol=headers.indexOf('Produzione (t)');
+          const idxSurfCol=headers.indexOf('Superficie (ha)');
+          for(let i=1;i<chartDataRaw.length;i++){
+            const row=chartDataRaw[i];
+            const areaKey=normAreaKey(row[idxProduct]);
+            let resaVal=null;
+            if(idxResa>=0){ resaVal=toNum(row[idxResa]); }
+            else {
+              const yCol=(idxYieldCol>=0)?idxYieldCol:(idxProdTCol>=0?idxProdTCol:-1);
+              if (yCol>=0 && idxSurfCol>=0){
+                const y=toNum(row[yCol]), s=toNum(row[idxSurfCol]);
+                resaVal=(s>0)?(y/s):0;
+              } else resaVal=0;
+            }
+            if(areaKey==='nord') resaByKey.nord=resaVal;
+            if(areaKey==='centro') resaByKey.centro=resaVal;
+            if(areaKey==='sud') resaByKey.sud=resaVal;
+          }
+        }
+      }
+      if(resaByKey.nord==null){ const s=toNum(surfNordHa), y=toNum(yieldNordT); resaByKey.nord=(s>0)?(y/s):0; }
+      if(resaByKey.centro==null){ const s=toNum(surfCentroHa), y=toNum(yieldCentroT); resaByKey.centro=(s>0)?(y/s):0; }
+      if(resaByKey.sud==null){ const s=toNum(surfSudHa), y=toNum(yieldSudT); resaByKey.sud=(s>0)?(y/s):0; }
+
+      const resaByArea=[resaByKey.nord, resaByKey.centro, resaByKey.sud];
+
+      const pieData=[
+        { name:'Produzione (t)',  value:toNum(totalYieldT),    itemStyle:{color:C_PIE_PROD} },
+        { name:'Superficie (ha)', value:toNum(totalSurfaceHa), itemStyle:{color:C_PIE_SURF} },
+        { name:'Resa (t/ha)',     value:toNum(totalResa),      itemStyle:{color:C_PIE_RESA} }
+      ];
+
+      myChart.setOption({
+        aria:{enabled:true, decal:{show:true}},
+        color:[C_NORD,C_CENTRO,C_SUD],
+        tooltip:{
+          trigger:'item',
+          formatter:(p)=> p.seriesType==='bar'
+            ? `${p.name}<br/>Resa: <b>${nf2.format(p.value)}</b> t/ha`
+            : `${p.name}<br/>Valore: <b>${nfCompact.format(p.value)}</b><br/>Percentuale: <b>${nf2.format(p.percent)}</b>%`
+        },
+        legend:{show:false},
+        grid:{top:'10%', bottom:'15%', left:'10%', right:'35%'},
+        xAxis:{type:'category', data:AREAS},
+        yAxis:{name:'Resa (t/ha)', axisLabel:{formatter:(v)=>nf2.format(v)}},
+        series:[
+          {
+            type:'bar',
+            data: resaByArea.map((v,i)=>({value:v,name:AREAS[i],itemStyle:{color:getAreaColor(AREAS[i])}})),
+            label:{show:true, position:'top', formatter:(p)=>nf2.format(p.value)}
+          },
+          {
+            type:'pie',
+            radius:'40%',
+            center:['75%','45%'],
+            label:{formatter:(p)=>`${p.name}\n${nfCompact.format(p.value)} (${nf2.format(p.percent)}%)`},
+            data: pieData
+          }
+        ]
+      });
+      window.addEventListener('resize',()=>myChart.resize());
+    })();
+
+    /* ===== GAUGE stile DEMO per Produzione (t) e Superficie (ha) ===== */
+    (function(){
+      const g1Dom=document.getElementById('echGaugeYield');
+      const g2Dom=document.getElementById('echGaugeSurface');
+      if(!g1Dom || !g2Dom) return;
+
+      function areaColor(area){
+        const a=(area||'').toLowerCase();
+        if(a.includes('nord')) return getAreaColor('Nord');
+        if(a.includes('centro')) return getAreaColor('Centro');
+        return getAreaColor('Sud');
+      }
+      function niceMax(values){
+        const m=Math.max(...values,1);
+        const pow=Math.pow(10, Math.max(0, Math.floor(Math.log10(m))-1));
+        return Math.ceil((m*1.1)/pow)*pow;
+      }
+
+      function buildGaugeOptionLikeDemo(valuesMap, unitLabel){
+  const vN = Number(valuesMap['Nord']   || 0);
+  const vC = Number(valuesMap['Centro'] || 0);
+  const vS = Number(valuesMap['Sud']    || 0);
+  const vmax = niceMax([vN, vC, vS]);
+
+  // Testo riepilogativo (es. "Nord: 123 t - Centro: 456 t - Sud: 789 t")
+  const footerText =
+    `Nord: ${nf0.format(vN)} ${unitLabel} - ` +
+    `Centro: ${nf0.format(vC)} ${unitLabel} - ` +
+    `Sud: ${nf0.format(vS)} ${unitLabel}`;
+
+  const data = [
+    { value: vN, name: 'Nord',   itemStyle:{ color: areaColor('Nord') } },
+    { value: vC, name: 'Centro', itemStyle:{ color: areaColor('Centro') } },
+    { value: vS, name: 'Sud',    itemStyle:{ color: areaColor('Sud') } }
+  ];
+
+  return {
+    // Testo personalizzato ancorato al chart (rimane centrato anche al resize)
+    graphic: [{
+      type: 'text',
+      left: 'center',
+      top: '88%', // sposta più/meno in base all'altezza del container
+      style: {
+        text: footerText,
+        fill: '#6c757d',                // grigio bootstrap
+        font: '600 16px "Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
+        align: 'center'
+      }
+    }],
+    series: [{
+      type: 'gauge',
+      startAngle: 210, endAngle: -30,
+      min: 0, max: vmax,
+      radius: '90%', center: ['50%','60%'],
+
+      // puntale come nella demo ufficiale
+      anchor: { show: true, showAbove: true, size: 18, itemStyle: { color: '#FAC858' } },
+      pointer: {
+        icon: 'path://M2.9,0.7L2.9,0.7c1.4,0,2.6,1.2,2.6,2.6v115c0,1.4-1.2,2.6-2.6,2.6l0,0c-1.4,0-2.6-1.2-2.6-2.6V3.3C0.3,1.9,1.4,0.7,2.9,0.7z',
+        width: 8, length: '80%', offsetCenter: [0, '8%']
+      },
+
+      progress: { show: true, overlap: true, roundCap: true },
+      axisLine: { roundCap: true },
+
+      splitLine: { distance: -12, length: 12, lineStyle: { width: 2 } },
+      axisTick:  { distance: -10, length: 6 },
+      axisLabel: { distance: 10, fontSize: 10 },
+
+      data,
+
+      // 👉 Disattiva i “chip” sotto al quadrante
+      title:  { show: false },
+      detail: { show: false }
+    }]
+  };
+}
+
+      const yieldVals={ 'Nord':yieldNordT, 'Centro':yieldCentroT, 'Sud':yieldSudT };
+      const surfVals={  'Nord':surfNordHa, 'Centro':surfCentroHa, 'Sud':surfSudHa };
+
+      const g1=echarts.init(g1Dom);
+      const g2=echarts.init(g2Dom);
+
+      g1.setOption(buildGaugeOptionLikeDemo(yieldVals, 't'));
+      g2.setOption(buildGaugeOptionLikeDemo(surfVals, 'ha'));
+
+      window.addEventListener('resize', ()=>{ g1.resize(); g2.resize(); });
+    })();
+    /*]]>*/
+</script>
+
+</body>
+</html>

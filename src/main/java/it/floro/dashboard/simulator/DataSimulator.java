@@ -16,14 +16,10 @@ public class DataSimulator {
     private final String[] crops = {"Grano duro", "Mais", "Olivo", "Vite"};
     private final String[] areas = {"Nord", "Centro", "Sud"};
 
-    // Target costi/ricavi leggermente più alto
-    private static final double COST_SHARE_TARGET   = 0.45; // ~45% costi, ~55% margine lordo
-    private static final double COST_BALANCE_WEIGHT = 0.65; // spinta verso il target
+    private static final double COST_SHARE_TARGET   = 0.45;
+    private static final double COST_BALANCE_WEIGHT = 0.65;
+    private static final double COST_SHARE_CAP      = 0.49;
 
-    // “Hard cap” per restare sotto al margine
-    private static final double COST_SHARE_CAP      = 0.49; // non superare il 49% dei ricavi
-
-    // Profili stabili per campo
     private String[] fieldName;
     private String[] fieldCrop;
     private String[] fieldArea;
@@ -36,8 +32,6 @@ public class DataSimulator {
         this.fields = fields;
         initFieldProfiles();
     }
-
-    /* ----------------------------- Helpers ----------------------------- */
 
     private static double clamp(double v, double lo, double hi) {
         return Math.max(lo, Math.min(hi, v));
@@ -55,10 +49,10 @@ public class DataSimulator {
     }
 
     private void initFieldProfiles() {
-        fieldName   = new String[fields];
-        fieldCrop   = new String[fields];
-        fieldArea   = new String[fields];
-        fieldSurface= new double[fields];
+        fieldName    = new String[fields];
+        fieldCrop    = new String[fields];
+        fieldArea    = new String[fields];
+        fieldSurface = new double[fields];
 
         for (int f = 0; f < fields; f++) {
             fieldName[f]    = "A" + String.format("%02d", f + 1);
@@ -66,7 +60,18 @@ public class DataSimulator {
             fieldArea[f]    = areas[rnd.nextInt(areas.length)];
             fieldSurface[f] = 1.0 + 5.0 * rnd.nextDouble();
         }
-        // opzionale: garantisci almeno un campo di Grano duro
+        // garantisci almeno un campo per ogni area
+        if (fields >= 3) {
+            fieldArea[0] = "Nord";
+            fieldArea[1] = "Centro";
+            fieldArea[2] = "Sud";
+        } else if (fields == 2) {
+            fieldArea[0] = "Nord";
+            fieldArea[1] = "Sud";
+        } else if (fields == 1) {
+            fieldArea[0] = "Sud";
+        }
+        // almeno un "Grano duro"
         if (fields > 0) fieldCrop[0] = "Grano duro";
     }
 
@@ -74,7 +79,7 @@ public class DataSimulator {
         return switch (area) {
             case "Nord"   -> -1.5;
             case "Centro" ->  0.0;
-            default       ->  1.5; // Sud
+            default       ->  1.5;
         };
     }
     private double areaRainProbBias(String area) {
@@ -116,7 +121,7 @@ public class DataSimulator {
         double mu = cropTempOpt(crop);
         double sigma = 7.0;
         double z = (t - mu) / sigma;
-        return Math.exp(-0.5 * z * z); // 0..1
+        return Math.exp(-0.5 * z * z);
     }
 
     private double rainFactor(double rainMm) {
@@ -133,51 +138,43 @@ public class DataSimulator {
         };
     }
 
-    // **AUMENTATI DI POCO**: costi stagionali per ha
     private double fixedCostPerHaSeason(String crop) {
         return switch (crop) {
-            case "Grano duro" -> 1150; // +~5%
-            case "Mais"       -> 1260; // +~5%
-            case "Olivo"      -> 1470; // +~5%
-            default /* Vite */-> 2310; // +~5%
+            case "Grano duro" -> 1150;
+            case "Mais"       -> 1260;
+            case "Olivo"      -> 1470;
+            default /* Vite */-> 2310;
         };
     }
     private double inputsPerHaSeason(String crop) {
         return switch (crop) {
-            case "Grano duro" -> 410;  // +~8%
-            case "Mais"       -> 485;  // +~8%
-            case "Olivo"      -> 378;  // +~8%
-            default /* Vite */-> 562;  // +~8%
+            case "Grano duro" -> 410;
+            case "Mais"       -> 485;
+            case "Olivo"      -> 378;
+            default /* Vite */-> 562;
         };
     }
 
-    // **AUMENTATO DI POCO**: costo acqua
     private double waterCostPerM3() {
-        return 0.20; // €/m3
+        return 0.20;
     }
-
-    /* --------------------------- Simulazione --------------------------- */
 
     public List<SampleRecord> generate() {
         List<SampleRecord> out = new ArrayList<>();
 
-        // Stati AR(1)
         double tempAnom = 0.0;
         double priceShockWheat = 0.0, priceShockMais = 0.0, priceShockOlivo = 0.0, priceShockVite = 0.0;
 
-        double phiT = 0.6, sigmaT = 1.8;   // meteo
-        double phiP = 0.7, sigmaP = 0.01;  // prezzo
+        double phiT = 0.6, sigmaT = 1.8;
+        double phiP = 0.7, sigmaP = 0.01;
 
         for (int d = 0; d < days; d++) {
             LocalDate date = start.plusDays(d);
 
-            // Meteo “di sfondo”
             double tempSeason = sinYear(30, d, 10, 12);
             tempAnom = phiT * tempAnom + gauss(0, sigmaT);
 
-            double seasonRainProb = 0.15 + 0.10 * Math.cos(2 * Math.PI * (d - 100) / 365.0);
-            seasonRainProb = clamp(seasonRainProb, 0.02, 0.45);
-
+            double seasonRainProb = clamp(0.15 + 0.10 * Math.cos(2 * Math.PI * (d - 100) / 365.0), 0.02, 0.45);
             double solarSeason = clamp(0.45 + 0.35 * Math.sin(2 * Math.PI * (d - 10) / 365.0), 0.1, 1.0);
 
             for (int f = 0; f < fields; f++) {
@@ -186,7 +183,6 @@ public class DataSimulator {
                 String area    = fieldArea[f];
                 double surface = fieldSurface[f];
 
-                // Meteo area/campo
                 double temp = tempSeason + tempAnom + areaTempBias(area);
 
                 double pRain = clamp(seasonRainProb + areaRainProbBias(area), 0, 0.75);
@@ -198,13 +194,10 @@ public class DataSimulator {
                 }
 
                 double humBase = sinYear(-60, d, 12, 62);
-                double hum = humBase + (rains ? 10 : -3) - 0.3 * (temp - 20);
-                hum = clamp(hum, 25, 95);
+                double hum = clamp(humBase + (rains ? 10 : -3) - 0.3 * (temp - 20), 25, 95);
 
-                double solar = solarSeason * (1.0 - clamp(rain / 25.0, 0, 0.7));
-                solar = clamp(solar, 0.05, 1.0);
+                double solar = clamp(solarSeason * (1.0 - clamp(rain / 25.0, 0, 0.7)), 0.05, 1.0);
 
-                // Resa (t/ha) e produzione totale
                 double baseYield = baseYieldPerHa(crop);
                 double seasonBoost = 1 + 0.25 * Math.sin(2 * Math.PI * (d - cropPhaseShift(crop)) / 365.0);
                 double fRain = rainFactor(rain);
@@ -213,12 +206,10 @@ public class DataSimulator {
                 double yieldPerHa = Math.max(0.0, gauss(baseYield * seasonBoost * fRain * fTemp * fSolar, 0.35));
                 double totalYield = yieldPerHa * surface;
 
-                // Domanda idrica e uso acqua
-                double demand = 70 * (1 + 0.04 * Math.max(temp - 20, 0));  // ~70..110 m3/ha/g
+                double demand = 70 * (1 + 0.04 * Math.max(temp - 20, 0));
                 double irrigationNeed = Math.max(0, demand - 20 * Math.log1p(rain));
                 double waterM3 = Math.max(0.0, gauss(irrigationNeed * surface, 18));
 
-                // Costi base (giornalieri)
                 int sDays = seasonDays(crop);
                 double fixedSeasonPerHa  = fixedCostPerHaSeason(crop);
                 double inputsSeasonPerHa = inputsPerHaSeason(crop);
@@ -228,7 +219,6 @@ public class DataSimulator {
                 double waterCost       = waterM3 * waterCostPerM3();
                 double baseCost        = Math.max(0.0, fixedCostDaily + inputsCostDaily + waterCost);
 
-                // Prezzo (€/t)
                 double basePrice = switch (crop) {
                     case "Grano duro" -> 280;
                     case "Mais"       -> 250;
@@ -249,27 +239,21 @@ public class DataSimulator {
                 };
                 double price = basePrice * (1.0 + shock) + gauss(0, 8);
 
-                // Ricavi e costo target
                 double revenue     = Math.max(0.0, price * totalYield);
                 double targetCost  = COST_SHARE_TARGET * revenue;
                 double blendedCost = (1.0 - COST_BALANCE_WEIGHT) * baseCost + COST_BALANCE_WEIGHT * targetCost;
 
-                // Cap: mai oltre il 49% dei ricavi (così restiamo sotto al margine)
                 double costCap = (revenue > 0) ? COST_SHARE_CAP * revenue : blendedCost;
-
-                // Floor: non scendere sotto fissi+input
                 double minCostFloor = fixedCostDaily + inputsCostDaily;
 
-                // Combinazione finale rispettando floor & cap
                 double cost = blendedCost;
                 cost = Math.max(minCostFloor, cost);
                 if (revenue > 0) cost = Math.min(cost, costCap);
 
-                // Outlier rari
                 if (rnd.nextDouble() < 0.01) {
                     totalYield *= 1.5;
                     waterM3    *= 1.4;
-                    cost       *= 1.2; // piccolo aumento anche sui costi
+                    cost       *= 1.2;
                 }
 
                 out.add(new SampleRecord(

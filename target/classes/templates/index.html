@@ -118,19 +118,21 @@
     .btn.btn-detail-link { background-color: white !important; color: #212529 !important; font-weight: 500; box-shadow: 0 2px 4px rgba(0,0,0,.08); transition: all 0.2s ease; }
     .btn.btn-detail-link:hover,.btn.btn-detail-link:focus { box-shadow: 0 0 0 2px var(--focus-ring), 0 4px 8px rgba(0,0,0,.15); transform: translateY(-1px); }
 
-    /* ✅ Legenda risk-track in stile Chart.js (rettangolino, bordo colorato, riempimento chiaro) */
+    /* STILI LEGENDA RISK-TRACK AGGIORNATI */
     .chartjs-like-legend { display:flex; justify-content:center; gap:24px; padding:6px 0; }
     .chartjs-like-legend .item { display:inline-flex; align-items:center; gap:8px; font-size:.875rem; color:#6c757d; }
     .chartjs-like-legend .swatch {
-      width: 36px;              /* ⬅️ allungato */
+      width: 36px;
       height: 12px;
       border-radius: 3px;
-      border: 3px solid transparent;   /* niente bordo nero di default */
-      background-clip: padding-box;     /* riempie senza invadere il bordo */
+      border: 2px solid transparent;
+      background-clip: padding-box;
     }
     .legend-low  .swatch { border-color: var(--risk-green);  background-color: rgba(25,135,84,.20); }
-    .legend-mid  .swatch { border-color: var(--risk-yellow); background-color: rgba(255,193,7,.20); }
-    .legend-high .swatch { border-color: var(--risk-red);    background-color: rgba(220,53,69,.20); }
+    .legend-mid  .swatch { border-color: var(--risk-mid-accessible); background-color: #e0940033; }
+    .legend-high .swatch { border-color: var(--risk-red);    background-color: #dc354533; }
+    /* FINE STILI LEGENDA RISK-TRACK */
+
 
     .nav-link { transition: background-color 0.2s; }
     .offcanvas-title { margin-left: auto; }
@@ -153,7 +155,6 @@
 
   <h1 class="header-logo display-6 fs-3">AgrItalia S.p.A</h1>
 
-  <!-- Pulsante Export a destra -->
   <a href="/export.csv" class="btn btn-outline-success ms-auto" title="Esporta Dati CSV" aria-label="Esporta Dati in formato CSV">
     <i class="bi bi-download"></i> Export
   </a>
@@ -188,7 +189,6 @@
 </div>
 
 <div class="container-fluid py-4">
-
   <div class="dashboard-card p-3 mb-4">
     <form id="filterForm" action="/" method="get"
           class="filters-bar"
@@ -347,8 +347,7 @@
           <a href="/rischio" class="btn btn-sm btn-detail-link border-2" style="border-color: var(--warning-accessible);" aria-label="Vai alla pagina Rischio Climatico">Vai alla pagina →</a>
         </div>
 
-        <!-- ✅ Legenda risk-track verde / giallo / rosso in stile Chart.js -->
-        <div class="chartjs-like-legend" aria-hidden="true" role="list">
+        <div class="chartjs-like-legend py-2 mb-3" aria-hidden="true" role="list">
           <span class="item legend-low" role="listitem">
             <span class="swatch" aria-hidden="true"></span>
             Basso (&lt; 0,4)
@@ -362,7 +361,6 @@
             Alto (&gt; 0,7)
           </span>
         </div>
-
         <div id="riskGauges" class="row g-4"></div>
       </div>
     </div>
