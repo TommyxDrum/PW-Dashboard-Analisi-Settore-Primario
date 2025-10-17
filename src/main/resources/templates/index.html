@@ -11,132 +11,479 @@
   <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 
   <style>
-    /*
-     * Variabili di stile per modernità e accessibilità
-     */
     :root{
       --primary-green:#198754;
       --secondary-blue:#0d6efd;
       --light-bg:#f8f9fa;
       --danger-red:#dc3545;
-      --warning-accessible:#e09400; /* Arancio scuro per contrasto */
+      --warning-accessible:#e09400;
       --info-color:#0dcaf0;
       --purple:#6f42c1;
-      --focus-ring: 0 0 0 0.25rem rgba(13, 110, 253, 0.25); /* Focus coerente con Bootstrap */
-      --control-h: 44px; /* Altezza uniforme per hamburger, select e pulsante */
+      --focus-ring: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+      --control-h: 44px;
 
-      /* 🎯 Colori legenda rischio (verde, giallo, rosso) */
-      --risk-green:#198754;   /* Bootstrap success */
-      --risk-yellow:#ffc107;  /* Bootstrap warning (giallo) */
-      --risk-red:#dc3545;     /* Bootstrap danger */
+      --area-nord:#0d6efd;
+      --area-centro:#fd7e14;
+      --area-sud:#10b981;
+
+      --risk-green:#198754;
+      --risk-yellow:#ffc107;
+      --risk-red:#dc3545;
+      --risk-mid-accessible:#e09400;
     }
 
-    body{background-color:var(--light-bg);font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; padding-top: 70px; }
-    .dashboard-card{border-radius:1rem;box-shadow:0 4px 10px rgba(0,0,0,.08);background:#fff;height:100%}
+    body{
+      background-color:var(--light-bg);
+      font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+      padding-top:70px;
+    }
+
+    .dashboard-card{
+      border-radius:1rem;
+      box-shadow:0 4px 10px rgba(0,0,0,.08);
+      background:#fff;
+      height:100%;
+      transition: box-shadow 0.3s ease;
+    }
+
+    .dashboard-card:hover{
+      box-shadow:0 6px 16px rgba(0,0,0,.12);
+    }
 
     /* HEADER FISSO */
     .header-bar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        z-index: 1040;
-        background-color: white;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        padding: 0.5rem 1rem;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1040;
+      background-color: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
     }
-    .header-logo { font-weight: 600; color: var(--primary-green); line-height: 1; margin: 0; }
 
-    .section-header{padding-bottom:.25rem;margin-bottom:1rem;border-bottom:2px solid var(--secondary-blue)}
+    .header-logo {
+      font-weight: 700;
+      color: var(--primary-green);
+      line-height: 1;
+      margin: 0;
+      letter-spacing: -0.5px;
+    }
+
+    .section-header{
+      padding-bottom:.5rem;
+      margin-bottom:1.25rem;
+      border-bottom:3px solid var(--secondary-blue);
+      position: relative;
+    }
+
+    .section-header::after {
+      content: '';
+      position: absolute;
+      bottom: -3px;
+      left: 0;
+      width: 60px;
+      height: 3px;
+      background: currentColor;
+      border-radius: 3px 3px 0 0;
+    }
+
     .section-header.success-border { border-color: var(--primary-green); }
+    .section-header.success-border::after { background: var(--primary-green); }
     .section-header.purple-border { border-color: var(--purple); }
+    .section-header.purple-border::after { background: var(--purple); }
     .section-header.warning-border { border-color: var(--warning-accessible); }
+    .section-header.warning-border::after { background: var(--warning-accessible); }
 
-    /* Migliorie KPI Box */
+    /* KPI Box migliorati */
     .kpi-box{
-      background:#f0fdf4;padding:15px;border-radius:.5rem;border-left:5px solid var(--primary-green);
-      transition: box-shadow 0.2s;
+      background:#f0fdf4;
+      padding:1.25rem;
+      border-radius:.75rem;
+      border-left:5px solid var(--primary-green);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
     }
-    .kpi-box:focus-within { box-shadow: 0 0 0 2px var(--secondary-blue); outline: none; }
+
+    .kpi-box::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 80px;
+      height: 80px;
+      background: currentColor;
+      opacity: 0.03;
+      border-radius: 50%;
+      transform: translate(30%, -30%);
+    }
+
+    .kpi-box:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 20px rgba(0,0,0,.12);
+    }
+
+    .kpi-box:focus-within {
+      box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+      outline: none;
+    }
+
     .kpi-box.blue   {background:#eef6ff;border-left-color:var(--secondary-blue)}
     .kpi-box.purple {background:#f7f2ff;border-left-color:var(--purple)}
     .kpi-box.info   {background:#e7fbff;border-left-color:var(--info-color)}
     .kpi-box.risk   {background:#fff8e7;border-left-color:var(--warning-accessible)}
-    .kpi-value{font-size:2rem;font-weight:700}
 
-    /* Utilità per accessibilità */
+    .kpi-value{
+      font-size:2.25rem;
+      font-weight:700;
+      line-height: 1.2;
+    }
+
+    .kpi-icon {
+      font-size: 1.25rem;
+      margin-right: 0.5rem;
+    }
+
     .visually-hidden {
-      position: absolute !important; width: 1px !important; height: 1px !important;
-      padding: 0 !important; margin: -1px !important; overflow: hidden !important;
-      clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important;
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
     }
 
-    /* Gauge rischio (CSS) */
-    .risk-gauge{--risk:.37;--thumb:34px;--track-h:12px;--edge-offset:10px;position:relative;width:100%;padding:calc(var(--thumb)/2) 16px}
+    /* Gauge rischio migliorato */
+    .risk-gauge{
+      --risk:.37;
+      --thumb:40px;
+      --track-h:16px;
+      --edge-offset:12px;
+      position:relative;
+      width:100%;
+      padding:calc(var(--thumb)/2 + 8px) 20px;
+    }
+
     .risk-track{
-      height:var(--track-h);border-radius:9999px;
-      background:linear-gradient(90deg,var(--primary-green) 0%,#86c443 30%,#e7cd27 50%,var(--warning-accessible) 65%,var(--danger-red) 100%);
-      position:relative;box-shadow:inset 0 1px 2px rgba(0,0,0,.15),0 2px 8px rgba(0,0,0,.12)}
-    .risk-thumb{position:absolute;top:50%;left:calc(max(var(--edge-offset),min(calc(var(--risk)*100%),calc(100% - var(--edge-offset)))));transform:translate(-50%,-50%);width:var(--thumb);height:var(--thumb);border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 2px 10px rgba(0,0,0,.18),0 0 0 3px rgba(255,255,255,.85)}
-    .risk-value{font-weight:700;font-size:.9rem;color:#2f2f2f;line-height:1}
+      height:var(--track-h);
+      border-radius:9999px;
+      background:linear-gradient(90deg,
+        var(--risk-green) 0%,
+        #86c443 30%,
+        #ffc107 50%,
+        var(--warning-accessible) 65%,
+        var(--danger-red) 100%
+      );
+      position:relative;
+      box-shadow:
+        inset 0 2px 4px rgba(0,0,0,.15),
+        0 2px 8px rgba(0,0,0,.1);
+    }
 
-    /* Focus visibile per i campi */
-    .form-select:focus, .btn:focus { box-shadow: var(--focus-ring); }
+    .risk-thumb{
+      position:absolute;
+      top:50%;
+      left:calc(max(var(--edge-offset), min(calc(var(--risk)*100%), calc(100% - var(--edge-offset)))));
+      transform:translate(-50%,-50%);
+      width:var(--thumb);
+      height:var(--thumb);
+      border-radius:50%;
+      background:#fff;
+      display:grid;
+      place-items:center;
+      box-shadow:
+        0 4px 12px rgba(0,0,0,.2),
+        0 0 0 4px rgba(255,255,255,.9);
+      transition: all 0.3s ease;
+    }
 
-    /* 🔄 FILTRI IN LINEA */
+    .risk-thumb:hover {
+      transform: translate(-50%,-50%) scale(1.1);
+    }
+
+    .risk-value{
+      font-weight:700;
+      font-size:1rem;
+      color:#2f2f2f;
+      line-height:1;
+    }
+
+    .form-select:focus, .btn:focus {
+      box-shadow: var(--focus-ring);
+    }
+
+    /* FILTRI migliorati */
     .filters-bar {
-      display: flex; flex-wrap: nowrap; align-items: flex-end; gap: .5rem; width: 100%;
-      overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: .25rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      gap: .75rem;
+      width: 100%;
+      padding-bottom: .25rem;
     }
-    .filters-bar .form-group { flex: 1 1 0; min-width: 140px; white-space: normal; }
+
+    .filters-bar .form-group {
+      flex: 1 1 140px;
+      min-width: 140px;
+    }
+
     .filters-bar .form-select {
-      height: var(--control-h); line-height: var(--control-h);
-      padding: 0 2.25rem 0 .75rem; background-position: right .75rem center;
+      height: var(--control-h);
+      line-height: var(--control-h);
+      padding: 0 2.5rem 0 .875rem;
+      background-position: right .875rem center;
+      border: 1px solid #dee2e6;
+      transition: all 0.2s ease;
     }
+
+    .filters-bar .form-select:hover {
+      border-color: var(--secondary-blue);
+    }
+
     .filters-bar .btn-primary {
-      height: var(--control-h); display: inline-flex; align-items: center; justify-content: center;
-      padding: 0 14px; flex: 0 0 auto;
+      height: var(--control-h);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 1.5rem;
+      flex: 0 0 auto;
+      font-weight: 600;
+      transition: all 0.2s ease;
     }
 
-    /* Hamburger quadrato */
+    .filters-bar .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+    }
+
+    /* Hamburger menu */
     .menu-toggle {
-      height: var(--control-h); width: var(--control-h); display: inline-flex; align-items: center; justify-content: center;
-      background-color: #fff !important; color: #333 !important; border: 1px solid #ccc;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.08); padding: 0; flex: 0 0 auto;
+      height: var(--control-h);
+      width: var(--control-h);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #fff !important;
+      color: #333 !important;
+      border: 1px solid #dee2e6;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.06);
+      padding: 0;
+      flex: 0 0 auto;
+      transition: all 0.2s ease;
+      border-radius: 0.375rem;
     }
-    .menu-toggle .bi { font-size: 1.25rem; line-height: 1; }
 
-    /* Offcanvas */
-    .offcanvas-body .nav-link { color: #495057; padding: 0.75rem 1rem; transition: background-color 0.2s, color 0.2s; font-weight: 500; }
-    .offcanvas-body .nav-link:hover,.offcanvas-body .nav-link:focus { color: var(--primary-green); background-color: #1987541a; }
-    .offcanvas-body .nav-link.active { color: white !important; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,.1); }
+    .menu-toggle:hover {
+      border-color: var(--primary-green);
+      color: var(--primary-green) !important;
+    }
 
-    /* Pulsanti "Vai alla pagina" */
-    .btn.btn-detail-link { background-color: white !important; color: #212529 !important; font-weight: 500; box-shadow: 0 2px 4px rgba(0,0,0,.08); transition: all 0.2s ease; }
-    .btn.btn-detail-link:hover,.btn.btn-detail-link:focus { box-shadow: 0 0 0 2px var(--focus-ring), 0 4px 8px rgba(0,0,0,.15); transform: translateY(-1px); }
+    .menu-toggle .bi {
+      font-size: 1.5rem;
+      line-height: 1;
+    }
 
-    /* STILI LEGENDA RISK-TRACK AGGIORNATI */
-    .chartjs-like-legend { display:flex; justify-content:center; gap:24px; padding:6px 0; }
-    .chartjs-like-legend .item { display:inline-flex; align-items:center; gap:8px; font-size:.875rem; color:#6c757d; }
+    /* Offcanvas migliorato */
+    .offcanvas-body .nav-link {
+      color: #495057;
+      padding: 0.875rem 1.25rem;
+      transition: all 0.2s ease;
+      font-weight: 500;
+      border-radius: 0.5rem;
+      margin-bottom: 0.375rem;
+    }
+
+    .offcanvas-body .nav-link:hover,
+    .offcanvas-body .nav-link:focus {
+      color: var(--primary-green);
+      background-color: rgba(25, 135, 84, 0.08);
+      transform: translateX(4px);
+    }
+
+    .offcanvas-body .nav-link.active {
+      color: white !important;
+      font-weight: 600;
+      box-shadow: 0 4px 8px rgba(25, 135, 84, 0.3);
+    }
+
+    .offcanvas-body .nav-link i {
+      font-size: 1.125rem;
+    }
+
+    /* Pulsanti "Vai alla pagina" migliorati */
+    .btn-detail-link {
+      background-color: white !important;
+      color: #212529 !important;
+      font-weight: 600;
+      font-size: 0.875rem;
+      padding: 0.5rem 1rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,.08);
+      transition: all 0.3s ease;
+      border-width: 2px !important;
+    }
+
+    .btn-detail-link:hover,
+    .btn-detail-link:focus {
+      box-shadow: 0 4px 12px rgba(0,0,0,.15);
+      transform: translateX(4px);
+    }
+
+    .btn-detail-link i {
+      transition: transform 0.3s ease;
+    }
+
+    .btn-detail-link:hover i {
+      transform: translateX(4px);
+    }
+
+    /* Legenda rischio migliorata */
+    .chartjs-like-legend {
+      display:flex;
+      justify-content:center;
+      align-items: center;
+      gap:2rem;
+      padding:0.75rem 0;
+      background: rgba(0,0,0,0.02);
+      border-radius: 0.5rem;
+    }
+
+    .chartjs-like-legend .item {
+      display:inline-flex;
+      align-items:center;
+      gap:0.625rem;
+      font-size:.875rem;
+      color:#495057;
+      font-weight: 500;
+    }
+
     .chartjs-like-legend .swatch {
-      width: 36px;
-      height: 12px;
-      border-radius: 3px;
+      width: 40px;
+      height: 14px;
+      border-radius: 4px;
       border: 2px solid transparent;
       background-clip: padding-box;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    .legend-low  .swatch { border-color: var(--risk-green);  background-color: rgba(25,135,84,.20); }
-    .legend-mid  .swatch { border-color: var(--risk-mid-accessible); background-color: #e0940033; }
-    .legend-high .swatch { border-color: var(--risk-red);    background-color: #dc354533; }
-    /* FINE STILI LEGENDA RISK-TRACK */
 
+    .legend-low  .swatch {
+      border-color: var(--risk-green);
+      background-color: rgba(25,135,84,.25);
+    }
 
-    .nav-link { transition: background-color 0.2s; }
-    .offcanvas-title { margin-left: auto; }
-    .min-200 { min-width: 200px; }
+    .legend-mid  .swatch {
+      border-color: var(--risk-mid-accessible);
+      background-color: rgba(224,148,0,0.25);
+    }
+
+    .legend-high .swatch {
+      border-color: var(--risk-red);
+      background-color: rgba(220,53,69,0.25);
+    }
+
+    /* Badge migliorati */
+    .badge {
+      font-weight: 600;
+      padding: 0.5rem 0.875rem;
+      font-size: 0.8125rem;
+    }
+
+    /* Export button migliorato */
+    .btn-outline-success {
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .btn-outline-success:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(25, 135, 84, 0.3);
+    }
+
+    /* Responsive migliorato */
+    @media (max-width: 768px) {
+      .kpi-value {
+        font-size: 1.75rem;
+      }
+
+      .filters-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .filters-bar .form-group {
+        width: 100%;
+        min-width: 100%;
+      }
+
+      .filters-bar .btn-primary {
+        width: 100%;
+      }
+
+      .section-header {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 0.5rem;
+      }
+
+      .btn-detail-link {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    /* Chart containers */
+    .chart-container {
+      position: relative;
+      height: 320px;
+    }
+
+    @media (max-width: 992px) {
+      .chart-container {
+        height: 280px;
+      }
+    }
+
+    /* Footer */
+    footer {
+      font-size: 0.875rem;
+      opacity: 0.7;
+    }
+
+    /* Animazioni */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .dashboard-card {
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    .kpi-box {
+      animation: fadeIn 0.6s ease-out;
+    }
+
+    /* Loading state */
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 200px;
+      color: var(--primary-green);
+      font-size: 1.125rem;
+    }
   </style>
 </head>
 <body>
@@ -150,40 +497,67 @@
           aria-expanded="false"
           aria-label="Apri Menu KPI">
     <i class="bi bi-list" aria-hidden="true"></i>
-    <span class="visually-hidden">Apri navigazione Menu KPI</span>
   </button>
 
-  <h1 class="header-logo display-6 fs-3">AgrItalia S.p.A</h1>
+  <h1 class="header-logo display-6 fs-3">AgrItalia</h1>
 
   <a href="/export.csv" class="btn btn-outline-success ms-auto" title="Esporta Dati CSV" aria-label="Esporta Dati in formato CSV">
-    <i class="bi bi-download"></i> Export
+    <i class="bi bi-download me-1"></i>
+    <span class="d-none d-sm-inline">Export</span>
   </a>
 </header>
 
 <div class="offcanvas offcanvas-start" data-bs-scroll="true" tabindex="-1" id="offcanvasWithBothOptions" aria-labelledby="offcanvasWithBothOptionsLabel">
-  <div class="offcanvas-header">
-    <h5 class="offcanvas-title" id="offcanvasWithBothOptionsLabel">Menu KPI</h5>
+  <div class="offcanvas-header border-bottom">
+    <h5 class="offcanvas-title fw-bold" id="offcanvasWithBothOptionsLabel">
+      <i class="bi bi-grid-3x3-gap-fill me-2 text-success"></i>Menu KPI
+    </h5>
     <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Chiudi Menu"></button>
   </div>
   <div class="offcanvas-body d-flex flex-column">
     <nav aria-label="Navigazione sezioni Dashboard" class="flex-grow-1">
-      <ul class="nav nav-pills flex-column mb-4">
-        <li class="nav-item mb-2">
-          <a href="/" class="nav-link active d-flex align-items-center rounded-3" aria-current="page"
+      <ul class="nav nav-pills flex-column">
+        <li class="nav-item">
+          <a href="/" class="nav-link active" aria-current="page"
              style="background-color: var(--primary-green); color: white;">
-            <i class="bi bi-speedometer me-3" aria-hidden="true"></i> Dashboard Principale
+            <i class="bi bi-speedometer me-3"></i>Dashboard Principale
           </a>
         </li>
-        <hr class="text-muted opacity-25">
-        <li class="nav-item"><a href="/resa" class="nav-link d-flex align-items-center rounded-3 my-1"><i class="bi bi-graph-up-arrow me-3" aria-hidden="true"></i> Andamento Resa</a></li>
-        <li class="nav-item"><a href="/risorse" class="nav-link d-flex align-items-center rounded-3 my-1"><i class="bi bi-droplet-fill me-3" aria-hidden="true"></i> Efficienza Idrica</a></li>
-        <li class="nav-item"><a href="/margine" class="nav-link d-flex align-items-center rounded-3 my-1"><i class="bi bi-currency-euro me-3" aria-hidden="true"></i> Margini</a></li>
-        <li class="nav-item"><a href="/costi" class="nav-link d-flex align-items-center rounded-3 my-1"><i class="bi bi-tag-fill me-3" aria-hidden="true"></i> Costi</a></li>
-        <li class="nav-item"><a href="/rischio" class="nav-link d-flex align-items-center rounded-3 my-1"><i class="bi bi-cloud-lightning-fill me-3" aria-hidden="true"></i> Rischio climatico</a></li>
+        <li class="nav-item mt-3 mb-2">
+          <small class="text-muted text-uppercase fw-bold px-3" style="font-size: 0.75rem; letter-spacing: 0.5px;">Sezioni</small>
+        </li>
+        <li class="nav-item">
+          <a href="/resa" class="nav-link">
+            <i class="bi bi-graph-up-arrow me-3"></i>Andamento Resa
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="/efficienzaIdrica" class="nav-link">
+            <i class="bi bi-droplet-fill me-3"></i>Efficienza Idrica
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="/margine" class="nav-link">
+            <i class="bi bi-currency-euro me-3"></i>Margini
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="/costi" class="nav-link">
+            <i class="bi bi-tag-fill me-3"></i>Costi
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="/rischioClimatico" class="nav-link">
+            <i class="bi bi-cloud-lightning-fill me-3"></i>Rischio Climatico
+          </a>
+        </li>
       </ul>
     </nav>
     <div class="mt-auto pt-3 border-top">
-      <small class="text-muted d-block text-center"><i class="bi bi-tools me-1"></i> Data Analytics Platform</small>
+      <small class="text-muted d-block text-center">
+        <i class="bi bi-shield-check me-1"></i>
+        Data Analytics Platform v1.0
+      </small>
     </div>
   </div>
 </div>
@@ -192,11 +566,10 @@
   <div class="dashboard-card p-3 mb-4">
     <form id="filterForm" action="/" method="get"
           class="filters-bar"
-          aria-label="Filtri avanzati per la dashboard"
-          role="group">
-      <div class="form-group d-flex flex-column">
-        <label for="monthSel" class="form-label small text-muted mb-1">Mese</label>
-        <select id="monthSel" class="form-select" aria-label="Seleziona mese" tabindex="0">
+          aria-label="Filtri avanzati per la dashboard">
+      <div class="form-group">
+        <label for="monthSel" class="form-label small text-muted mb-1 fw-semibold">Mese</label>
+        <select id="monthSel" class="form-select" aria-label="Seleziona mese">
           <option value="1"  th:selected="${from != null and #temporals.month(from) == 1 }">Gennaio</option>
           <option value="2"  th:selected="${from != null and #temporals.month(from) == 2 }">Febbraio</option>
           <option value="3"  th:selected="${from != null and #temporals.month(from) == 3 }">Marzo</option>
@@ -212,9 +585,9 @@
         </select>
       </div>
 
-      <div class="form-group d-flex flex-column">
-        <label for="yearSel" class="form-label small text-muted mb-1">Anno</label>
-        <select id="yearSel" class="form-select" aria-label="Seleziona anno" tabindex="0">
+      <div class="form-group">
+        <label for="yearSel" class="form-label small text-muted mb-1 fw-semibold">Anno</label>
+        <select id="yearSel" class="form-select" aria-label="Seleziona anno">
           <option th:each="y : ${#numbers.sequence(2015, 2025)}"
                   th:value="${y}" th:text="${y}"
                   th:selected="${from != null ? #temporals.year(from) == y : y == #temporals.year(#temporals.createNow())}">
@@ -223,10 +596,10 @@
         </select>
       </div>
 
-      <div class="form-group d-flex flex-column min-200">
-        <label for="cropSel" class="form-label small text-muted mb-1">Coltura</label>
-        <select id="cropSel" name="crop" class="form-select" aria-label="Seleziona coltura" tabindex="0">
-          <option value="">Tutte</option>
+      <div class="form-group" style="min-width: 180px;">
+        <label for="cropSel" class="form-label small text-muted mb-1 fw-semibold">Coltura</label>
+        <select id="cropSel" name="crop" class="form-select" aria-label="Seleziona coltura">
+          <option value="">Tutte le colture</option>
           <option th:each="c : ${cropsList != null ? cropsList : {'Grano duro','Mais','Olivo','Vite'}}"
                   th:value="${c}" th:text="${c}" th:selected="${c == crop}">
             Coltura
@@ -234,10 +607,10 @@
         </select>
       </div>
 
-      <div class="form-group d-flex flex-column min-200">
-        <label for="areaSel" class="form-label small text-muted mb-1">Area</label>
-        <select id="areaSel" name="area" class="form-select" aria-label="Seleziona area geografica" tabindex="0">
-          <option value="">Tutte</option>
+      <div class="form-group" style="min-width: 180px;">
+        <label for="areaSel" class="form-label small text-muted mb-1 fw-semibold">Area</label>
+        <select id="areaSel" name="area" class="form-select" aria-label="Seleziona area geografica">
+          <option value="">Tutte le aree</option>
           <option th:each="a : ${areasList != null ? areasList : {'Nord','Centro','Sud'}}"
                   th:value="${a}" th:text="${a}" th:selected="${a == area}">
             Area
@@ -246,7 +619,8 @@
       </div>
 
       <button type="submit" class="btn btn-primary">
-        <i class="bi bi-funnel me-1" aria-hidden="true"></i><span>Applica Filtri</span>
+        <i class="bi bi-funnel me-2" aria-hidden="true"></i>
+        <span>Applica</span>
       </button>
 
       <input type="hidden" id="from" name="from" th:value="${#temporals.format(from,'yyyy-MM-dd')}"/>
@@ -254,100 +628,131 @@
     </form>
   </div>
 
-  <div class="row g-4 mb-4 row-cols-1 row-cols-md-2 row-cols-lg-4 row-cols-xl-5">
-    <div class="col" role="region" aria-labelledby="kpiYield">
+  <!-- KPI Cards -->
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-sm-6 col-lg-4 col-xl" role="region" aria-labelledby="kpiYield">
       <div class="kpi-box">
         <h2 id="kpiYield" class="visually-hidden">Resa Media</h2>
-        <p class="small text-muted mb-1"><i class="bi bi-bar-chart-line-fill text-success" aria-hidden="true"></i> RESA MEDIA</p>
-        <div class="d-flex align-items-center">
+        <p class="small text-muted mb-2 fw-semibold">
+          <i class="bi bi-bar-chart-line-fill text-success kpi-icon" aria-hidden="true"></i>
+          RESA MEDIA
+        </p>
+        <div class="d-flex align-items-baseline">
           <span class="kpi-value text-success" th:text="${#numbers.formatDecimal(avgYieldHa,1,'POINT',2,'COMMA')}">0,00</span>
-          <span class="ms-2 text-muted">t/ha</span>
+          <span class="ms-2 text-muted fw-medium">t/ha</span>
         </div>
       </div>
     </div>
-    <div class="col" role="region" aria-labelledby="kpiEff">
+
+    <div class="col-12 col-sm-6 col-lg-4 col-xl" role="region" aria-labelledby="kpiEff">
       <div class="kpi-box blue">
         <h2 id="kpiEff" class="visually-hidden">Efficienza Idrica</h2>
-        <p class="small text-muted mb-1"><i class="bi bi-water text-primary" aria-hidden="true"></i> EFFICIENZA IDRICA</p>
-        <div class="d-flex align-items-center">
+        <p class="small text-muted mb-2 fw-semibold">
+          <i class="bi bi-water text-primary kpi-icon" aria-hidden="true"></i>
+          EFFICIENZA IDRICA
+        </p>
+        <div class="d-flex align-items-baseline">
           <span class="kpi-value text-primary" th:text="${#numbers.formatDecimal(avgEff,1,'POINT',2,'COMMA')}">0,00</span>
-          <span class="ms-2 text-muted">Kg/m³</span>
+          <span class="ms-2 text-muted fw-medium">Kg/m³</span>
         </div>
       </div>
     </div>
-    <div class="col" role="region" aria-labelledby="kpiCost">
+
+    <div class="col-12 col-sm-6 col-lg-4 col-xl" role="region" aria-labelledby="kpiCost">
       <div class="kpi-box purple">
         <h2 id="kpiCost" class="visually-hidden">Costo Unitario</h2>
-        <p class="small text-muted mb-1"><i class="bi bi-cash-coin" style="color:var(--purple)" aria-hidden="true"></i> COSTO UNITARIO</p>
-        <div class="d-flex align-items-center">
+        <p class="small text-muted mb-2 fw-semibold">
+          <i class="bi bi-cash-coin kpi-icon" style="color:var(--purple)" aria-hidden="true"></i>
+          COSTO UNITARIO
+        </p>
+        <div class="d-flex align-items-baseline">
           <span class="kpi-value" style="color:var(--purple)" th:text="${#numbers.formatDecimal(avgCost,1,'POINT',2,'COMMA')}">0,00</span>
-          <span class="ms-2 text-muted">€/t</span>
+          <span class="ms-2 text-muted fw-medium">€/t</span>
         </div>
       </div>
     </div>
-    <div class="col" role="region" aria-labelledby="kpiMargin">
+
+    <div class="col-12 col-sm-6 col-lg-4 col-xl" role="region" aria-labelledby="kpiMargin">
       <div class="kpi-box info">
         <h2 id="kpiMargin" class="visually-hidden">Margine Unitario</h2>
-        <p class="small text-muted mb-1"><i class="bi bi-graph-up-arrow text-info" aria-hidden="true"></i> MARGINE UNITARIO</p>
-        <div class="d-flex align-items-center">
+        <p class="small text-muted mb-2 fw-semibold">
+          <i class="bi bi-graph-up-arrow text-info kpi-icon" aria-hidden="true"></i>
+          MARGINE UNITARIO
+        </p>
+        <div class="d-flex align-items-baseline">
           <span class="kpi-value text-info" th:text="${#numbers.formatDecimal(avgMargin,1,'POINT',2,'COMMA')}">0,00</span>
-          <span class="ms-2 text-muted">€/t</span>
+          <span class="ms-2 text-muted fw-medium">€/t</span>
         </div>
       </div>
     </div>
-    <div class="col" role="region" aria-labelledby="kpiRisk">
+
+    <div class="col-12 col-sm-6 col-lg-4 col-xl" role="region" aria-labelledby="kpiRisk">
       <div class="kpi-box risk" th:with="risk=${avgRisk}">
         <h2 id="kpiRisk" class="visually-hidden">Rischio Climatico</h2>
-        <p class="small text-muted mb-1"><i class="bi bi-exclamation-triangle-fill" style="color:var(--warning-accessible)" aria-hidden="true"></i> RISCHIO CLIMATICO</p>
-        <div class="d-flex align-items-center">
+        <p class="small text-muted mb-2 fw-semibold">
+          <i class="bi bi-exclamation-triangle-fill kpi-icon" style="color:var(--warning-accessible)" aria-hidden="true"></i>
+          RISCHIO CLIMATICO
+        </p>
+        <div class="d-flex align-items-baseline">
           <span class="kpi-value" style="color:var(--warning-accessible)" th:text="${#numbers.formatDecimal(risk,1,'POINT',2,'COMMA')}">0,00</span>
-          <span class="ms-2 text-muted">Indice (0-1)</span>
+          <span class="ms-2 text-muted fw-medium">Indice</span>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="row g-4">
+  <!-- Charts Row 1 -->
+  <div class="row g-4 mb-4">
     <div class="col-lg-8">
       <div class="dashboard-card p-4">
-        <div class="d-flex justify-content-between align-items-center section-header success-border">
-          <h2 class="h6 mb-0 fw-bold text-success">Andamento Resa (t/ha)</h2>
-          <span class="badge bg-secondary" th:text="${crop != null ? crop : 'Tutte le Colture'}">Tutte le Colture</span>
-          <a href="/resa" class="btn btn-sm btn-detail-link border-2" style="border-color: var(--primary-green);" aria-label="Vai alla pagina Resa">Vai alla pagina →</a>
+        <div class="d-flex flex-wrap justify-content-between align-items-center section-header success-border mb-3">
+          <div class="d-flex align-items-center gap-2">
+            <h2 class="h6 mb-0 fw-bold text-success">Andamento Resa (t/ha)</h2>
+            <span class="badge bg-success bg-opacity-10 text-success" th:text="${crop != null && !crop.isEmpty() ? crop : 'Tutte le Colture'}">Tutte</span>
+          </div>
+          <a href="/resa" class="btn btn-sm btn-detail-link" style="border-color: var(--primary-green);" aria-label="Vai alla pagina Resa">
+            Dettagli <i class="bi bi-arrow-right ms-1"></i>
+          </a>
         </div>
-        <div style="height:300px">
+        <div class="chart-container">
           <canvas id="yieldMinMax" role="img" aria-label="Grafico a linee che mostra l'andamento della resa per ettaro nel tempo."></canvas>
         </div>
-        <table class="visually-hidden" summary="Tabella dati Resa (t/ha)">
-          <thead><tr><th>Periodo</th><th>Nord</th><th>Centro</th><th>Sud</th></tr></thead>
-          <tbody></tbody>
-        </table>
       </div>
     </div>
 
     <div class="col-lg-4">
       <div class="dashboard-card p-4">
-        <div class="d-flex justify-content-between align-items-center section-header">
-          <h2 class="h6 mb-0 fw-bold text-primary">Efficienza Idrica (Kg/m³)</h2>
-          <span class="badge bg-secondary" th:text="${crop != null ? crop : 'Tutte le Colture'}">Tutte le Colture</span>
-          <a href="/risorse" class="btn btn-sm btn-detail-link border-2" style="border-color: var(--secondary-blue);" aria-label="Vai alla pagina Risorse Idriche">Vai alla pagina →</a>
+        <div class="d-flex flex-wrap justify-content-between align-items-center section-header mb-3">
+          <div class="d-flex align-items-center gap-2">
+            <h2 class="h6 mb-0 fw-bold text-primary">Efficienza Idrica (Kg/m³)</h2>
+            <span class="badge bg-primary bg-opacity-10 text-primary" th:text="${crop != null && !crop.isEmpty() ? crop : 'Tutte'}">Tutte</span>
+          </div>
+          <a href="/efficienzaIdrica" class="btn btn-sm btn-detail-link" style="border-color: var(--secondary-blue);" aria-label="Vai alla pagina Risorse Idriche">
+            Dettagli <i class="bi bi-arrow-right ms-1"></i>
+          </a>
         </div>
-        <div style="height:350px">
-          <canvas id="effPolar" role="img" aria-label="Grafico ad area polare che confronta l'efficienza idrica (Kg per metro cubo) tra le aree Nord, Centro e Sud."></canvas>
+        <div class="chart-container">
+          <canvas id="effPolar" role="img" aria-label="Grafico ad area polare che confronta l'efficienza idrica tra le aree."></canvas>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="row g-4 mt-4">
+  <!-- Rischio Climatico -->
+  <div class="row g-4 mb-4">
     <div class="col-12">
       <div class="dashboard-card p-4" role="region" aria-label="Indicatori di Rischio Climatico per Area">
-        <div class="d-flex justify-content-between align-items-center section-header warning-border">
-          <h2 class="h6 mb-0 fw-bold" style="color:var(--warning-accessible)">Rischio climatico</h2>
-          <a href="/rischio" class="btn btn-sm btn-detail-link border-2" style="border-color: var(--warning-accessible);" aria-label="Vai alla pagina Rischio Climatico">Vai alla pagina →</a>
+        <div class="d-flex flex-wrap justify-content-between align-items-center section-header warning-border mb-3">
+          <h2 class="h6 mb-0 fw-bold" style="color:var(--warning-accessible)">
+            <i class="bi bi-cloud-lightning-fill me-2"></i>
+            Rischio Climatico per Area
+          </h2>
+          <a href="/rischioClimatico" class="btn btn-sm btn-detail-link" style="border-color: var(--warning-accessible);" aria-label="Vai alla pagina Rischio Climatico">
+            Dettagli <i class="bi bi-arrow-right ms-1"></i>
+          </a>
         </div>
 
-        <div class="chartjs-like-legend py-2 mb-3" aria-hidden="true" role="list">
+        <div class="chartjs-like-legend mb-4" role="list" aria-label="Legenda livelli di rischio">
           <span class="item legend-low" role="listitem">
             <span class="swatch" aria-hidden="true"></span>
             Basso (&lt; 0,4)
@@ -366,29 +771,43 @@
     </div>
   </div>
 
-  <div class="row g-4 mt-4">
+  <!-- Charts Row 2: Margini e Costi -->
+  <div class="row g-4">
     <div class="col-lg-6">
       <div class="dashboard-card p-4">
-        <div class="d-flex justify-content-between align-items-center section-header">
-          <h2 class="h6 mb-0 fw-bold text-info">Margine (€/t)</h2>
-          <a href="/margine" class="btn btn-sm btn-detail-link border-2" style="border-color: var(--info-color);" aria-label="Vai alla pagina Margine">Vai alla pagina →</a>
+        <div class="d-flex flex-wrap justify-content-between align-items-center section-header mb-3">
+          <h2 class="h6 mb-0 fw-bold text-info">
+            <i class="bi bi-graph-up-arrow me-2"></i>
+            Margine per Area (€/t)
+          </h2>
+          <a href="/margine" class="btn btn-sm btn-detail-link" style="border-color: var(--info-color);" aria-label="Vai alla pagina Margine">
+            Dettagli <i class="bi bi-arrow-right ms-1"></i>
+          </a>
         </div>
-        <div id="echMargin" style="height:320px;" role="img" aria-label="Grafico a barre che mostra il Margine unitario medio per area geografica in euro per tonnellata."></div>
+        <div id="echMargin" class="chart-container" role="img" aria-label="Grafico a barre del margine unitario per area."></div>
       </div>
     </div>
+
     <div class="col-lg-6">
       <div class="dashboard-card p-4">
-        <div class="d-flex justify-content-between align-items-center section-header purple-border">
-          <h2 class="h6 mb-0 fw-bold" style="color:var(--purple)">Costi (€/t)</h2>
-          <a href="/costi" class="btn btn-sm btn-detail-link border-2" style="border-color: var(--purple);" aria-label="Vai alla pagina Costi">Vai alla pagina →</a>
+        <div class="d-flex flex-wrap justify-content-between align-items-center section-header purple-border mb-3">
+          <h2 class="h6 mb-0 fw-bold" style="color:var(--purple)">
+            <i class="bi bi-tag-fill me-2"></i>
+            Costi per Area (€/t)
+          </h2>
+          <a href="/costi" class="btn btn-sm btn-detail-link" style="border-color: var(--purple);" aria-label="Vai alla pagina Costi">
+            Dettagli <i class="bi bi-arrow-right ms-1"></i>
+          </a>
         </div>
-        <div id="echCost" style="height:320px;" role="img" aria-label="Grafico a barre che mostra il Costo unitario medio per area geografica in euro per tonnellata."></div>
+        <div id="echCost" class="chart-container" role="img" aria-label="Grafico a barre del costo unitario per area."></div>
       </div>
     </div>
   </div>
 
-  <footer class="text-center py-3 mt-5 border-top text-muted small">
-    &copy; [[${#temporals.year(#temporals.createNow())}]] AgrItalia S.p.A. | Dashboard Agronomica v1.0
+  <footer class="text-center py-4 mt-5 border-top">
+    <p class="text-muted small mb-0">
+      &copy; <span th:text="${#temporals.year(#temporals.createNow())}">2025</span> AgrItalia S.p.A. | Dashboard Agronomica
+    </p>
   </footer>
 </div>
 
@@ -396,14 +815,14 @@
 
 <script>
   (function(){
-    const monthSel = document.getElementById('monthSel');
-    const yearSel  = document.getElementById('yearSel');
-    const fromH    = document.getElementById('from');
-    const toH      = document.getElementById('to');
-    const form     = document.getElementById('filterForm');
+    var monthSel = document.getElementById('monthSel');
+    var yearSel  = document.getElementById('yearSel');
+    var fromH    = document.getElementById('from');
+    var toH      = document.getElementById('to');
+    var form     = document.getElementById('filterForm');
 
     function pad2(n){ return n<10 ? '0'+n : ''+n; }
-    function lastDay(y,m){ return new Date(y, m, 0).getDate(); } // m: 1..12
+    function lastDay(y,m){ return new Date(y, m, 0).getDate(); }
 
     function refreshHidden(){
       var y = parseInt(yearSel.value,10);
@@ -419,7 +838,7 @@
         var today = new Date();
         if (!monthSel.value) monthSel.value = (today.getMonth()+1).toString();
         var currentYear = today.getFullYear().toString();
-        var yearOption = Array.from(yearSel.options).find(opt => opt.value === currentYear);
+        var yearOption = Array.from(yearSel.options).find(function(opt){ return opt.value === currentYear; });
         if (yearOption) { yearSel.value = currentYear; }
       }
       refreshHidden();
@@ -432,257 +851,370 @@
 </script>
 
 <script th:inline="javascript">
-  /*<![CDATA[*/
-  /* ===== Variabili dal controller ===== */
-  const labels     = [[${labels}]];
-  const yNord      = /*[[${yieldsNord}]]*/ [];
-  const yCentro    = /*[[${yieldsCentro}]]*/ [];
-  const ySud       = /*[[${yieldsSud}]]*/ [];
-  const areaSel    = /*[[${area}]]*/ null;
+  (function(){
+    var labels     = [[${labels}]];
+    var yNord      = [[${yieldsNord}]];
+    var yCentro    = [[${yieldsCentro}]];
+    var ySud       = [[${yieldsSud}]];
+    var areaSel    = [[${area}]];
 
-  const avgEff     = /*[[${avgEff}]]*/ 0;
-  const effMax     = /*[[${effMaxScale}]]*/ 50;
-  const avgCost    = /*[[${avgCost}]]*/ 0;
-  const avgMargin  = /*[[${avgMargin}]]*/ 0;
+    var avgEff     = [[${avgEff}]];
+    var effMax     = [[${effMaxScale}]];
+    var avgCost    = [[${avgCost}]];
+    var avgMargin  = [[${avgMargin}]];
 
-  /* Polar Area (Kg/m³) per area */
-  const effNordKgM3   = /*[[${effNordKgM3}]]*/ 0;
-  const effCentroKgM3 = /*[[${effCentroKgM3}]]*/ 0;
-  const effSudKgM3    = /*[[${effSudKgM3}]]*/ 0;
+    var effNordKgM3   = [[${effNordKgM3}]];
+    var effCentroKgM3 = [[${effCentroKgM3}]];
+    var effSudKgM3    = [[${effSudKgM3}]];
 
-  /* NUOVI: Costi/Margini medi per area (€/t) */
-  const costNord   = /*[[${costNord}]]*/ 0;
-  const costCentro = /*[[${costCentro}]]*/ 0;
-  const costSud    = /*[[${costSud}]]*/ 0;
-  const marginNord   = /*[[${marginNord}]]*/ 0;
-  const marginCentro = /*[[${marginCentro}]]*/ 0;
-  const marginSud    = /*[[${marginSud}]]*/ 0;
+    var costNord   = [[${costNord}]];
+    var costCentro = [[${costCentro}]];
+    var costSud    = [[${costSud}]];
+    var marginNord   = [[${marginNord}]];
+    var marginCentro = [[${marginCentro}]];
+    var marginSud    = [[${marginSud}]];
 
-  /* NUOVI: Rischio per area (0..1). Se non presenti lato server, default 0. */
-  const riskNord   = /*[[${riskNord}]]*/ 0;
-  const riskCentro = /*[[${riskCentro}]]*/ 0;
-  const riskSud    = /*[[${riskSud}]]*/ 0;
+    var riskNord   = [[${riskNord}]];
+    var riskCentro = [[${riskCentro}]];
+    var riskSud    = [[${riskSud}]];
 
-  // Colori unificati
-  const C_NORD   = '#0d6efd';
-  const C_CENTRO = '#fd7e14';
-  const C_SUD    = '#10b981';
-  const colorsAll = [C_NORD, C_CENTRO, C_SUD];
+    var C_NORD   = '#0d6efd';
+    var C_CENTRO = '#fd7e14';
+    var C_SUD    = '#10b981';
+    var colorsAll = [C_NORD, C_CENTRO, C_SUD];
+
+    Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+    Chart.defaults.font.size = 12;
 
     /* ===== Resa: Linear Scale Min/Max ===== */
-  (function(){
-    const el = document.getElementById('yieldMinMax'); if(!el) return;
+    (function(){
+      var el = document.getElementById('yieldMinMax');
+      if(!el) return;
 
-    const allCandidates = [
-      { key: 'Nord',   label: 'Nord',   data: yNord,   color: C_NORD   },
-      { key: 'Centro', label: 'Centro', data: yCentro, color: C_CENTRO },
-      { key: 'Sud',    label: 'Sud',    data: ySud,    color: C_SUD    },
-    ];
+      var allCandidates = [
+        { key: 'Nord',   label: 'Nord',   data: yNord,   color: C_NORD   },
+        { key: 'Centro', label: 'Centro', data: yCentro, color: C_CENTRO },
+        { key: 'Sud',    label: 'Sud',    data: ySud,    color: C_SUD    }
+      ];
 
-    const datasetsPicked = (areaSel && areaSel.trim().length > 0)
-      ? allCandidates.filter(d => d.key.toLowerCase() === areaSel.toLowerCase())
-      : allCandidates;
+      var datasetsPicked = (areaSel && String(areaSel).trim().length > 0)
+        ? allCandidates.filter(function(d){ return d.key.toLowerCase() === String(areaSel).toLowerCase(); })
+        : allCandidates;
 
-    const datasetsNonEmpty = datasetsPicked.filter(d => Array.isArray(d.data) && d.data.some(v => Number.isFinite(v)));
-    if (datasetsNonEmpty.length === 0) return;
+      var datasetsNonEmpty = datasetsPicked.filter(function(d){
+        return Array.isArray(d.data) && d.data.some(function(v){ return Number.isFinite(v); });
+      });
 
-    const allVals = datasetsNonEmpty.flatMap(d => d.data).filter(Number.isFinite);
-    const yMin0 = Math.min(...allVals);
-    const yMax0 = Math.max(...allVals);
-    const span  = Math.max(0, yMax0 - yMin0);
-    const pad   = span > 0 ? span * 0.10 : (yMax0 || 1) * 0.10;
-
-    new Chart(el.getContext('2d'), {
-      type: 'line',
-      data: {
-        labels,
-        datasets: datasetsNonEmpty.map(d => ({
-          label: d.label,
-          data: d.data,
-          borderColor: d.color,
-          backgroundColor: d.color + '33',
-          pointBackgroundColor: d.color,
-          pointBorderColor: d.color,
-          pointRadius: 3,
-          borderWidth: 2,
-          tension: .25,
-          fill: false
-        }))
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: { type: 'linear', min: Math.max(0, yMin0 - pad), max: yMax0 + pad, title: { display: true, text: 'Resa (T)' } },
-          x: { type: 'category', ticks: { autoSkip: true, maxTicksLimit: 12 } }
-        },
-        plugins: {
-          legend: { position: 'top' },
-          tooltip: { mode: 'index', intersect: false, callbacks: {
-            label: (ctx) => `${ctx.dataset.label}: ${(+ctx.raw).toFixed(2)} t/ha`
-          }}
-        },
-        interaction: { mode: 'index', intersect: false }
+      if (datasetsNonEmpty.length === 0) {
+        el.parentElement.innerHTML = '<div class="loading"><i class="bi bi-exclamation-circle me-2"></i>Nessun dato disponibile</div>';
+        return;
       }
-    });
-  })();
 
-  /* ===== Efficienza Idrica: Polar Area (Kg/m³) ===== */
-  (function(){
-    const el = document.getElementById('effPolar'); if(!el) return;
+      var allVals = datasetsNonEmpty.flatMap(function(d){ return d.data; }).filter(Number.isFinite);
+      var yMin0 = Math.min.apply(null, allVals);
+      var yMax0 = Math.max.apply(null, allVals);
+      var span  = Math.max(0, yMax0 - yMin0);
+      var pad   = span > 0 ? span * 0.10 : (yMax0 || 1) * 0.10;
 
-    const labelsAreas = ['Nord','Centro','Sud'];
-    const valuesAreas = [effNordKgM3, effCentroKgM3, effSudKgM3];
-    const colors      = colorsAll;
-
-    let L = [], V = [], C = [];
-    if (areaSel && String(areaSel).trim().length > 0){
-      const a = String(areaSel).toLowerCase();
-      const idx = a === 'nord' ? 0 : (a === 'centro' ? 1 : (a === 'sud' ? 2 : -1));
-      if (idx >= 0){ L = [labelsAreas[idx]]; V = [valuesAreas[idx]]; C = [colors[idx]]; }
-      else { L = labelsAreas; V = valuesAreas; C = colors; }
-    } else { L = labelsAreas; V = valuesAreas; C = colors; }
-
-    const vmax = Math.max( ...V.filter(n => Number.isFinite(n)), 100 );
-
-    const datasets = [{
-      data: V,
-      backgroundColor: C.map(c => c + '33'),
-      borderColor: C,
-      borderWidth: 2
-    }];
-
-    new Chart(el.getContext('2d'), {
-      type: 'polarArea',
-      data: { labels: L, datasets: datasets },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'top' },
-          tooltip: { mode: 'index', intersect: false, callbacks: {
-            label: (ctx) => `${ctx.label}: ${(+ctx.raw).toFixed(2)} Kg/m³`
-          }}
+      new Chart(el.getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: datasetsNonEmpty.map(function(d){
+            return {
+              label: d.label,
+              data: d.data,
+              borderColor: d.color,
+              backgroundColor: d.color + '15',
+              pointBackgroundColor: d.color,
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2,
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              borderWidth: 3,
+              tension: 0.35,
+              fill: true
+            };
+          })
         },
-        scales: {
-          r: {
-            suggestedMin: 0,
-            suggestedMax: vmax * 1.1,
-            ticks: { stepSize: Math.max(5, Math.round(vmax/5)), callback: (v) => `${v} Kg/m³` }
-          }
-        },
-        animation: { animateRotate:true, animateScale:true }
-      }
-    });
-  })();
-
-  /* ===== ECharts: Margine (sx) e Costi (dx) ===== */
-  (function(){
-    const C_NORD   = '#0d6efd';
-    const C_CENTRO = '#fd7e14';
-    const C_SUD    = '#10b981';
-
-    const areasAll   = ['Nord','Centro','Sud'];
-    const marginVals = [marginNord, marginCentro, marginSud];
-    const costVals   = [costNord,   costCentro,   costSud];
-
-    const sel = (areaSel && String(areaSel).trim().length>0) ? String(areaSel).toLowerCase() : null;
-    function filtered(names, values){
-      if(!sel) return {names, values};
-      const idx = sel==='nord'?0: sel==='centro'?1: sel==='sud'?2:-1;
-      if(idx<0) return {names, values};
-      return {names:[names[idx]], values:[values[idx]]};
-    }
-
-    const M = filtered(areasAll, marginVals);
-    const C = filtered(areasAll, costVals);
-
-    function colorByName(name){
-      const k = String(name).toLowerCase();
-      if(k==='nord') return C_NORD;
-      if(k==='centro') return C_CENTRO;
-      if(k==='sud') return C_SUD;
-      return '#999';
-    }
-
-    function buildOption(titleText, cats, vals, mainColor){
-      return {
-        title: { text: titleText, left: 'center', top: 0, textStyle:{ fontSize: 12, fontWeight: 600 } },
-        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, valueFormatter: (v)=> `€ ${Number(v).toFixed(2)}/t` },
-        grid: { left: 40, right: 20, top: 40, bottom: 30, containLabel: true },
-        xAxis: { type: 'category', data: cats, axisTick:{alignWithLabel:true} },
-        yAxis: { type: 'value', name: '€/t', nameGap: 10, axisLabel: { formatter: '€ {value}' } },
-        series: [{
-          type: 'bar',
-          name: titleText,
-          universalTransition: true,
-          barWidth: '60%',
-          itemStyle: {
-            color: cats.length > 1 ? (p) => colorByName(p.name) : mainColor,
-            borderRadius: [4,4,0,0]
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              type: 'linear',
+              min: Math.max(0, yMin0 - pad),
+              max: yMax0 + pad,
+              title: { display: true, text: 'Resa (t/ha)', font: { weight: '600', size: 13 } },
+              grid: { color: 'rgba(0,0,0,0.05)' }
+            },
+            x: {
+              type: 'category',
+              ticks: { autoSkip: true, maxTicksLimit: 12 },
+              grid: { display: false }
+            }
           },
-          data: vals
-        }]
-      };
-    }
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: { usePointStyle: true, padding: 15, font: { weight: '500' } }
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              backgroundColor: 'rgba(255,255,255,0.95)',
+              titleColor: '#333',
+              bodyColor: '#666',
+              borderColor: '#ddd',
+              borderWidth: 1,
+              padding: 12,
+              callbacks: {
+                label: function(ctx){
+                  return ctx.dataset.label + ': ' + (+ctx.raw).toFixed(2) + ' t/ha';
+                }
+              }
+            }
+          },
+          interaction: { mode: 'index', intersect: false }
+        }
+      });
+    })();
 
-    const echMargin = echarts.init(document.getElementById('echMargin'));
-    const echCost   = echarts.init(document.getElementById('echCost'));
+    /* ===== Efficienza Idrica: Polar Area ===== */
+    (function(){
+      var el = document.getElementById('effPolar');
+      if(!el) return;
 
-    echMargin.setOption(buildOption('Margine medio (€/t)', M.names, M.values, C_SUD));
-    echCost.setOption(buildOption('Costo medio (€/t)', C.names, C.values, 'var(--purple)'));
+      var labelsAreas = ['Nord','Centro','Sud'];
+      var valuesAreas = [effNordKgM3, effCentroKgM3, effSudKgM3];
+      var colors      = colorsAll;
 
-    window.addEventListener('resize', () => { echMargin.resize(); echCost.resize(); });
+      var L = [], V = [], C = [];
+      if (areaSel && String(areaSel).trim().length > 0){
+        var a = String(areaSel).toLowerCase();
+        var idx = a === 'nord' ? 0 : (a === 'centro' ? 1 : (a === 'sud' ? 2 : -1));
+        if (idx >= 0){
+          L = [labelsAreas[idx]];
+          V = [valuesAreas[idx]];
+          C = [colors[idx]];
+        } else {
+          L = labelsAreas;
+          V = valuesAreas;
+          C = colors;
+        }
+      } else {
+        L = labelsAreas;
+        V = valuesAreas;
+        C = colors;
+      }
+
+      var vmax = Math.max.apply(null, V.filter(function(n){ return Number.isFinite(n); }).concat([100]));
+
+      new Chart(el.getContext('2d'), {
+        type: 'polarArea',
+        data: {
+          labels: L,
+          datasets: [{
+            data: V,
+            backgroundColor: C.map(function(c){ return c + '40'; }),
+            borderColor: C,
+            borderWidth: 3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: { usePointStyle: true, padding: 15, font: { weight: '500' } }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(255,255,255,0.95)',
+              titleColor: '#333',
+              bodyColor: '#666',
+              borderColor: '#ddd',
+              borderWidth: 1,
+              padding: 12,
+              callbacks: {
+                label: function(ctx){
+                  return ctx.label + ': ' + (+ctx.raw).toFixed(2) + ' Kg/m³';
+                }
+              }
+            }
+          },
+          scales: {
+            r: {
+              suggestedMin: 0,
+              suggestedMax: vmax * 1.15,
+              ticks: {
+                stepSize: Math.max(5, Math.round(vmax/5)),
+                callback: function(v){ return v + ' Kg/m³'; },
+                font: { size: 11 }
+              },
+              grid: { color: 'rgba(0,0,0,0.08)' }
+            }
+          },
+          animation: { animateRotate: true, animateScale: true }
+        }
+      });
+    })();
+
+    /* ===== ECharts: Margine e Costi ===== */
+    (function(){
+      var areasAll   = ['Nord','Centro','Sud'];
+      var marginVals = [marginNord, marginCentro, marginSud];
+      var costVals   = [costNord, costCentro, costSud];
+
+      var sel = (areaSel && String(areaSel).trim().length > 0) ? String(areaSel).toLowerCase() : null;
+
+      function filtered(names, values){
+        if(!sel) return {names: names, values: values};
+        var idx = sel === 'nord' ? 0 : (sel === 'centro' ? 1 : (sel === 'sud' ? 2 : -1));
+        if(idx < 0) return {names: names, values: values};
+        return {names: [names[idx]], values: [values[idx]]};
+      }
+
+      var M = filtered(areasAll, marginVals);
+      var C_DATA = filtered(areasAll, costVals);
+
+      function colorByName(name){
+        var k = String(name).toLowerCase();
+        if(k === 'nord') return C_NORD;
+        if(k === 'centro') return C_CENTRO;
+        if(k === 'sud') return C_SUD;
+        return '#999';
+      }
+
+      function buildOption(titleText, cats, vals, mainColor){
+        return {
+          tooltip: {
+            trigger: 'axis',
+            axisPointer: { type: 'shadow' },
+            backgroundColor: 'rgba(255,255,255,0.95)',
+            borderColor: '#ddd',
+            borderWidth: 1,
+            textStyle: { color: '#333' },
+            padding: 12,
+            valueFormatter: function(v){ return '€ ' + Number(v).toFixed(2) + '/t'; }
+          },
+          grid: {
+            left: 50,
+            right: 30,
+            top: 30,
+            bottom: 40,
+            containLabel: true
+          },
+          xAxis: {
+            type: 'category',
+            data: cats,
+            axisTick: { alignWithLabel: true },
+            axisLine: { lineStyle: { color: '#ddd' } },
+            axisLabel: { color: '#666', fontWeight: '500' }
+          },
+          yAxis: {
+            type: 'value',
+            name: '€/t',
+            nameTextStyle: { fontWeight: '600', fontSize: 13 },
+            nameGap: 15,
+            axisLabel: {
+              formatter: '€ {value}',
+              color: '#666'
+            },
+            splitLine: { lineStyle: { color: '#f0f0f0' } }
+          },
+          series: [{
+            type: 'bar',
+            name: titleText,
+            barWidth: '50%',
+            itemStyle: {
+              color: cats.length > 1
+                ? function(p){ return colorByName(p.name); }
+                : mainColor,
+              borderRadius: [6, 6, 0, 0],
+              shadowColor: 'rgba(0,0,0,0.1)',
+              shadowBlur: 10,
+              shadowOffsetY: 4
+            },
+            emphasis: {
+              itemStyle: {
+                shadowBlur: 20,
+                shadowOffsetY: 8
+              }
+            },
+            data: vals
+          }],
+          animationDuration: 800,
+          animationEasing: 'cubicOut'
+        };
+      }
+
+      var echMargin = echarts.init(document.getElementById('echMargin'));
+      var echCost   = echarts.init(document.getElementById('echCost'));
+
+      echMargin.setOption(buildOption('Margine medio (€/t)', M.names, M.values, '#0dcaf0'));
+      echCost.setOption(buildOption('Costo medio (€/t)', C_DATA.names, C_DATA.values, '#6f42c1'));
+
+      window.addEventListener('resize', function(){
+        echMargin.resize();
+        echCost.resize();
+      });
+    })();
+
+    /* ===== Rischio Climatico: Gauge CSS ===== */
+    (function(){
+      var container = document.getElementById('riskGauges');
+      if(!container) return;
+
+      var areas = [
+        { key: 'Nord',   color: '#0d6efd', value: riskNord   },
+        { key: 'Centro', color: '#fd7e14', value: riskCentro },
+        { key: 'Sud',    color: '#10b981', value: riskSud    }
+      ];
+
+      function levelText(v){
+        if (v > 0.7) return '<span class="badge bg-danger">ALTO</span>';
+        if (v >= 0.4) return '<span class="badge" style="background-color:var(--warning-accessible)">MEDIO</span>';
+        return '<span class="badge bg-success">BASSO</span>';
+      }
+
+      var set = areas;
+      if (areaSel && String(areaSel).trim().length > 0){
+        var a = String(areaSel).toLowerCase();
+        set = areas.filter(function(x){ return x.key.toLowerCase() === a; });
+        if (set.length === 0) set = areas;
+      }
+
+      container.innerHTML = set.map(function(a){
+        var colClass = set.length === 1 ? 'col-12' : (set.length === 2 ? 'col-md-6' : 'col-lg-4');
+        return '<div class="' + colClass + '">' +
+          '<div class="p-4 border rounded-3 h-100" style="background: linear-gradient(135deg, #fff 0%, ' + a.color + '08 100%)">' +
+            '<div class="d-flex justify-content-between align-items-center mb-3 pb-2" style="border-bottom:3px solid ' + a.color + '">' +
+              '<h3 class="h6 mb-0 fw-bold" style="color:' + a.color + '">' +
+                '<i class="bi bi-geo-alt-fill me-2"></i>Area ' + a.key +
+              '</h3>' +
+              levelText(a.value) +
+            '</div>' +
+            '<p class="text-muted small mb-3">' +
+              'Indice di rischio climatico: ' +
+              '<span class="fw-bold fs-5" style="color:' + a.color + '">' + (Number(a.value) || 0).toFixed(2) + '</span>' +
+              ' <span class="text-muted">(scala 0-1)</span>' +
+            '</p>' +
+            '<div class="risk-gauge" role="progressbar" ' +
+              'aria-label="Indice di rischio climatico ' + a.key + '" ' +
+              'aria-valuemin="0" aria-valuemax="1" ' +
+              'aria-valuenow="' + (Number(a.value) || 0).toFixed(2) + '" ' +
+              'style="--risk:' + (Number.isFinite(a.value) ? a.value : 0) + '">' +
+              '<div class="risk-track"></div>' +
+              '<div class="risk-thumb">' +
+                '<span class="risk-value">' + (Number(a.value) || 0).toFixed(2) + '</span>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    })();
   })();
-
-  /* ===== Rischio Climatico per area: 1–3 gauge CSS dinamici ===== */
-  (function(){
-    const container = document.getElementById('riskGauges'); if(!container) return;
-
-    const areas = [
-      { key:'Nord',   color:'#0d6efd', value: riskNord   },
-      { key:'Centro', color:'#fd7e14', value: riskCentro },
-      { key:'Sud',    color:'#10b981', value: riskSud    },
-    ];
-
-    function levelText(v){
-      if (v > 0.7) return '<span class="text-danger">ALTO</span>';
-      if (v >= 0.4) return '<span style="color:var(--warning-accessible)">MEDIO</span>';
-      return '<span class="text-success">BASSO</span>';
-    }
-
-    let set = areas;
-    if (areaSel && String(areaSel).trim().length>0){
-      const a = String(areaSel).toLowerCase();
-      set = areas.filter(x => x.key.toLowerCase() === a);
-      if (set.length === 0) set = areas;
-    }
-
-    container.innerHTML = set.map(a => `
-      <div class="${set.length===1 ? 'col-12' : (set.length===2 ? 'col-md-6' : 'col-lg-4')}">
-        <div class="p-3 border rounded-3 h-100">
-          <div class="d-flex justify-content-between align-items-center mb-2" style="border-bottom:2px solid ${a.color}">
-            <h3 class="h6 mb-0" style="color:${a.color}">Rischio — ${a.key}</h3>
-            <span class="badge bg-light text-dark p-2 border">${levelText(a.value)}</span>
-          </div>
-
-          <p class="text-muted small mb-2">
-            Indice area ${a.key}:
-            <span class="fw-bold" style="color:${a.color}">${(Number(a.value)||0).toFixed(2)}</span>
-            (0 = basso, 1 = alto).
-          </p>
-
-          <div class="risk-gauge"
-               role="progressbar" aria-label="Indice di rischio climatico ${a.key}"
-               aria-valuemin="0" aria-valuemax="1" aria-valuenow="${(Number(a.value)||0).toFixed(2)}"
-               style="--risk:${Number.isFinite(a.value)? a.value : 0}">
-            <div class="risk-track"></div>
-            <div class="risk-thumb"><span class="risk-value">${(Number(a.value)||0).toFixed(2)}</span></div>
-          </div>
-        </div>
-      </div>
-    `).join('');
-  })();
-  /*]]>*/
 </script>
 
 </body>

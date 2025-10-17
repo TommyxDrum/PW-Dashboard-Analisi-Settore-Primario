@@ -14,6 +14,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.springframework.format.annotation.DateTimeFormat.ISO;
 
@@ -60,7 +61,7 @@ public class ResaController {
         final LocalDate finalTo = toDate;
 
         List<SampleRecord> filtered = cachedRecords.stream()
-                .filter(r -> !r.date().isBefore(finalFrom) && !r.date().isAfter(finalTo))
+                .filter(r -> r.date() != null && !r.date().isBefore(finalFrom) && !r.date().isAfter(finalTo))
                 .filter(r -> cropFilter == null || cropFilter.equalsIgnoreCase(r.crop()))
                 .filter(r -> areaFilter == null || norm(r.area()).contains(norm(areaFilter)))
                 .collect(Collectors.toList());
@@ -68,13 +69,7 @@ public class ResaController {
         List<String> areas = List.of("Nord", "Centro", "Sud");
 
         Map<String, List<SampleRecord>> byArea = filtered.stream()
-                .collect(Collectors.groupingBy(r -> {
-                    String a = norm(r.area());
-                    if (a.contains("nord"))   return "Nord";
-                    if (a.contains("centro")) return "Centro";
-                    if (a.contains("sud"))    return "Sud";
-                    return "Altro";
-                }));
+                .collect(Collectors.groupingBy(r -> normArea(r.area())));
 
         Map<String, Double> sumYield   = sumBy(byArea, SampleRecord::yieldT);
         Map<String, Double> sumSurface = sumBy(byArea, SampleRecord::surfaceHa);
@@ -99,50 +94,84 @@ public class ResaController {
                 ))
                 .collect(Collectors.toList());
 
+        // === DATI STORICI PER IL GRAFICO ANNUALE ===
+        List<SampleRecord> historicalRecords = cachedRecords.stream()
+                .filter(r -> r.date() != null)
+                .filter(r -> cropFilter == null || cropFilter.equalsIgnoreCase(r.crop()))
+                .collect(Collectors.toList());
+
+        List<Integer> years = IntStream.rangeClosed(MIN_DATE.getYear(), MAX_DATE.getYear())
+                .boxed()
+                .collect(Collectors.toList());
+
+        Map<String, List<Double>> annualResaByArea = calculateAnnualResaAverage(historicalRecords, years);
+
         List<String> cropsList = cropsFrom(cachedRecords);
         List<String> areasList = List.of("Nord", "Centro", "Sud");
 
         model.addAttribute("from", fromDate);
         model.addAttribute("to", toDate);
-        model.addAttribute("crop", cropFilter);
-        model.addAttribute("area", areaFilter);
+        model.addAttribute("crop", cropFilter != null ? cropFilter : "");
+        model.addAttribute("area", areaFilter != null ? areaFilter : "");
 
         model.addAttribute("cropsList", cropsList);
         model.addAttribute("areasList", areasList);
 
-        model.addAttribute("yieldNordT",   sumYield.getOrDefault("Nord", 0d));
-        model.addAttribute("yieldCentroT", sumYield.getOrDefault("Centro", 0d));
-        model.addAttribute("yieldSudT",    sumYield.getOrDefault("Sud", 0d));
-        model.addAttribute("surfNordHa",   sumSurface.getOrDefault("Nord", 0d));
-        model.addAttribute("surfCentroHa", sumSurface.getOrDefault("Centro", 0d));
-        model.addAttribute("surfSudHa",    sumSurface.getOrDefault("Sud", 0d));
+        model.addAttribute("yieldNordT",   round2(sumYield.getOrDefault("Nord", 0d)));
+        model.addAttribute("yieldCentroT", round2(sumYield.getOrDefault("Centro", 0d)));
+        model.addAttribute("yieldSudT",    round2(sumYield.getOrDefault("Sud", 0d)));
+        model.addAttribute("surfNordHa",   round2(sumSurface.getOrDefault("Nord", 0d)));
+        model.addAttribute("surfCentroHa", round2(sumSurface.getOrDefault("Centro", 0d)));
+        model.addAttribute("surfSudHa",    round2(sumSurface.getOrDefault("Sud", 0d)));
 
         model.addAttribute("resaRows", rows);
         model.addAttribute("totalYieldT", round2(totalYield));
         model.addAttribute("totalSurfaceHa", round2(totalSurface));
         model.addAttribute("totalResa", round2(totalResa));
 
-        List<List<Object>> chartData = List.of(
-                List.of("product", "Resa (t/ha)", "Produzione (t)", "Superficie (ha)"),
-                List.of("Nord",
-                        round2(resa.getOrDefault("Nord", 0d)),
-                        round2(sumYield.getOrDefault("Nord", 0d)),
-                        round2(sumSurface.getOrDefault("Nord", 0d))
-                ),
-                List.of("Centro",
-                        round2(resa.getOrDefault("Centro", 0d)),
-                        round2(sumYield.getOrDefault("Centro", 0d)),
-                        round2(sumSurface.getOrDefault("Centro", 0d))
-                ),
-                List.of("Sud",
-                        round2(resa.getOrDefault("Sud", 0d)),
-                        round2(sumYield.getOrDefault("Sud", 0d)),
-                        round2(sumSurface.getOrDefault("Sud", 0d))
-                )
-        );
-        model.addAttribute("chartData", chartData);
+        // Dati annuali per il line chart
+        model.addAttribute("years", years);
+        model.addAttribute("annualResaNord", annualResaByArea.getOrDefault("Nord", Collections.emptyList()));
+        model.addAttribute("annualResaCentro", annualResaByArea.getOrDefault("Centro", Collections.emptyList()));
+        model.addAttribute("annualResaSud", annualResaByArea.getOrDefault("Sud", Collections.emptyList()));
 
         return "resa";
+    }
+
+    private Map<String, List<Double>> calculateAnnualResaAverage(
+            List<SampleRecord> records, List<Integer> years) {
+
+        // Raggruppa per anno e area
+        Map<Integer, Map<String, List<SampleRecord>>> grouped = records.stream()
+                .filter(r -> r.date() != null)
+                .collect(Collectors.groupingBy(
+                        r -> r.date().getYear(),
+                        Collectors.groupingBy(r -> normArea(r.area()))
+                ));
+
+        Map<String, List<Double>> result = new HashMap<>();
+
+        for (String area : List.of("Nord", "Centro", "Sud")) {
+            List<Double> annualValues = new ArrayList<>(years.size());
+            for (Integer year : years) {
+                double yearResa = Optional.ofNullable(grouped.get(year))
+                        .map(m -> m.get(area))
+                        .map(list -> {
+                            double totalYield = list.stream()
+                                    .mapToDouble(r -> Optional.ofNullable(r.yieldT()).orElse(0.0))
+                                    .sum();
+                            double totalSurface = list.stream()
+                                    .mapToDouble(r -> Optional.ofNullable(r.surfaceHa()).orElse(0.0))
+                                    .sum();
+                            return totalSurface > 0 ? totalYield / totalSurface : 0.0;
+                        })
+                        .orElse(0.0);
+                annualValues.add(round2(yearResa));
+            }
+            result.put(area, annualValues);
+        }
+
+        return result;
     }
 
     private static String norm(String s) {
@@ -152,11 +181,23 @@ public class ResaController {
         return noAccents.toLowerCase();
     }
 
+    private static String normArea(String area) {
+        if (area == null) return "Altro";
+        String a = norm(area);
+        if (a.contains("nord"))   return "Nord";
+        if (a.contains("centro")) return "Centro";
+        if (a.contains("sud"))    return "Sud";
+        return "Altro";
+    }
+
     private static Map<String, Double> sumBy(Map<String, List<SampleRecord>> byArea,
                                              Function<SampleRecord, Double> getter) {
         Map<String, Double> out = new HashMap<>();
         byArea.forEach((area, list) ->
-                out.put(area, list.stream().mapToDouble(getter::apply).sum())
+                out.put(area, list.stream().mapToDouble(r -> {
+                    Double val = getter.apply(r);
+                    return val != null ? val : 0.0;
+                }).sum())
         );
         return out;
     }

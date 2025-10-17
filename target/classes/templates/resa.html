@@ -8,6 +8,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
     <style>
         :root {
@@ -20,16 +21,12 @@
           --purple: #6f42c1;
           --focus-ring: 0 0 0 0.25rem rgba(13, 110, 253, .25);
           --control-h: 44px;
-
-          /* colori aree */
-          --area-nord: #0d6efd;   /* blu */
-          --area-centro: #D96D00; /* arancio */
-          --area-sud: #10b981;    /* verde */
-
-          /* colori per le CARD TOTALI */
-          --pie-prod: #800080;   /* viola */
-          --pie-surf: #B8860B;   /* ocra/sabbia scuro */
-          --pie-resa: #6c757d;   /* grigio */
+          --area-nord: #0d6efd;
+          --area-centro: #D96D00;
+          --area-sud: #10b981;
+          --pie-prod: #800080;
+          --pie-surf: #B8860B;
+          --pie-resa: #6c757d;
         }
 
         body {
@@ -37,234 +34,553 @@
           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
           padding-top: 70px;
         }
+
         .dashboard-card {
           border-radius: 1rem;
           box-shadow: 0 4px 10px rgba(0, 0, 0, .08);
           background: #fff;
-          height: 100%
+          height: 100%;
+          transition: box-shadow 0.3s ease;
+        }
+
+        .dashboard-card:hover {
+          box-shadow: 0 6px 16px rgba(0, 0, 0, .12);
         }
 
         .header-bar {
-          position: fixed; top: 0; left: 0; right: 0; z-index: 1040; background: #fff;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, .05); padding: .5rem 1rem;
-          display: flex; align-items: center; gap: 1rem;
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          z-index: 1040;
+          background: #fff;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+          padding: 0.75rem 1rem;
+          display: flex;
+          align-items: center;
+          gap: 1rem;
         }
-        .header-logo { font-weight: 600; color: var(--primary-green); line-height: 1; margin: 0; }
+
+        .header-logo {
+          font-weight: 700;
+          color: var(--primary-green);
+          line-height: 1;
+          margin: 0;
+          letter-spacing: -0.5px;
+        }
+
+        .btn-back {
+          height: var(--control-h);
+          width: var(--control-h);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 0.375rem;
+          transition: all 0.2s ease;
+        }
+
+        .btn-back:hover {
+          transform: translateX(-3px);
+        }
 
         .filters-bar {
-          display: flex; flex-wrap: nowrap; align-items: flex-end; gap: .5rem; width: 100%;
-          overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: .25rem;
+          display: flex;
+          flex-wrap: wrap;
+          align-items: flex-end;
+          gap: .75rem;
+          width: 100%;
+          padding-bottom: .25rem;
         }
-        .filters-bar .form-group { flex: 1 1 0; min-width: 140px; }
+
+        .filters-bar .form-group {
+          flex: 1 1 140px;
+          min-width: 140px;
+        }
+
         .filters-bar .form-select {
-          height: var(--control-h); line-height: var(--control-h);
-          padding: 0 2.25rem 0 .75rem; background-position: right .75rem center;
+          height: var(--control-h);
+          padding: 0 2.5rem 0 .875rem;
+          background-position: right .875rem center;
+          border: 1px solid #dee2e6;
+          transition: all 0.2s ease;
         }
+
+        .filters-bar .form-select:hover {
+          border-color: var(--secondary-blue);
+        }
+
         .filters-bar .btn-primary {
-          height: var(--control-h); display: inline-flex; align-items: center; justify-content: center;
-          padding: 0 14px; flex: 0 0 auto;
+          height: var(--control-h);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0 1.5rem;
+          flex: 0 0 auto;
+          font-weight: 600;
+          transition: all 0.2s ease;
         }
-        .form-select:focus, .btn:focus { box-shadow: var(--focus-ring); }
-        .min-200 { min-width: 200px; }
+
+        .filters-bar .btn-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+        }
+
+        .form-select:focus, .btn:focus {
+          box-shadow: var(--focus-ring);
+        }
 
         .section-header {
-          padding-bottom: .25rem; margin-bottom: 1rem;
-          border-bottom: 2px solid var(--secondary-blue);
+          padding-bottom: .5rem;
+          margin-bottom: 1.25rem;
+          border-bottom: 3px solid var(--primary-green);
+          position: relative;
         }
-        .section-header.success-border { border-color: var(--primary-green); }
 
-        .chartjs-like-legend { display: flex; gap: 24px; align-items: center; }
-        .chartjs-like-legend .item { display: inline-flex; align-items: center; gap: 8px; font-size: .875rem; color: #6c757d; }
-        .chartjs-like-legend .swatch { width: 36px; height: 12px; border-radius: 3px; border: 3px solid transparent; background-clip: padding-box; }
-        .legend-nord .swatch { border-color: var(--area-nord); background-color: #0d6efd33; }
-        .legend-centro .swatch { border-color: var(--area-centro); background-color: #fd7e1433; }
-        .legend-sud .swatch { border-color: var(--area-sud); background-color: #10b98133; }
-
-        .subtitle { color: #5f676d; font-size: .9375rem; line-height: 1.4; }
-        .caption { color: var(--bs-tertiary-color, #8a8f94); font-size: .8125rem; }
-
-        /* === STILI KPI BOX IMPORTATI E ADATTATI === */
-        .kpi-box{
-          padding: 1rem; border-radius: .5rem; border-left-width: 5px; border-left-style: solid;
+        .section-header::after {
+          content: '';
+          position: absolute;
+          bottom: -3px;
+          left: 0;
+          width: 60px;
+          height: 3px;
+          background: currentColor;
+          border-radius: 3px 3px 0 0;
         }
-        .kpi-value { font-size: 2rem; font-weight: 700; }
 
-        /* Colori personalizzati per le card KPI di questa pagina */
-        .kpi-box.prod { background: #fdf5ff; border-left-color: var(--pie-prod); }
-        .kpi-box.prod .kpi-value { color: var(--pie-prod); }
-        .kpi-box.prod .kpi-icon { color: var(--pie-prod); }
+        .section-header.success-border {
+          border-color: var(--primary-green);
+        }
 
-        .kpi-box.surf { background: #fffaf0; border-left-color: var(--pie-surf); }
-        .kpi-box.surf .kpi-value { color: var(--pie-surf); }
-        .kpi-box.surf .kpi-icon { color: var(--pie-surf); }
+        .section-header.success-border::after {
+          background: var(--primary-green);
+        }
 
-        .kpi-box.resa { background: #f8f9fa; border-left-color: var(--pie-resa); }
-        .kpi-box.resa .kpi-value { color: var(--pie-resa); }
-        .kpi-box.resa .kpi-icon { color: var(--pie-resa); }
+        .section-header.primary-border {
+          border-color: var(--secondary-blue);
+        }
+
+        .section-header.primary-border::after {
+          background: var(--secondary-blue);
+        }
+
+        .subtitle {
+          color: #5f676d;
+          font-size: .9375rem;
+          line-height: 1.5;
+        }
+
+        .caption {
+          color: #8a8f94;
+          font-size: .8125rem;
+        }
+
+        .kpi-box {
+          padding: 1.25rem;
+          border-radius: .75rem;
+          border-left: 5px solid;
+          transition: all 0.3s ease;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .kpi-box::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: 80px;
+          height: 80px;
+          background: currentColor;
+          opacity: 0.03;
+          border-radius: 50%;
+          transform: translate(30%, -30%);
+        }
+
+        .kpi-box:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 8px 20px rgba(0, 0, 0, .12);
+        }
+
+        .kpi-box.prod {
+          background: #fdf5ff;
+          border-left-color: var(--pie-prod);
+        }
+
+        .kpi-box.surf {
+          background: #fffaf0;
+          border-left-color: var(--pie-surf);
+        }
+
+        .kpi-box.resa {
+          background: #f8f9fa;
+          border-left-color: var(--pie-resa);
+        }
+
+        .kpi-value {
+          font-size: 2.25rem;
+          font-weight: 700;
+          line-height: 1.2;
+        }
+
+        .kpi-icon {
+          font-size: 1.25rem;
+          margin-right: 0.5rem;
+        }
+
+        .badge {
+          font-weight: 600;
+          padding: 0.5rem 0.875rem;
+          font-size: 0.8125rem;
+        }
+
+        .btn-outline-success {
+          font-weight: 600;
+          transition: all 0.2s ease;
+        }
+
+        .btn-outline-success:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(25, 135, 84, 0.3);
+        }
+
+        .chart-container {
+          position: relative;
+          height: 360px;
+        }
+
+        .loading {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          min-height: 200px;
+          color: var(--primary-green);
+          font-size: 1.125rem;
+          font-weight: 500;
+        }
+
+        .table {
+          font-size: 0.9375rem;
+        }
+
+        .table thead th {
+          font-weight: 600;
+          text-transform: uppercase;
+          font-size: 0.8125rem;
+          letter-spacing: 0.5px;
+          color: #6c757d;
+        }
+
+        .table tbody tr {
+          transition: background-color 0.2s ease;
+        }
+
+        .table tbody tr:hover {
+          background-color: rgba(13, 110, 253, 0.03);
+        }
+
+        .table tfoot th {
+          font-weight: 700;
+          border-top: 2px solid #dee2e6;
+          padding-top: 1rem;
+        }
+
+        .header-line {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: space-between;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        .header-line .left {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          flex-wrap: wrap;
+        }
+
+        @media (max-width: 768px) {
+          .kpi-value {
+            font-size: 1.75rem;
+          }
+
+          .filters-bar {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .filters-bar .form-group {
+            width: 100%;
+            min-width: 100%;
+          }
+
+          .filters-bar .btn-primary {
+            width: 100%;
+          }
+
+          .header-line {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+
+          .chart-container {
+            height: 280px;
+          }
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .dashboard-card {
+          animation: fadeIn 0.5s ease-out;
+        }
+
+        .kpi-box {
+          animation: fadeIn 0.6s ease-out;
+        }
+
+        footer {
+          font-size: 0.875rem;
+          opacity: 0.7;
+        }
     </style>
 </head>
 <body>
 
 <header class="header-bar">
-    <a href="/" class="btn btn-outline-secondary" aria-label="Torna alla Dashboard"><i class="bi bi-arrow-left"></i></a>
-    <h1 class="header-logo display-6 fs-4 mb-0">Resa per Area</h1>
+    <a href="/" class="btn btn-outline-secondary btn-back" aria-label="Torna alla Dashboard">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h1 class="header-logo display-6 fs-4 mb-0">
+        <i class="bi bi-graph-up-arrow me-2" style="color:var(--primary-green)"></i>
+        Resa per Area
+    </h1>
     <a href="/export.csv" class="btn btn-outline-success ms-auto" aria-label="Esporta i dati filtrati in formato CSV">
-        <i class="bi bi-download"></i> Export
+        <i class="bi bi-download me-1"></i>
+        <span class="d-none d-sm-inline">Export</span>
     </a>
 </header>
 
 <div class="container-fluid py-4">
 
     <div class="dashboard-card p-3 mb-4">
-        <form id="filterForm" action="/resa" method="get" class="filters-bar" role="group" aria-label="Filtri resa">
-            <div class="form-group d-flex flex-column">
-                <label class="form-label small text-muted mb-1" for="monthSel">Mese</label>
-                <select id="monthSel" class="form-select">
-                    <option th:each="m : ${#numbers.sequence(1,12)}"
-                            th:value="${m}"
-                            th:text="${#temporals.format(#temporals.create((from != null ? #temporals.year(from) : #temporals.year(#temporals.createNow())), m, 1),'MMMM')}"
-                            th:selected="${from != null and #temporals.month(from) == m}">
-                    </option>
+        <form id="filterForm" action="/resa" method="get" class="filters-bar"
+              role="group" aria-label="Filtri resa">
+            <div class="form-group">
+                <label class="form-label small text-muted mb-1 fw-semibold" for="monthSel">Mese</label>
+                <select id="monthSel" class="form-select" aria-label="Seleziona mese">
+                    <option value="1"  th:selected="${from != null and #temporals.month(from) == 1 }">Gennaio</option>
+                    <option value="2"  th:selected="${from != null and #temporals.month(from) == 2 }">Febbraio</option>
+                    <option value="3"  th:selected="${from != null and #temporals.month(from) == 3 }">Marzo</option>
+                    <option value="4"  th:selected="${from != null and #temporals.month(from) == 4 }">Aprile</option>
+                    <option value="5"  th:selected="${from != null and #temporals.month(from) == 5 }">Maggio</option>
+                    <option value="6"  th:selected="${from != null and #temporals.month(from) == 6 }">Giugno</option>
+                    <option value="7"  th:selected="${from != null and #temporals.month(from) == 7 }">Luglio</option>
+                    <option value="8"  th:selected="${from != null and #temporals.month(from) == 8 }">Agosto</option>
+                    <option value="9"  th:selected="${from != null and #temporals.month(from) == 9 }">Settembre</option>
+                    <option value="10" th:selected="${from != null and #temporals.month(from) == 10}">Ottobre</option>
+                    <option value="11" th:selected="${from != null and #temporals.month(from) == 11}">Novembre</option>
+                    <option value="12" th:selected="${from != null and #temporals.month(from) == 12}">Dicembre</option>
                 </select>
             </div>
 
-            <div class="form-group d-flex flex-column">
-                <label class="form-label small text-muted mb-1" for="yearSel">Anno</label>
-                <select id="yearSel" class="form-select">
+            <div class="form-group">
+                <label class="form-label small text-muted mb-1 fw-semibold" for="yearSel">Anno</label>
+                <select id="yearSel" class="form-select" aria-label="Seleziona anno">
                     <option th:each="y : ${#numbers.sequence(2015, 2025)}"
                             th:value="${y}"
                             th:text="${y}"
                             th:selected="${from != null ? #temporals.year(from) == y : y == #temporals.year(#temporals.createNow())}">
+                        2025
                     </option>
                 </select>
             </div>
 
-            <div class="form-group d-flex flex-column min-200">
-                <label class="form-label small text-muted mb-1" for="cropSel">Coltura</label>
-                <select id="cropSel" name="crop" class="form-select">
-                    <option value="">Tutte</option>
-                    <option th:each="c : ${cropsList}" th:value="${c}" th:text="${c}" th:selected="${c == crop}"></option>
+            <div class="form-group" style="min-width:180px">
+                <label class="form-label small text-muted mb-1 fw-semibold" for="cropSel">Coltura</label>
+                <select id="cropSel" name="crop" class="form-select" aria-label="Seleziona coltura">
+                    <option value="">Tutte le colture</option>
+                    <option th:each="c : ${cropsList}" th:value="${c}" th:text="${c}"
+                            th:selected="${c == crop}">Coltura</option>
                 </select>
             </div>
 
-            <div class="form-group d-flex flex-column min-200">
-                <label class="form-label small text-muted mb-1" for="areaSel">Area</label>
-                <select id="areaSel" name="area" class="form-select">
-                    <option value="">Tutte</option>
-                    <option th:each="a : ${areasList}" th:value="${a}" th:text="${a}" th:selected="${a == area}"></option>
+            <div class="form-group" style="min-width:180px">
+                <label class="form-label small text-muted mb-1 fw-semibold" for="areaSel">Area</label>
+                <select id="areaSel" name="area" class="form-select" aria-label="Seleziona area">
+                    <option value="">Tutte le aree</option>
+                    <option th:each="a : ${areasList}" th:value="${a}" th:text="${a}"
+                            th:selected="${a == area}">Area</option>
                 </select>
             </div>
 
             <button type="submit" class="btn btn-primary">
-                <i class="bi bi-funnel me-1"></i>Applica Filtri
+                <i class="bi bi-funnel me-2"></i>
+                <span>Applica</span>
             </button>
 
-            <input type="hidden" id="from" name="from" th:value="${from != null ? #temporals.format(from,'yyyy-MM-dd') : ''}"/>
-            <input type="hidden" id="to" name="to" th:value="${to != null ? #temporals.format(to,'yyyy-MM-dd') : ''}"/>
+            <input type="hidden" id="from" name="from"
+                   th:value="${from != null ? #temporals.format(from,'yyyy-MM-dd') : ''}"/>
+            <input type="hidden" id="to" name="to"
+                   th:value="${to != null ? #temporals.format(to,'yyyy-MM-dd') : ''}"/>
         </form>
     </div>
 
     <div class="row g-4 mb-4">
-        <div class="col">
+        <div class="col-12 col-md-4">
             <div class="kpi-box prod">
-                <p class="small text-muted mb-1"><i class="bi bi-box-seam-fill kpi-icon"></i> PRODUZIONE TOTALE</p>
+                <p class="small text-muted mb-2 fw-semibold">
+                    <i class="bi bi-box-seam-fill kpi-icon" style="color:var(--pie-prod)"></i>
+                    PRODUZIONE TOTALE
+                </p>
                 <div class="d-flex align-items-baseline">
-                    <span class="kpi-value" id="totalValueProd">-</span>
-                    <span class="ms-2 text-muted fw-semibold">(t)</span>
+                    <span class="kpi-value" style="color:var(--pie-prod)" id="totalValueProd">-</span>
+                    <span class="ms-2 text-muted fw-medium">t</span>
                 </div>
             </div>
         </div>
-        <div class="col">
+        <div class="col-12 col-md-4">
             <div class="kpi-box surf">
-                <p class="small text-muted mb-1"><i class="bi bi-rulers kpi-icon"></i> SUPERFICIE TOTALE</p>
+                <p class="small text-muted mb-2 fw-semibold">
+                    <i class="bi bi-rulers kpi-icon" style="color:var(--pie-surf)"></i>
+                    SUPERFICIE TOTALE
+                </p>
                 <div class="d-flex align-items-baseline">
-                    <span class="kpi-value" id="totalValueSurf">-</span>
-                    <span class="ms-2 text-muted fw-semibold">(ha)</span>
+                    <span class="kpi-value" style="color:var(--pie-surf)" id="totalValueSurf">-</span>
+                    <span class="ms-2 text-muted fw-medium">ha</span>
                 </div>
             </div>
         </div>
-        <div class="col">
+        <div class="col-12 col-md-4">
             <div class="kpi-box resa">
-                <p class="small text-muted mb-1"><i class="bi bi-graph-up-arrow kpi-icon"></i> RESA MEDIA TOTALE</p>
+                <p class="small text-muted mb-2 fw-semibold">
+                    <i class="bi bi-graph-up-arrow kpi-icon" style="color:var(--pie-resa)"></i>
+                    RESA MEDIA TOTALE
+                </p>
                 <div class="d-flex align-items-baseline">
-                    <span class="kpi-value" id="totalValueResa">-</span>
-                    <span class="ms-2 text-muted fw-semibold">(t/ha)</span>
+                    <span class="kpi-value" style="color:var(--pie-resa)" id="totalValueResa">-</span>
+                    <span class="ms-2 text-muted fw-medium">t/ha</span>
                 </div>
             </div>
         </div>
     </div>
-    <div class="row g-4">
-        <div class="col-lg-7">
-            <div class="dashboard-card p-4">
-                <div class="d-flex justify-content-between align-items-center section-header success-border">
-                    <h2 class="h6 mb-0 fw-bold text-success">Resa media per Area (t/ha)</h2>
-                    <div class="chartjs-like-legend" aria-hidden="true">
-                        <span class="item legend-nord"><span class="swatch"></span>Nord</span>
-                        <span class="item legend-centro"><span class="swatch"></span>Centro</span>
-                        <span class="item legend-sud"><span class="swatch"></span>Sud</span>
+
+    <div class="dashboard-card p-4 mb-4">
+        <div class="row g-4">
+            <div class="col-lg-7">
+                <div class="section-header success-border header-line">
+                    <div class="left">
+                        <h2 class="h6 mb-0 fw-bold text-success">
+                            <i class="bi bi-graph-up me-2"></i>
+                            Andamento Storico della Resa
+                        </h2>
+                        <span class="badge bg-success bg-opacity-10 text-success"
+                              th:text="${crop != null && !#strings.isEmpty(crop) ? crop : 'Tutte le Colture'}">
+                            Tutte le Colture
+                        </span>
                     </div>
                 </div>
                 <p class="subtitle mb-3">
-                    Confronto della <strong>resa media (t/ha)</strong> per area geografica nel periodo selezionato.
+                    Evoluzione della <strong>resa (t/ha)</strong> per area geografica
+                    nel corso degli anni.
                 </p>
-                <div id="echResaByAreaChart" style="height: 380px;">
-                    <span class="visually-hidden">Grafico a barre che mostra la resa media per area geografica.</span>
+                <div class="chart-container">
+                    <canvas id="resaAnnualTrend" role="img"
+                            aria-label="Grafico a linee sull'andamento della resa negli anni."></canvas>
                 </div>
             </div>
-        </div>
-        <div class="col-lg-5">
-            <div class="dashboard-card p-4">
-                <div class="d-flex justify-content-between align-items-center section-header success-border">
-                    <h3 class="h6 mb-0 fw-bold text-success">Composizione Produzione (%)</h3>
+
+            <div class="col-lg-5">
+                <div class="section-header primary-border header-line">
+                    <div class="left">
+                        <h3 class="h6 mb-0 fw-bold text-primary">
+                            <i class="bi bi-pie-chart-fill me-2"></i>
+                            Composizione Produzione
+                        </h3>
+                        <span class="badge bg-primary bg-opacity-10 text-primary"
+                              th:text="${crop != null && !#strings.isEmpty(crop) ? crop : 'Tutte'}">
+                            Tutte
+                        </span>
+                    </div>
                 </div>
                 <p class="subtitle mb-3">
-                    Contributo percentuale di ciascuna area alla <strong>produzione totale</strong> in tonnellate.
+                    Contributo percentuale di ciascuna area alla <strong>produzione totale</strong>
+                    in tonnellate.
                 </p>
-                <div id="echDonutYield" style="height: 380px;">
-                    <span class="visually-hidden">Grafico ad anello sulla ripartizione percentuale della produzione.</span>
-                </div>
+                <div id="echDonutYield" class="chart-container"
+                     role="img" aria-label="Grafico ad anello sulla ripartizione percentuale della produzione."></div>
             </div>
         </div>
     </div>
-    <div class="dashboard-card p-4 mt-4">
-        <h3 class="h6 mb-0 fw-bold text-success">Dettaglio dati selezionati
-            <span class="badge bg-secondary ms-2" th:text="${crop != null ? crop : 'Tutte le Colture'}">Tutte le Colture</span>
-        </h3>
-        <div class="table-responsive mt-3">
-            <table class="table table-sm table-hover align-middle">
+
+    <div class="dashboard-card p-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+            <h3 class="h6 mb-0 fw-bold text-success">
+                <i class="bi bi-table me-2"></i>
+                Dettaglio Dati per Area
+            </h3>
+            <span class="badge bg-secondary"
+                  th:text="${crop != null && !#strings.isEmpty(crop) ? crop : 'Tutte le colture'}">
+                Tutte le colture
+            </span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
                 <thead class="table-light">
                 <tr>
                     <th scope="col">Area</th>
                     <th scope="col" class="text-end">Produzione (t)</th>
                     <th scope="col" class="text-end">Superficie (ha)</th>
-                    <th scope="col" class="text-end fw-bold">Resa (t/ha)</th>
+                    <th scope="col" class="text-end">Resa (t/ha)</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:each="r : ${resaRows}">
-                    <td th:text="${r.area}">Nord</td>
-                    <td class="text-end" th:text="${#numbers.formatDecimal(r.yieldT,1,'POINT',2,'COMMA')}">0,00</td>
-                    <td class="text-end" th:text="${#numbers.formatDecimal(r.surfaceHa,1,'POINT',2,'COMMA')}">0,00</td>
-                    <td class="text-end fw-bold" th:text="${#numbers.formatDecimal(r.resa,1,'POINT',2,'COMMA')}">0,00</td>
+                    <td>
+                        <span class="fw-semibold" th:text="${r.area}">Area</span>
+                    </td>
+                    <td class="text-end"
+                        th:text="${#numbers.formatDecimal(r.yieldT,1,'POINT',2,'COMMA')}">0,00</td>
+                    <td class="text-end"
+                        th:text="${#numbers.formatDecimal(r.surfaceHa,1,'POINT',2,'COMMA')}">0,00</td>
+                    <td class="text-end fw-bold"
+                        th:text="${#numbers.formatDecimal(r.resa,1,'POINT',2,'COMMA')}">0,00</td>
                 </tr>
                 </tbody>
                 <tfoot class="table-light">
                 <tr>
-                    <th scope="row">Totale</th>
-                    <th class="text-end" th:text="${#numbers.formatDecimal(totalYieldT,1,'POINT',2,'COMMA')}">0,00</th>
-                    <th class="text-end" th:text="${#numbers.formatDecimal(totalSurfaceHa,1,'POINT',2,'COMMA')}">0,00</th>
-                    <th class="text-end fw-bold" th:text="${#numbers.formatDecimal(totalResa,1,'POINT',2,'COMMA')}">0,00</th>
+                    <th scope="row">
+                        <i class="bi bi-calculator me-2"></i>Totale
+                    </th>
+                    <th class="text-end"
+                        th:text="${#numbers.formatDecimal(totalYieldT,1,'POINT',2,'COMMA')}">0,00</th>
+                    <th class="text-end"
+                        th:text="${#numbers.formatDecimal(totalSurfaceHa,1,'POINT',2,'COMMA')}">0,00</th>
+                    <th class="text-end fw-bold"
+                        th:text="${#numbers.formatDecimal(totalResa,1,'POINT',2,'COMMA')}">0,00</th>
                 </tr>
                 </tfoot>
             </table>
-            <p class="caption mt-2">
-                Nota: le cifre in tabella sono aggregate in base ai filtri e possono differire per arrotondamenti.
+            <p class="caption mt-3">
+                <i class="bi bi-info-circle me-1"></i>
+                Le cifre in tabella sono aggregate in base ai filtri selezionati.
             </p>
         </div>
     </div>
 
-    <footer class="text-center py-3 mt-5 border-top text-muted small">
-        &copy; [[${#temporals.year(#temporals.createNow())}]] AgrItalia S.p.A. | Dashboard Agronomica
+    <footer class="text-center py-4 mt-5 border-top">
+        <p class="text-muted small mb-0">
+            &copy; <span th:text="${#temporals.year(#temporals.createNow())}">2025</span>
+            AgrItalia S.p.A. | Dashboard Agronomica
+        </p>
     </footer>
 </div>
 
@@ -272,19 +588,19 @@
 
 <script>
     (function() {
-      const monthSel = document.getElementById('monthSel');
-      const yearSel  = document.getElementById('yearSel');
-      const fromH    = document.getElementById('from');
-      const toH      = document.getElementById('to');
-      const form     = document.getElementById('filterForm');
+      var monthSel = document.getElementById('monthSel');
+      var yearSel  = document.getElementById('yearSel');
+      var fromH    = document.getElementById('from');
+      var toH      = document.getElementById('to');
+      var form     = document.getElementById('filterForm');
 
       function pad2(n){ return n < 10 ? '0' + n : '' + n; }
       function lastDay(y,m){ return new Date(y, m, 0).getDate(); }
 
       function refreshRange(){
-        const y = parseInt(yearSel.value || new Date().getFullYear(), 10);
-        const m = parseInt(monthSel.value || (new Date().getMonth()+1), 10);
-        const dEnd = lastDay(y, m);
+        var y = parseInt(yearSel.value || new Date().getFullYear(), 10);
+        var m = parseInt(monthSel.value || (new Date().getMonth()+1), 10);
+        var dEnd = lastDay(y, m);
         fromH.value = y + '-' + pad2(m) + '-01';
         toH.value   = y + '-' + pad2(m) + '-' + pad2(dEnd);
       }
@@ -297,97 +613,195 @@
 </script>
 
 <script th:inline="javascript">
-    /*<![CDATA[*/
-    function cssVar(n){const v=getComputedStyle(document.documentElement).getPropertyValue(n);return (v&&v.trim())||n;}
-    const C_NORD=cssVar('--area-nord'),C_CENTRO=cssVar('--area-centro'),C_SUD=cssVar('--area-sud');
+    (function(){
+      function cssVar(n){
+        var v=getComputedStyle(document.documentElement).getPropertyValue(n);
+        return (v && v.trim()) || n;
+      }
+      var C_NORD=cssVar('--area-nord');
+      var C_CENTRO=cssVar('--area-centro');
+      var C_SUD=cssVar('--area-sud');
 
-    function getAreaColor(name){const n=(''+(name||'')).toLowerCase();if(n.includes('nord'))return C_NORD;if(n.includes('centro'))return C_CENTRO;if(n.includes('sud'))return C_SUD;return C_NORD;}
-    const nf2 = new Intl.NumberFormat('it-IT',{maximumFractionDigits:2,minimumFractionDigits:2});
-    const nf0 = new Intl.NumberFormat('it-IT',{maximumFractionDigits:0});
-    const nfCompact = new Intl.NumberFormat('it-IT',{notation:'compact',maximumFractionDigits:1});
+      var nf2 = new Intl.NumberFormat('it-IT',{maximumFractionDigits:2,minimumFractionDigits:2});
+      var nf0 = new Intl.NumberFormat('it-IT',{maximumFractionDigits:0});
+      var nfCompact = new Intl.NumberFormat('it-IT',{notation:'compact',maximumFractionDigits:1});
 
-    function toNum(v){if(v==null) return 0;if(typeof v==='number') return isFinite(v)?v:0;const s=String(v).trim().replace(/\./g,'').replace(',', '.');const n=Number(s);return isFinite(n)?n:0;}
-
-    const yieldNordT     = /*[[${yieldNordT}]]*/ 0;
-    const yieldCentroT   = /*[[${yieldCentroT}]]*/ 0;
-    const yieldSudT      = /*[[${yieldSudT}]]*/ 0;
-    const surfNordHa     = /*[[${surfNordHa}]]*/ 0;
-    const surfCentroHa   = /*[[${surfCentroHa}]]*/ 0;
-    const surfSudHa      = /*[[${surfSudHa}]]*/ 0;
-    const totalYieldT    = /*[[${totalYieldT}]]*/ 0;
-    const totalSurfaceHa = /*[[${totalSurfaceHa}]]*/ 0;
-    const totalResa      = /*[[${totalResa}]]*/ 0;
-
-    /* ===== Popolamento Card KPI ===== */
-    (function() {
-      document.getElementById('totalValueProd').textContent = nfCompact.format(toNum(totalYieldT));
-      document.getElementById('totalValueSurf').textContent = nfCompact.format(toNum(totalSurfaceHa));
-      document.getElementById('totalValueResa').textContent = nf2.format(toNum(totalResa));
-    })();
-
-    /* ===== Grafico a barre: Resa Media per Area ===== */
-    (function() {
-      const barChartEl = document.getElementById('echResaByAreaChart');
-      if (!barChartEl) return;
-      const myChart = echarts.init(barChartEl);
-
-      const AREAS = ['Nord','Centro','Sud'];
-      const resaByKey = {};
-      const sNord = toNum(surfNordHa), yNord = toNum(yieldNordT);
-      const sCentro = toNum(surfCentroHa), yCentro = toNum(yieldCentroT);
-      const sSud = toNum(surfSudHa), ySud = toNum(yieldSudT);
-      resaByKey.nord = (sNord > 0) ? (yNord / sNord) : 0;
-      resaByKey.centro = (sCentro > 0) ? (yCentro / sCentro) : 0;
-      resaByKey.sud = (sSud > 0) ? (ySud / sSud) : 0;
-      const resaByArea=[resaByKey.nord, resaByKey.centro, resaByKey.sud];
-
-      myChart.setOption({
-        tooltip:{ trigger:'item', formatter:(p)=> `${p.name}<br/>Resa: <b>${nf2.format(p.value)}</b> t/ha` },
-        legend:{show:false},
-        grid:{top:'10%', bottom:'15%', left:'12%', right:'5%'},
-        xAxis:{type:'category', data:AREAS},
-        yAxis:{name:'Resa (t/ha)', axisLabel:{formatter:(v)=>nf2.format(v)}},
-        series:[{
-            type:'bar',
-            data: resaByArea.map((v,i)=>({value:v,name:AREAS[i],itemStyle:{color:getAreaColor(AREAS[i])}})),
-            label:{show:true, position:'top', formatter:(p)=>nf2.format(p.value)}
-        }]
-      });
-      window.addEventListener('resize',()=>myChart.resize());
-    })();
-
-    /* ===== Grafico Donut: Composizione Produzione ===== */
-    (function() {
-      const donutEl = document.getElementById('echDonutYield');
-      if (!donutEl) return;
-      const donutChart = echarts.init(donutEl);
-
-      const data = [
-        { value: toNum(yieldNordT),   name: 'Nord',   itemStyle: { color: C_NORD } },
-        { value: toNum(yieldCentroT), name: 'Centro', itemStyle: { color: C_CENTRO } },
-        { value: toNum(yieldSudT),    name: 'Sud',    itemStyle: { color: C_SUD } }
-      ].filter(d => d.value > 0);
-
-      if (data.length === 0) {
-        donutEl.innerHTML = '<div class="d-flex align-items-center justify-content-center h-100 text-muted">Nessun dato di produzione disponibile.</div>';
-        return;
+      function toNum(v){
+        if(v==null) return 0;
+        if(typeof v==='number') return isFinite(v)?v:0;
+        var s=String(v).trim().replace(/\./g,'').replace(',', '.');
+        var n=Number(s);
+        return isFinite(n)?n:0;
       }
 
-      donutChart.setOption({
-        tooltip: { trigger: 'item', formatter: (p) => `<b>${p.name}</b><br/>Produzione: ${nf0.format(p.value)} t (${p.percent}%)` },
-        legend: { show: false },
-        series: [{
-          name: 'Produzione', type: 'pie', radius: ['45%', '70%'], center: ['50%', '50%'],
-          avoidLabelOverlap: true,
-          label: { show: true, position: 'outside', formatter: '{b}\n{d}%', fontSize: 14, color: '#495057' },
-          labelLine: { show: true, length: 15, length2: 15 },
-          emphasis: { label: { show: true, fontSize: 16, fontWeight: 'bold' } },
-          data: data
-        }]
-      });
-      window.addEventListener('resize', () => donutChart.resize());
+      var years = [[${years}]];
+      var annualResaNord = [[${annualResaNord}]];
+      var annualResaCentro = [[${annualResaCentro}]];
+      var annualResaSud = [[${annualResaSud}]];
+      var areaSel = [[${area}]];
+
+      var yieldNordT     = [[${yieldNordT}]];
+      var yieldCentroT   = [[${yieldCentroT}]];
+      var yieldSudT      = [[${yieldSudT}]];
+      var surfNordHa     = [[${surfNordHa}]];
+      var surfCentroHa   = [[${surfCentroHa}]];
+      var surfSudHa      = [[${surfSudHa}]];
+      var totalYieldT    = [[${totalYieldT}]];
+      var totalSurfaceHa = [[${totalSurfaceHa}]];
+      var totalResa      = [[${totalResa}]];
+
+      Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+      Chart.defaults.font.size = 12;
+
+      /* Popolamento Card KPI */
+      (function() {
+        document.getElementById('totalValueProd').textContent = nfCompact.format(toNum(totalYieldT));
+        document.getElementById('totalValueSurf').textContent = nfCompact.format(toNum(totalSurfaceHa));
+        document.getElementById('totalValueResa').textContent = nf2.format(toNum(totalResa));
+      })();
+
+      /* Line Chart: Andamento Annuale Resa */
+      (function(){
+        var el=document.getElementById('resaAnnualTrend');
+        if(!el) return;
+        if(!years || years.length===0){
+          el.parentElement.innerHTML='<div class="loading"><i class="bi bi-exclamation-circle me-2"></i>Nessun dato storico disponibile</div>';
+          return;
+        }
+        var datasets=[
+          {label:'Nord',   data:annualResaNord,   borderColor:C_NORD, backgroundColor:C_NORD+'15'},
+          {label:'Centro', data:annualResaCentro, borderColor:C_CENTRO, backgroundColor:C_CENTRO+'15'},
+          {label:'Sud',    data:annualResaSud,    borderColor:C_SUD, backgroundColor:C_SUD+'15'}
+        ];
+        var filtered = datasets;
+        if(areaSel && String(areaSel).trim().length > 0){
+          filtered = datasets.filter(function(d){
+            return d.label.toLowerCase() === String(areaSel).toLowerCase();
+          });
+        }
+
+        new Chart(el.getContext('2d'),{
+          type:'line',
+          data:{
+            labels:years,
+            datasets: filtered.map(function(d){
+              return {
+                label: d.label,
+                data: d.data,
+                borderColor: d.borderColor,
+                backgroundColor: d.backgroundColor,
+                pointBackgroundColor: d.borderColor,
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                borderWidth: 3,
+                tension: 0.35,
+                fill: true
+              };
+            })
+          },
+          options:{
+            responsive:true,
+            maintainAspectRatio:false,
+            scales:{
+              y:{
+                title:{display:true, text:'Resa (t/ha)', font:{weight:'600',size:13}},
+                grid:{color:'rgba(0,0,0,0.05)'}
+              },
+              x:{
+                ticks:{ autoSkip:true, maxTicksLimit:10 },
+                grid:{display:false}
+              }
+            },
+            plugins:{
+              legend:{
+                position:'top',
+                labels:{usePointStyle:true, padding:15, font:{weight:'500'}}
+              },
+              tooltip:{
+                mode:'index',
+                intersect:false,
+                backgroundColor:'rgba(255,255,255,0.95)',
+                titleColor:'#333',
+                bodyColor:'#666',
+                borderColor:'#ddd',
+                borderWidth:1,
+                padding:12,
+                callbacks:{
+                  label:function(ctx){
+                    return ctx.dataset.label + ': ' + (+ctx.raw).toFixed(2) + ' t/ha';
+                  }
+                }
+              }
+            },
+            interaction:{ mode:'index', intersect:false }
+          }
+        });
+      })();
+
+      /* Donut Chart: Composizione Produzione */
+      (function() {
+        var donutEl = document.getElementById('echDonutYield');
+        if (!donutEl) return;
+        var donutChart = echarts.init(donutEl);
+
+        var data = [
+          { value: toNum(yieldNordT),   name: 'Nord',   itemStyle: { color: C_NORD } },
+          { value: toNum(yieldCentroT), name: 'Centro', itemStyle: { color: C_CENTRO } },
+          { value: toNum(yieldSudT),    name: 'Sud',    itemStyle: { color: C_SUD } }
+        ].filter(function(d){ return d.value > 0; });
+
+        if (data.length === 0) {
+          donutEl.innerHTML = '<div class="loading"><i class="bi bi-exclamation-circle me-2"></i>Nessun dato di produzione disponibile</div>';
+          return;
+        }
+
+        donutChart.setOption({
+          tooltip: {
+            trigger: 'item',
+            backgroundColor: 'rgba(255,255,255,0.95)',
+            borderColor: '#ddd',
+            borderWidth: 1,
+            textStyle: {color: '#333'},
+            padding: 12,
+            formatter: function(p){
+              return '<b>' + p.name + '</b><br/>Produzione: ' + nf0.format(p.value) + ' t (' + p.percent + '%)';
+            }
+          },
+          legend: { show: false },
+          series: [{
+            name: 'Produzione',
+            type: 'pie',
+            radius: ['45%', '70%'],
+            center: ['50%', '50%'],
+            avoidLabelOverlap: true,
+            label: {
+              show: true,
+              position: 'outside',
+              formatter: '{b}\n{d}%',
+              fontSize: 14,
+              color: '#495057',
+              fontWeight: '500'
+            },
+            labelLine: { show: true, length: 15, length2: 15 },
+            emphasis: {
+              label: { show: true, fontSize: 16, fontWeight: 'bold' },
+              itemStyle: {
+                shadowBlur: 10,
+                shadowColor: 'rgba(0,0,0,0.3)'
+              }
+            },
+            data: data
+          }],
+          animationDuration: 800,
+          animationEasing: 'cubicOut'
+        });
+        window.addEventListener('resize', function(){
+          donutChart.resize();
+        });
+      })();
     })();
-    /*]]>*/
 </script>
 
 </body>

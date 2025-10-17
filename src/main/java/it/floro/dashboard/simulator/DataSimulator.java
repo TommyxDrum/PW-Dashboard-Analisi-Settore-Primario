@@ -36,6 +36,9 @@ public class DataSimulator {
     private static double clamp(double v, double lo, double hi) {
         return Math.max(lo, Math.min(hi, v));
     }
+    private static double clamp01(double v) {
+        return Math.max(0.0, Math.min(1.0, v));
+    }
 
     private static double sinYear(int dayShift, int day, double amp, double base) {
         return base + amp * Math.sin(2 * Math.PI * (day - dayShift) / 365.0);
@@ -157,6 +160,23 @@ public class DataSimulator {
 
     private double waterCostPerM3() {
         return 0.20;
+    }
+
+    /**
+     * Calcolo del rischio termico “smooth” per coltura.
+     * 0 circa nella fascia ottimale (minOk..maxOk), cresce verso caldo e freddo.
+     */
+    private double calculateRiskTemperature(double t, String crop) {
+        double minOk, maxOk, maxHot, minCold;
+        switch (crop) {
+            case "Mais" -> { minOk = 22; maxOk = 28; maxHot = 40; minCold = 0; }
+            case "Olivo" -> { minOk = 20; maxOk = 28; maxHot = 42; minCold = 0; }
+            case "Vite" -> { minOk = 18; maxOk = 26; maxHot = 40; minCold = 0; }
+            default /* Grano duro */ -> { minOk = 16; maxOk = 24; maxHot = 38; minCold = 0; }
+        }
+        double cold = clamp01((minOk - t) / (minOk - minCold + 1e-9));
+        double hot  = clamp01((t - maxOk) / (maxHot - maxOk + 1e-9));
+        return clamp01(0.6 * hot + 0.4 * cold);
     }
 
     public List<SampleRecord> generate() {
