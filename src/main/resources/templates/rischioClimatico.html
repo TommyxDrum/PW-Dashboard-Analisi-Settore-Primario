@@ -373,15 +373,15 @@
       <div class="form-group">
         <label class="form-label small text-muted mb-1 fw-semibold" for="monthSel">Mese</label>
         <select id="monthSel" class="form-select" aria-label="Seleziona mese">
-          <option value="1"  th:selected="${from!=null and #temporals.month(from)==1 }">Gennaio</option>
-          <option value="2"  th:selected="${from!=null and #temporals.month(from)==2 }">Febbraio</option>
-          <option value="3"  th:selected="${from!=null and #temporals.month(from)==3 }">Marzo</option>
-          <option value="4"  th:selected="${from!=null and #temporals.month(from)==4 }">Aprile</option>
-          <option value="5"  th:selected="${from!=null and #temporals.month(from)==5 }">Maggio</option>
-          <option value="6"  th:selected="${from!=null and #temporals.month(from)==6 }">Giugno</option>
-          <option value="7"  th:selected="${from!=null and #temporals.month(from)==7 }">Luglio</option>
-          <option value="8"  th:selected="${from!=null and #temporals.month(from)==8 }">Agosto</option>
-          <option value="9"  th:selected="${from!=null and #temporals.month(from)==9 }">Settembre</option>
+          <option value="1" th:selected="${from!=null and #temporals.month(from)==1 }">Gennaio</option>
+          <option value="2" th:selected="${from!=null and #temporals.month(from)==2 }">Febbraio</option>
+          <option value="3" th:selected="${from!=null and #temporals.month(from)==3 }">Marzo</option>
+          <option value="4" th:selected="${from!=null and #temporals.month(from)==4 }">Aprile</option>
+          <option value="5" th:selected="${from!=null and #temporals.month(from)==5 }">Maggio</option>
+          <option value="6" th:selected="${from!=null and #temporals.month(from)==6 }">Giugno</option>
+          <option value="7" th:selected="${from!=null and #temporals.month(from)==7 }">Luglio</option>
+          <option value="8" th:selected="${from!=null and #temporals.month(from)==8 }">Agosto</option>
+          <option value="9" th:selected="${from!=null and #temporals.month(from)==9 }">Settembre</option>
           <option value="10" th:selected="${from!=null and #temporals.month(from)==10}">Ottobre</option>
           <option value="11" th:selected="${from!=null and #temporals.month(from)==11}">Novembre</option>
           <option value="12" th:selected="${from!=null and #temporals.month(from)==12}">Dicembre</option>
@@ -403,7 +403,8 @@
         <select id="cropSel" name="crop" class="form-select" aria-label="Seleziona coltura">
           <option value="">Tutte le colture</option>
           <option th:each="c:${cropsList}" th:value="${c}" th:text="${c}"
-                  th:selected="${c==crop}">Coltura</option>
+                  th:selected="${c==crop}">Coltura
+          </option>
         </select>
       </div>
       <div class="form-group" style="min-width:180px">
@@ -411,7 +412,8 @@
         <select id="areaSel" name="area" class="form-select" aria-label="Seleziona area">
           <option value="">Tutte le aree</option>
           <option th:each="a:${areasList}" th:value="${a}" th:text="${a}"
-                  th:selected="${a==area}">Area</option>
+                  th:selected="${a==area}">Area
+          </option>
         </select>
       </div>
       <button type="submit" class="btn btn-primary">
@@ -476,11 +478,10 @@
               <i class="bi bi-graph-up me-2"></i>
               Andamento Storico del Rischio Climatico
             </h2>
-            <span class="badge"
-                  style="background-color: rgba(224,148,0,0.15); color: var(--warning-accessible); font-weight: 600;"
-                  th:text="${crop!=null and !#strings.isEmpty(crop) ? crop : 'Tutte le Colture'}">
-              Tutte le Colture
-            </span>
+            <span class="badge" style="background-color: rgba(224, 148, 0, 0.15); color: #b87500"
+                  th:text="${crop != null && !#strings.isEmpty(crop) ? crop : 'Tutte le Colture'}">
+                            Tutte le Colture
+                        </span>
           </div>
         </div>
         <p class="subtitle mb-3">
@@ -499,11 +500,10 @@
               <i class="bi bi-radar me-2"></i>
               Profilo di Rischio per Area
             </h3>
-            <span class="badge"
-                  style="background-color: rgba(224,148,0,0.15); color: var(--warning-accessible); font-weight: 600;"
-                  th:text="${crop!=null and !#strings.isEmpty(crop) ? crop : 'Tutte'}">
-              Tutte
-            </span>
+            <span class="badge bg-primary bg-opacity-10 text-primary"
+                  th:text="${crop != null && !#strings.isEmpty(crop) ? crop : 'Tutte le Colture'}">
+                            Tutte le Colture
+                        </span>
           </div>
         </div>
         <p class="subtitle mb-3">
@@ -544,13 +544,17 @@
             <span class="fw-semibold" th:text="${r.area}">Area</span>
           </td>
           <td class="text-end fw-bold"
-              th:text="${#numbers.formatDecimal(r.riskIndex,1,'POINT',2,'COMMA')}">0,00</td>
+              th:text="${#numbers.formatDecimal(r.riskIndex,1,'POINT',2,'COMMA')}">0,00
+          </td>
           <td class="text-end"
-              th:text="${#numbers.formatDecimal(r.riskTemp,1,'POINT',2,'COMMA')}">0,00</td>
+              th:text="${#numbers.formatDecimal(r.riskTemp,1,'POINT',2,'COMMA')}">0,00
+          </td>
           <td class="text-end"
-              th:text="${#numbers.formatDecimal(r.riskWater,1,'POINT',2,'COMMA')}">0,00</td>
+              th:text="${#numbers.formatDecimal(r.riskWater,1,'POINT',2,'COMMA')}">0,00
+          </td>
           <td class="text-end"
-              th:text="${#numbers.formatDecimal(r.riskFrost,1,'POINT',2,'COMMA')}">0,00</td>
+              th:text="${#numbers.formatDecimal(r.riskFrost,1,'POINT',2,'COMMA')}">0,00
+          </td>
         </tr>
         </tbody>
       </table>

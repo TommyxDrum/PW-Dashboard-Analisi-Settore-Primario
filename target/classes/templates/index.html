@@ -23,7 +23,7 @@
       --control-h: 44px;
 
       --area-nord:#0d6efd;
-      --area-centro:#fd7e14;
+      --area-centro:#D96D00;
       --area-sud:#10b981;
 
       --risk-green:#198754;
@@ -387,6 +387,44 @@
       background-color: rgba(220,53,69,0.25);
     }
 
+    /* Legenda aree per grafici - COME NEL FILE COSTI */
+    .chart-legend {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1.5rem;
+      padding: 0.75rem 0;
+      margin-top: 0.75rem;
+    }
+
+    .chart-legend .item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      color: #495057;
+      font-weight: 500;
+    }
+
+    .chart-legend .item .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .chart-legend .item.nord .legend-dot {
+      background-color: var(--area-nord);
+    }
+
+    .chart-legend .item.centro .legend-dot {
+      background-color: var(--area-centro);
+    }
+
+    .chart-legend .item.sud .legend-dot {
+      background-color: var(--area-sud);
+    }
+
     /* Badge migliorati */
     .badge {
       font-weight: 600;
@@ -434,6 +472,11 @@
       .btn-detail-link {
         width: 100%;
         justify-content: center;
+      }
+
+      .chart-legend {
+        flex-wrap: wrap;
+        gap: 1rem;
       }
     }
 
@@ -708,7 +751,7 @@
         <div class="d-flex flex-wrap justify-content-between align-items-center section-header success-border mb-3">
           <div class="d-flex align-items-center gap-2">
             <h2 class="h6 mb-0 fw-bold text-success">Andamento Resa (t/ha)</h2>
-            <span class="badge bg-success bg-opacity-10 text-success" th:text="${crop != null && !crop.isEmpty() ? crop : 'Tutte le Colture'}">Tutte</span>
+            <span class="badge bg-success bg-opacity-10 text-success" th:text="${crop != null && !crop.isEmpty() ? crop : 'Tutte le Colture'}">Tutte le Colture</span>
           </div>
           <a href="/resa" class="btn btn-sm btn-detail-link" style="border-color: var(--primary-green);" aria-label="Vai alla pagina Resa">
             Dettagli <i class="bi bi-arrow-right ms-1"></i>
@@ -717,6 +760,7 @@
         <div class="chart-container">
           <canvas id="yieldMinMax" role="img" aria-label="Grafico a linee che mostra l'andamento della resa per ettaro nel tempo."></canvas>
         </div>
+        <div id="yieldLegend"></div>
       </div>
     </div>
 
@@ -725,7 +769,7 @@
         <div class="d-flex flex-wrap justify-content-between align-items-center section-header mb-3">
           <div class="d-flex align-items-center gap-2">
             <h2 class="h6 mb-0 fw-bold text-primary">Efficienza Idrica (Kg/m³)</h2>
-            <span class="badge bg-primary bg-opacity-10 text-primary" th:text="${crop != null && !crop.isEmpty() ? crop : 'Tutte'}">Tutte</span>
+            <span class="badge bg-primary bg-opacity-10 text-primary" th:text="${crop != null && !crop.isEmpty() ? crop : 'Tutte le Colture'}">Tutte le Colture</span>
           </div>
           <a href="/efficienzaIdrica" class="btn btn-sm btn-detail-link" style="border-color: var(--secondary-blue);" aria-label="Vai alla pagina Risorse Idriche">
             Dettagli <i class="bi bi-arrow-right ms-1"></i>
@@ -734,6 +778,7 @@
         <div class="chart-container">
           <canvas id="effPolar" role="img" aria-label="Grafico ad area polare che confronta l'efficienza idrica tra le aree."></canvas>
         </div>
+        <div id="effLegend"></div>
       </div>
     </div>
   </div>
@@ -778,8 +823,8 @@
         <div class="d-flex flex-wrap justify-content-between align-items-center section-header mb-3">
           <h2 class="h6 mb-0 fw-bold text-info">
             <i class="bi bi-graph-up-arrow me-2"></i>
-            Margine per Area (€/t)
-          </h2>
+            Margine per Area (€/t)</h2>
+          <span class="badge bg-success bg-opacity-10 text-success" th:text="${crop != null && !crop.isEmpty() ? crop : 'Tutte le Colture'}">Tutte le Colture</span>
           <a href="/margine" class="btn btn-sm btn-detail-link" style="border-color: var(--info-color);" aria-label="Vai alla pagina Margine">
             Dettagli <i class="bi bi-arrow-right ms-1"></i>
           </a>
@@ -793,8 +838,8 @@
         <div class="d-flex flex-wrap justify-content-between align-items-center section-header purple-border mb-3">
           <h2 class="h6 mb-0 fw-bold" style="color:var(--purple)">
             <i class="bi bi-tag-fill me-2"></i>
-            Costi per Area (€/t)
-          </h2>
+            Costi per Area (€/t)</h2>
+          <span class="badge bg-success bg-opacity-10 text-success" th:text="${crop != null && !crop.isEmpty() ? crop : 'Tutte le Colture'}">Tutte le Colture</span>
           <a href="/costi" class="btn btn-sm btn-detail-link" style="border-color: var(--purple);" aria-label="Vai alla pagina Costi">
             Dettagli <i class="bi bi-arrow-right ms-1"></i>
           </a>
@@ -879,7 +924,7 @@
     var riskSud    = [[${riskSud}]];
 
     var C_NORD   = '#0d6efd';
-    var C_CENTRO = '#fd7e14';
+    var C_CENTRO = '#D96D00';
     var C_SUD    = '#10b981';
     var colorsAll = [C_NORD, C_CENTRO, C_SUD];
 
@@ -956,8 +1001,7 @@
           },
           plugins: {
             legend: {
-              position: 'top',
-              labels: { usePointStyle: true, padding: 15, font: { weight: '500' } }
+              display: false
             },
             tooltip: {
               mode: 'index',
@@ -978,6 +1022,19 @@
           interaction: { mode: 'index', intersect: false }
         }
       });
+
+      // Legenda personalizzata COME NEL FILE COSTI
+      var legendContainer = document.getElementById('yieldLegend');
+      var legendHTML = '<div class="chart-legend" role="list" aria-label="Legenda aree geografiche">';
+      datasetsNonEmpty.forEach(function(d){
+        var colorClass = d.key.toLowerCase();
+        legendHTML += '<span class="item ' + colorClass + '" role="listitem">' +
+          '<span class="legend-dot"></span>' +
+          '<span>' + d.label + '</span>' +
+          '</span>';
+      });
+      legendHTML += '</div>';
+      legendContainer.innerHTML = legendHTML;
     })();
 
     /* ===== Efficienza Idrica: Polar Area ===== */
@@ -1026,8 +1083,7 @@
           maintainAspectRatio: false,
           plugins: {
             legend: {
-              position: 'top',
-              labels: { usePointStyle: true, padding: 15, font: { weight: '500' } }
+              display: false
             },
             tooltip: {
               backgroundColor: 'rgba(255,255,255,0.95)',
@@ -1058,6 +1114,19 @@
           animation: { animateRotate: true, animateScale: true }
         }
       });
+
+      // Legenda personalizzata COME NEL FILE COSTI
+      var legendContainer = document.getElementById('effLegend');
+      var legendHTML = '<div class="chart-legend" role="list" aria-label="Legenda aree geografiche">';
+      L.forEach(function(label){
+        var colorClass = label.toLowerCase();
+        legendHTML += '<span class="item ' + colorClass + '" role="listitem">' +
+          '<span class="legend-dot"></span>' +
+          '<span>' + label + '</span>' +
+          '</span>';
+      });
+      legendHTML += '</div>';
+      legendContainer.innerHTML = legendHTML;
     })();
 
     /* ===== ECharts: Margine e Costi ===== */
@@ -1168,7 +1237,7 @@
 
       var areas = [
         { key: 'Nord',   color: '#0d6efd', value: riskNord   },
-        { key: 'Centro', color: '#fd7e14', value: riskCentro },
+        { key: 'Centro', color: '#D96D00', value: riskCentro },
         { key: 'Sud',    color: '#10b981', value: riskSud    }
       ];
 

@@ -140,7 +140,7 @@ public class IndexController {
             effMaxScale = Math.max(10.0, Math.ceil((p95 * 1.10) / 5.0) * 5.0);
         }
 
-        // Efficienza media (Kg/m³) per area (per polar)
+        // Efficienza media (Kg/mÂ³) per area (per polar)
         Map<String, List<Double>> effListByArea = filtered.stream().collect(
                 Collectors.groupingBy(
                         SampleRecord::area,
@@ -155,7 +155,7 @@ public class IndexController {
         double effCentroKgM3 = avgFinite(effListByArea.get("Centro"));
         double effSudKgM3    = avgFinite(effListByArea.get("Sud"));
 
-        // Costi/Margini/Rischio per area (€/t e indice 0..1)
+        // Costi/Margini/Rischio per area (â‚¬/t e indice 0..1)
         Map<String, List<Kpi>> kpisByArea = filtered.stream().collect(
                 Collectors.groupingBy(
                         SampleRecord::area,
