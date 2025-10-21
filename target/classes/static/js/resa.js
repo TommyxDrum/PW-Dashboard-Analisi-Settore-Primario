@@ -44,7 +44,7 @@
     ];
     const filtered = filterDatasetsByArea(datasets, areaSel);
 
-    new Chart(el.getContext('2d'), {
+    const resaChart = new Chart(el.getContext('2d'), {
       type: 'line',
       data: {
         labels: years,
@@ -102,6 +102,9 @@
         interaction: { mode: 'index', intersect: false }
       }
     });
+
+    // 🔴 ESPORTA riferimento globale
+    window.resaAnnualTrendChart = resaChart;
   })();
 
   /* ===== Donut Chart: Composizione Produzione ===== */
@@ -165,5 +168,8 @@
     window.addEventListener('resize', function () {
       donutChart.resize();
     });
+
+    // 🔴 ESPORTA riferimento globale
+    window.echDonutYieldChart = donutChart;
   })();
 })();

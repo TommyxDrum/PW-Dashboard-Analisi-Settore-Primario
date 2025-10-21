@@ -200,5 +200,8 @@
     window.addEventListener('resize', function () {
       chart.resize();
     });
+
+    // 🔴 ESPORTA riferimento globale
+    window.echScatterEfficiencyChart = chart;
   })();
 })();

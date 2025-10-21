@@ -1,86 +1,85 @@
 (function () {
-  const labels = window.dashboardData.labels;
-  const yNord = window.dashboardData.yieldsNord;
-  const yCentro = window.dashboardData.yieldsCentro;
-  const ySud = window.dashboardData.yieldsSud;
-  const areaSel = window.dashboardData.area;
+  // ====== DATI DA THYMELEAF ======
+  const data = window.dashboardData || {};
+  const labels = data.labels || [];
+  const yNord = data.yieldsNord || [];
+  const yCentro = data.yieldsCentro || [];
+  const ySud = data.yieldsSud || [];
+  const areaSel = data.area || '';
 
-  const avgEff = window.dashboardData.avgEff;
-  const effMax = window.dashboardData.effMaxScale;
-  const avgCost = window.dashboardData.avgCost;
-  const avgMargin = window.dashboardData.avgMargin;
+  const effNordKgM3 = data.effNordKgM3;
+  const effCentroKgM3 = data.effCentroKgM3;
+  const effSudKgM3 = data.effSudKgM3;
 
-  const effNordKgM3 = window.dashboardData.effNordKgM3;
-  const effCentroKgM3 = window.dashboardData.effCentroKgM3;
-  const effSudKgM3 = window.dashboardData.effSudKgM3;
+  const costNord = data.costNord;
+  const costCentro = data.costCentro;
+  const costSud = data.costSud;
+  const marginNord = data.marginNord;
+  const marginCentro = data.marginCentro;
+  const marginSud = data.marginSud;
 
-  const costNord = window.dashboardData.costNord;
-  const costCentro = window.dashboardData.costCentro;
-  const costSud = window.dashboardData.costSud;
-  const marginNord = window.dashboardData.marginNord;
-  const marginCentro = window.dashboardData.marginCentro;
-  const marginSud = window.dashboardData.marginSud;
+  const riskNord = data.riskNord;
+  const riskCentro = data.riskCentro;
+  const riskSud = data.riskSud;
 
-  const riskNord = window.dashboardData.riskNord;
-  const riskCentro = window.dashboardData.riskCentro;
-  const riskSud = window.dashboardData.riskSud;
-
-  const colors = getAreaColors();
-  const C_NORD = colors.NORD;
-  const C_CENTRO = colors.CENTRO;
-  const C_SUD = colors.SUD;
+  // ====== COLORI (da common.js) ======
+  const colors = (typeof getAreaColors === 'function') ? getAreaColors() : { NORD: '#0d6efd', CENTRO: '#D96D00', SUD: '#10b981' };
+  const C_NORD = colors.NORD, C_CENTRO = colors.CENTRO, C_SUD = colors.SUD;
   const colorsAll = [C_NORD, C_CENTRO, C_SUD];
 
-  /* ===== Resa: Linear Scale Min/Max ===== */
-  (function () {
+  // ====== RIFERIMENTI GRAFICI ESPORTATI ======
+  let effPolarChart = null;
+  let echMarginChart = null;
+  let echCostChart = null;
+  window.effPolarChart = null;
+  window.echMarginChart = null;
+  window.echCostChart = null;
+
+  // ====== GRAFICO RESA (Chart.js line) ======
+  (function buildYieldLine() {
     const el = document.getElementById('yieldMinMax');
     if (!el) return;
 
-    const allCandidates = [
-      { key: 'Nord', label: 'Nord', data: yNord, color: C_NORD },
+    const candidates = [
+      { key: 'Nord',   label: 'Nord',   data: yNord,   color: C_NORD },
       { key: 'Centro', label: 'Centro', data: yCentro, color: C_CENTRO },
-      { key: 'Sud', label: 'Sud', data: ySud, color: C_SUD }
+      { key: 'Sud',    label: 'Sud',    data: ySud,    color: C_SUD }
     ];
 
     const datasetsPicked = (areaSel && String(areaSel).trim().length > 0)
-      ? allCandidates.filter(function (d) { return d.key.toLowerCase() === String(areaSel).toLowerCase(); })
-      : allCandidates;
+      ? candidates.filter(d => d.key.toLowerCase() === String(areaSel).toLowerCase())
+      : candidates;
 
-    const datasetsNonEmpty = datasetsPicked.filter(function (d) {
-      return Array.isArray(d.data) && d.data.some(function (v) { return Number.isFinite(v); });
-    });
-
-    if (datasetsNonEmpty.length === 0) {
+    const datasets = datasetsPicked.filter(d => Array.isArray(d.data) && d.data.some(Number.isFinite));
+    if (datasets.length === 0) {
       el.parentElement.innerHTML = '<div class="loading"><i class="bi bi-exclamation-circle me-2"></i>Nessun dato disponibile</div>';
       return;
     }
 
-    const allVals = datasetsNonEmpty.flatMap(function (d) { return d.data; }).filter(Number.isFinite);
-    const yMin0 = Math.min.apply(null, allVals);
-    const yMax0 = Math.max.apply(null, allVals);
+    const allVals = datasets.flatMap(d => d.data).filter(Number.isFinite);
+    const yMin0 = Math.min(...allVals);
+    const yMax0 = Math.max(...allVals);
     const span = Math.max(0, yMax0 - yMin0);
     const pad = span > 0 ? span * 0.10 : (yMax0 || 1) * 0.10;
 
     new Chart(el.getContext('2d'), {
       type: 'line',
       data: {
-        labels: labels,
-        datasets: datasetsNonEmpty.map(function (d) {
-          return {
-            label: d.label,
-            data: d.data,
-            borderColor: d.color,
-            backgroundColor: d.color + '15',
-            pointBackgroundColor: d.color,
-            pointBorderColor: '#fff',
-            pointBorderWidth: 2,
-            pointRadius: 4,
-            pointHoverRadius: 6,
-            borderWidth: 3,
-            tension: 0.35,
-            fill: true
-          };
-        })
+        labels,
+        datasets: datasets.map(d => ({
+          label: d.label,
+          data: d.data,
+          borderColor: d.color,
+          backgroundColor: d.color + '15',
+          pointBackgroundColor: d.color,
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          borderWidth: 3,
+          tension: 0.35,
+          fill: true
+        }))
       },
       options: {
         responsive: true,
@@ -93,161 +92,116 @@
             title: { display: true, text: 'Resa (t/ha)', font: { weight: '600', size: 13 } },
             grid: { color: 'rgba(0,0,0,0.05)' }
           },
-          x: {
-            type: 'category',
-            ticks: { autoSkip: true, maxTicksLimit: 12 },
-            grid: { display: false }
-          }
+          x: { type: 'category', ticks: { autoSkip: true, maxTicksLimit: 12 }, grid: { display: false } }
         },
         plugins: {
-          legend: {
-            display: false
-          },
+          legend: { display: false },
           tooltip: {
-            mode: 'index',
-            intersect: false,
+            mode: 'index', intersect: false,
             backgroundColor: 'rgba(255,255,255,0.95)',
-            titleColor: '#333',
-            bodyColor: '#666',
-            borderColor: '#ddd',
-            borderWidth: 1,
-            padding: 12,
-            callbacks: {
-              label: function (ctx) {
-                return ctx.dataset.label + ': ' + (+ctx.raw).toFixed(2) + ' t/ha';
-              }
-            }
+            titleColor: '#333', bodyColor: '#666',
+            borderColor: '#ddd', borderWidth: 1, padding: 12,
+            callbacks: { label: (ctx) => `${ctx.dataset.label}: ${(+ctx.raw).toFixed(2)} t/ha` }
           }
         },
         interaction: { mode: 'index', intersect: false }
       }
     });
 
-    // Legenda personalizzata
     const legendContainer = document.getElementById('yieldLegend');
-    let legendHTML = '<div class="chart-legend" role="list" aria-label="Legenda aree geografiche">';
-    datasetsNonEmpty.forEach(function (d) {
-      const colorClass = d.key.toLowerCase();
-      legendHTML += '<span class="item ' + colorClass + '" role="listitem">' +
-        '<span class="legend-dot"></span>' +
-        '<span>' + d.label + '</span>' +
-        '</span>';
-    });
-    legendHTML += '</div>';
-    legendContainer.innerHTML = legendHTML;
+    if (legendContainer) {
+      legendContainer.innerHTML =
+        `<div class="chart-legend" role="list" aria-label="Legenda aree geografiche">
+          ${datasets.map(d => (
+            `<span class="item ${d.key.toLowerCase()}" role="listitem">
+              <span class="legend-dot"></span><span>${d.label}</span>
+            </span>`
+          )).join('')}
+        </div>`;
+    }
   })();
 
-  /* ===== Efficienza Idrica: Polar Area ===== */
-  (function () {
+  // ====== GRAFICO EFFICIENZA POLARE (Chart.js polarArea) ======
+  (function buildEffPolar() {
     const el = document.getElementById('effPolar');
     if (!el) return;
 
-    const labelsAreas = ['Nord', 'Centro', 'Sud'];
-    const valuesAreas = [effNordKgM3, effCentroKgM3, effSudKgM3];
-    const colors = colorsAll;
+    const L = ['Nord', 'Centro', 'Sud'];
+    const V = [effNordKgM3, effCentroKgM3, effSudKgM3];
+    const C = colorsAll.slice();
 
-    let L = [], V = [], C = [];
-    if (areaSel && String(areaSel).trim().length > 0) {
-      const a = String(areaSel).toLowerCase();
-      const idx = a === 'nord' ? 0 : (a === 'centro' ? 1 : (a === 'sud' ? 2 : -1));
-      if (idx >= 0) {
-        L = [labelsAreas[idx]];
-        V = [valuesAreas[idx]];
-        C = [colors[idx]];
-      } else {
-        L = labelsAreas;
-        V = valuesAreas;
-        C = colors;
+    let labelsUsed = L, valuesUsed = V, colorsUsed = C;
+    if (areaSel && String(areaSel).trim()) {
+      const idx = ({nord:0, centro:1, sud:2})[String(areaSel).toLowerCase()];
+      if (Number.isInteger(idx)) {
+        labelsUsed = [L[idx]];
+        valuesUsed = [V[idx]];
+        colorsUsed = [C[idx]];
       }
-    } else {
-      L = labelsAreas;
-      V = valuesAreas;
-      C = colors;
     }
 
-    const vmax = Math.max.apply(null, V.filter(function (n) { return Number.isFinite(n); }).concat([100]));
+    const vmax = Math.max(...valuesUsed.filter(Number.isFinite), 100);
 
-    new Chart(el.getContext('2d'), {
+    effPolarChart = new Chart(el.getContext('2d'), {
       type: 'polarArea',
       data: {
-        labels: L,
+        labels: labelsUsed,
         datasets: [{
-          data: V,
-          backgroundColor: C.map(function (c) { return c + '40'; }),
-          borderColor: C,
+          data: valuesUsed,
+          backgroundColor: colorsUsed.map(c => c + '40'),
+          borderColor: colorsUsed,
           borderWidth: 3
         }]
       },
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
+        responsive: true, maintainAspectRatio: false,
         plugins: {
-          legend: {
-            display: false
-          },
+          legend: { display: false },
           tooltip: {
             backgroundColor: 'rgba(255,255,255,0.95)',
-            titleColor: '#333',
-            bodyColor: '#666',
-            borderColor: '#ddd',
-            borderWidth: 1,
-            padding: 12,
-            callbacks: {
-              label: function (ctx) {
-                return ctx.label + ': ' + (+ctx.raw).toFixed(2) + ' Kg/m³';
-              }
-            }
+            titleColor: '#333', bodyColor: '#666',
+            borderColor: '#ddd', borderWidth: 1, padding: 12,
+            callbacks: { label: (ctx) => `${ctx.label}: ${(+ctx.raw).toFixed(2)} Kg/m³` }
           }
         },
         scales: {
           r: {
-            suggestedMin: 0,
-            suggestedMax: vmax * 1.15,
-            ticks: {
-              stepSize: Math.max(5, Math.round(vmax / 5)),
-              callback: function (v) { return v + ' Kg/m³'; },
-              font: { size: 11 }
-            },
+            suggestedMin: 0, suggestedMax: vmax * 1.15,
+            ticks: { stepSize: Math.max(5, Math.round(vmax / 5)), callback: v => v + ' Kg/m³', font: { size: 11 } },
             grid: { color: 'rgba(0,0,0,0.08)' }
           }
-        },
-        animation: { animateRotate: true, animateScale: true }
+        }
       }
     });
 
-    // Legenda personalizzata
+    window.effPolarChart = effPolarChart;
+
     const legendContainer = document.getElementById('effLegend');
-    let legendHTML = '<div class="chart-legend" role="list" aria-label="Legenda aree geografiche">';
-    L.forEach(function (label) {
-      const colorClass = label.toLowerCase();
-      legendHTML += '<span class="item ' + colorClass + '" role="listitem">' +
-        '<span class="legend-dot"></span>' +
-        '<span>' + label + '</span>' +
-        '</span>';
-    });
-    legendHTML += '</div>';
-    legendContainer.innerHTML = legendHTML;
+    if (legendContainer) {
+      legendContainer.innerHTML =
+        `<div class="chart-legend" role="list" aria-label="Legenda aree geografiche">
+          ${labelsUsed.map(label => (
+            `<span class="item ${label.toLowerCase()}" role="listitem">
+              <span class="legend-dot"></span><span>${label}</span>
+            </span>`
+          )).join('')}
+        </div>`;
+    }
   })();
 
-  /* ===== ECharts: Margine e Costi ===== */
-  (function () {
+  // ====== GRAFICI ECHARTS (Margine, Costi) ======
+  (function buildECharts() {
     const areasAll = ['Nord', 'Centro', 'Sud'];
     const marginVals = [marginNord, marginCentro, marginSud];
     const costVals = [costNord, costCentro, costSud];
 
-    const sel = (areaSel && String(areaSel).trim().length > 0) ? String(areaSel).toLowerCase() : null;
+    const sel = (areaSel && String(areaSel).trim()) ? String(areaSel).toLowerCase() : null;
+    const idxSel = sel ? ({nord:0, centro:1, sud:2})[sel] ?? -1 : -1;
 
-    function filtered(names, values) {
-      if (!sel) return { names: names, values: values };
-      const idx = sel === 'nord' ? 0 : (sel === 'centro' ? 1 : (sel === 'sud' ? 2 : -1));
-      if (idx < 0) return { names: names, values: values };
-      return { names: [names[idx]], values: [values[idx]] };
-    }
+    const M = (idxSel >= 0) ? { names: [areasAll[idxSel]], values: [marginVals[idxSel]] } : { names: areasAll, values: marginVals };
+    const C_DATA = (idxSel >= 0) ? { names: [areasAll[idxSel]], values: [costVals[idxSel]] } : { names: areasAll, values: costVals };
 
-    const M = filtered(areasAll, marginVals);
-    const C_DATA = filtered(areasAll, costVals);
-
-    function buildOption(titleText, cats, vals, mainColor) {
+    function buildOption(titleText, cats, vals, defColor) {
       return {
         tooltip: {
           trigger: 'axis',
@@ -257,31 +211,20 @@
           borderWidth: 1,
           textStyle: { color: '#333' },
           padding: 12,
-          valueFormatter: function (v) { return '€ ' + Number(v).toFixed(2) + '/t'; }
+          valueFormatter: v => '€ ' + Number(v).toFixed(2) + '/t'
         },
-        grid: {
-          left: 50,
-          right: 30,
-          top: 30,
-          bottom: 40,
-          containLabel: true
-        },
+        grid: { left: 50, right: 30, top: 30, bottom: 40, containLabel: true },
         xAxis: {
-          type: 'category',
-          data: cats,
+          type: 'category', data: cats,
           axisTick: { alignWithLabel: true },
           axisLine: { lineStyle: { color: '#ddd' } },
           axisLabel: { color: '#666', fontWeight: '500' }
         },
         yAxis: {
-          type: 'value',
-          name: '€/t',
+          type: 'value', name: '€/t',
           nameTextStyle: { fontWeight: '600', fontSize: 13 },
           nameGap: 15,
-          axisLabel: {
-            formatter: '€ {value}',
-            color: '#666'
-          },
+          axisLabel: { formatter: '€ {value}', color: '#666' },
           splitLine: { lineStyle: { color: '#f0f0f0' } }
         },
         series: [{
@@ -289,20 +232,15 @@
           name: titleText,
           barWidth: '50%',
           itemStyle: {
-            color: cats.length > 1
-              ? function (p) { return colorByAreaName(p.name); }
-              : mainColor,
+            color: cats.length > 1 && typeof colorByAreaName === 'function'
+              ? p => colorByAreaName(p.name)
+              : defColor,
             borderRadius: [6, 6, 0, 0],
             shadowColor: 'rgba(0,0,0,0.1)',
             shadowBlur: 10,
             shadowOffsetY: 4
           },
-          emphasis: {
-            itemStyle: {
-              shadowBlur: 20,
-              shadowOffsetY: 8
-            }
-          },
+          emphasis: { itemStyle: { shadowBlur: 20, shadowOffsetY: 8 } },
           data: vals
         }],
         animationDuration: 800,
@@ -310,20 +248,27 @@
       };
     }
 
-    const echMargin = echarts.init(document.getElementById('echMargin'));
-    const echCost = echarts.init(document.getElementById('echCost'));
+    const mEl = document.getElementById('echMargin');
+    const cEl = document.getElementById('echCost');
+    if (mEl) {
+      echMarginChart = echarts.init(mEl);
+      echMarginChart.setOption(buildOption('Margine medio (€/t)', M.names, M.values, '#0dcaf0'));
+      window.echMarginChart = echMarginChart;
+    }
+    if (cEl) {
+      echCostChart = echarts.init(cEl);
+      echCostChart.setOption(buildOption('Costo medio (€/t)', C_DATA.names, C_DATA.values, '#6f42c1'));
+      window.echCostChart = echCostChart;
+    }
 
-    echMargin.setOption(buildOption('Margine medio (€/t)', M.names, M.values, '#0dcaf0'));
-    echCost.setOption(buildOption('Costo medio (€/t)', C_DATA.names, C_DATA.values, '#6f42c1'));
-
-    window.addEventListener('resize', function () {
-      echMargin.resize();
-      echCost.resize();
+    window.addEventListener('resize', () => {
+      echMarginChart && echMarginChart.resize();
+      echCostChart && echCostChart.resize();
     });
   })();
 
-  /* ===== Rischio Climatico: Gauge CSS ===== */
-  (function () {
+  // ====== RISCHIO CLIMATICO (gauge CSS) ======
+  (function buildRiskGauges() {
     const container = document.getElementById('riskGauges');
     if (!container) return;
 
@@ -333,46 +278,232 @@
       { key: 'Sud', color: '#10b981', value: riskSud }
     ];
 
-    function levelText(v) {
+    let set = areas;
+    if (areaSel && String(areaSel).trim()) {
+      const a = String(areaSel).toLowerCase();
+      set = areas.filter(x => x.key.toLowerCase() === a);
+      if (set.length === 0) set = areas;
+    }
+
+    function levelBadge(v) {
       if (v > 0.7) return '<span class="badge bg-danger">ALTO</span>';
       if (v >= 0.4) return '<span class="badge" style="background-color:var(--warning-accessible)">MEDIO</span>';
       return '<span class="badge bg-success">BASSO</span>';
     }
 
-    let set = areas;
-    if (areaSel && String(areaSel).trim().length > 0) {
-      const a = String(areaSel).toLowerCase();
-      set = areas.filter(function (x) { return x.key.toLowerCase() === a; });
-      if (set.length === 0) set = areas;
-    }
-
-    container.innerHTML = set.map(function (a) {
+    container.innerHTML = set.map(a => {
       const colClass = set.length === 1 ? 'col-12' : (set.length === 2 ? 'col-md-6' : 'col-lg-4');
-      return '<div class="' + colClass + '">' +
-        '<div class="p-4 border rounded-3 h-100" style="background: linear-gradient(135deg, #fff 0%, ' + a.color + '08 100%)">' +
-        '<div class="d-flex justify-content-between align-items-center mb-3 pb-2" style="border-bottom:3px solid ' + a.color + '">' +
-        '<h3 class="h6 mb-0 fw-bold" style="color:' + a.color + '">' +
-        '<i class="bi bi-geo-alt-fill me-2"></i>Area ' + a.key +
-        '</h3>' +
-        levelText(a.value) +
-        '</div>' +
-        '<p class="text-muted small mb-3">' +
-        'Indice di rischio climatico: ' +
-        '<span class="fw-bold fs-5" style="color:' + a.color + '">' + (Number(a.value) || 0).toFixed(2) + '</span>' +
-        ' <span class="text-muted">(scala 0-1)</span>' +
-        '</p>' +
-        '<div class="risk-gauge" role="progressbar" ' +
-        'aria-label="Indice di rischio climatico ' + a.key + '" ' +
-        'aria-valuemin="0" aria-valuemax="1" ' +
-        'aria-valuenow="' + (Number(a.value) || 0).toFixed(2) + '" ' +
-        'style="--risk:' + (Number.isFinite(a.value) ? a.value : 0) + '">' +
-        '<div class="risk-track"></div>' +
-        '<div class="risk-thumb">' +
-        '<span class="risk-value">' + (Number(a.value) || 0).toFixed(2) + '</span>' +
-        '</div>' +
-        '</div>' +
-        '</div>' +
-        '</div>';
+      return `<div class="${colClass}">
+        <div class="p-4 border rounded-3 h-100" style="background: linear-gradient(135deg, #fff 0%, ${a.color}08 100%)">
+          <div class="d-flex justify-content-between align-items-center mb-3 pb-2" style="border-bottom:3px solid ${a.color}">
+            <h3 class="h6 mb-0 fw-bold" style="color:${a.color}"><i class="bi bi-geo-alt-fill me-2"></i>Area ${a.key}</h3>
+            ${levelBadge(a.value)}
+          </div>
+          <p class="text-muted small mb-3">
+            Indice di rischio climatico:
+            <span class="fw-bold fs-5" style="color:${a.color}">${(Number(a.value) || 0).toFixed(2)}</span>
+            <span class="text-muted">(scala 0-1)</span>
+          </p>
+          <div class="risk-gauge" role="progressbar"
+               aria-label="Indice di rischio climatico ${a.key}"
+               aria-valuemin="0" aria-valuemax="1"
+               aria-valuenow="${(Number(a.value) || 0).toFixed(2)}"
+               style="--risk:${Number.isFinite(a.value) ? a.value : 0}">
+            <div class="risk-track"></div>
+            <div class="risk-thumb"><span class="risk-value">${(Number(a.value) || 0).toFixed(2)}</span></div>
+          </div>
+        </div>
+      </div>`;
     }).join('');
   })();
+
+  // ====== FUNZIONI DI AGGIORNAMENTO LIVE ======
+  function updateKpiCards(dto) {
+    const map = [
+      { selector: '[th\\:text*="avgYieldHa"]', value: dto.resaMedia },
+      { selector: '[th\\:text*="avgEff"]',     value: dto.efficienzaIdrica },
+      { selector: '[th\\:text*="avgCost"]',    value: dto.costoUnitario },
+      { selector: '[th\\:text*="avgMargin"]',  value: dto.margineUnitario },
+      { selector: '[th\\:text*="avgRisk"]',    value: dto.rischioClimatico }
+    ];
+    map.forEach(item => {
+      const el = document.querySelector(item.selector);
+      if (!el || item.value == null) return;
+      const oldVal = parseFloat((el.textContent || '0').replace(',', '.')) || 0;
+      const newVal = Number(item.value);
+      if (Math.abs(oldVal - newVal) > 0.01) {
+        el.classList.add('updating');
+        animateValue(el, oldVal, newVal, 800);
+        setTimeout(() => el.classList.remove('updating'), 800);
+      }
+    });
+  }
+
+  function updateCharts(dto) {
+    if (window.echMarginChart && dto.marginePerArea) {
+      const areas = Object.keys(dto.marginePerArea);
+      const values = Object.values(dto.marginePerArea);
+      window.echMarginChart.setOption({ xAxis: { data: areas }, series: [{ data: values }] });
+    }
+    if (window.echCostChart && dto.costoPerArea) {
+      const areas = Object.keys(dto.costoPerArea);
+      const values = Object.values(dto.costoPerArea);
+      window.echCostChart.setOption({ xAxis: { data: areas }, series: [{ data: values }] });
+    }
+    if (window.effPolarChart && dto.efficienzaPerArea) {
+      const values = Object.values(dto.efficienzaPerArea);
+      window.effPolarChart.data.datasets[0].data = values;
+      window.effPolarChart.update('none');
+    }
+    if (dto.rischioPerArea) updateRiskGauges(dto.rischioPerArea);
+  }
+
+  function updateRiskGauges(riskMap) {
+    Object.keys(riskMap).forEach(area => {
+      const value = Number(riskMap[area]);
+      const gauge = document.querySelector(`.risk-gauge[data-area="${area}"]`) || null;
+      // versioni correnti usano CSS puro; qui potresti aggiungere
+      // data-area="{area}" se vuoi aggiornamenti granulari
+      // per ora aggiorniamo solo l’aria “visiva” principale:
+      if (!gauge) return;
+      gauge.style.setProperty('--risk', value);
+      const valueSpan = gauge.querySelector('.risk-value');
+      if (valueSpan) valueSpan.textContent = value.toFixed(2);
+    });
+  }
+
+  function animateValue(element, start, end, duration) {
+    const range = end - start;
+    const increment = range / (duration / 16);
+    let current = start;
+    const timer = setInterval(() => {
+      current += increment;
+      if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+        current = end; clearInterval(timer);
+      }
+      element.textContent = current.toFixed(2);
+    }, 16);
+  }
+
+  function updateLastUpdateTime() {
+    const el = document.getElementById('lastUpdateTime');
+    if (el) el.textContent = new Date().toLocaleTimeString('it-IT');
+  }
+
+  function flashLiveBadge() {
+    const badge = document.getElementById('liveBadge');
+    if (!badge) return;
+    badge.style.animation = 'none';
+    setTimeout(() => { badge.style.animation = 'pulse 0.5s ease-in-out'; }, 10);
+  }
+
+  // ====== SSE (unica dichiarazione) ======
+  let eventSource = null;
+
+  function connectLiveStream() {
+    if (eventSource) eventSource.close();
+    eventSource = new EventSource('/api/stream/kpi');
+
+    eventSource.addEventListener('kpi-update', (event) => {
+      const dto = JSON.parse(event.data);
+      updateKpiCards(dto);
+      updateCharts(dto);
+      updateLastUpdateTime();
+      flashLiveBadge();
+    });
+
+    eventSource.onerror = () => {
+      console.error('❌ Errore streaming, riconnessione in 5s...');
+      eventSource.close();
+      setTimeout(connectLiveStream, 5000);
+    };
+  }
+
+  // ====== ALERT POLLING ======
+  function startAlertPolling() {
+    const poll = () => {
+      fetch('/api/alerts/active')
+        .then(res => res.json())
+        .then(alerts => {
+          if (Array.isArray(alerts) && alerts.length) showAlertNotification(alerts);
+        })
+        .catch(err => console.error('Errore alert:', err));
+    };
+    poll();
+    setInterval(poll, 15000);
+  }
+
+  function showAlertNotification(alerts) {
+    const container = document.getElementById('alertContainer');
+    if (!container) return;
+    container.innerHTML = '';
+    alerts.forEach(alert => {
+      const div = document.createElement('div');
+      div.className = 'alert alert-warning alert-dismissible fade show';
+      div.innerHTML = `
+        ${alert.message || 'Segnalazione'}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  // ====== METEO MINI-WIDGET (SSE dedicato) ======
+  function connectMiniWeatherWidget() {
+    const src = new EventSource('/api/stream/weather');
+    src.addEventListener('weather-update', (event) => {
+      const payload = JSON.parse(event.data);
+      updateMiniWeatherWidget(payload);
+    });
+  }
+
+  function updateMiniWeatherWidget(payload) {
+    const container = document.getElementById('weatherMiniCards');
+    if (!container || !payload || !payload.dataPerArea) return;
+    container.innerHTML = '';
+
+    Object.entries(payload.dataPerArea).forEach(([area, w]) => {
+      const icon = getWeatherIcon((w && w.condizioni) || '');
+      const areaColor =
+        area === 'Nord'   ? '#667eea' :
+        area === 'Centro' ? '#f5576c' :
+        '#00f2fe';
+
+      container.innerHTML += `
+        <div class="col-md-4">
+          <div class="p-3 border rounded" style="background: linear-gradient(135deg, ${areaColor}15, ${areaColor}05);">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <strong style="color: ${areaColor}">${area}</strong>
+                <div class="small text-muted">${w.condizioni}</div>
+              </div>
+              <div style="font-size: 2rem;">${icon}</div>
+            </div>
+            <div class="mt-2 d-flex justify-content-between">
+              <span><i class="bi bi-thermometer-half"></i> ${(w.temperaturaC ?? 0).toFixed(1)}°C</span>
+              <span><i class="bi bi-droplet-fill"></i> ${(w.umiditaPct ?? 0).toFixed(0)}%</span>
+              <span><i class="bi bi-wind"></i> ${(w.ventoKmh ?? 0).toFixed(1)} km/h</span>
+            </div>
+          </div>
+        </div>`;
+    });
+  }
+
+  function getWeatherIcon(cond) {
+    switch (cond) {
+      case 'Soleggiato': return '☀️';
+      case 'Nuvoloso':   return '☁️';
+      case 'Pioggia':    return '🌧️';
+      default:           return '🌤️';
+    }
+  }
+
+  // ====== LIFECYCLE ======
+  document.addEventListener('DOMContentLoaded', () => {
+    connectLiveStream();
+    connectMiniWeatherWidget();
+    startAlertPolling();
+  });
+
+  window.addEventListener('beforeunload', () => { if (eventSource) eventSource.close(); });
 })();

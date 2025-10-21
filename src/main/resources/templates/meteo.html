@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Dashboard Agronomica • Monitoraggio Meteo Live</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+    <link rel="stylesheet" th:href="@{/css/common.css}"/>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+    <style>
+        .weather-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .weather-icon {
+            font-size: 4rem;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .weather-value {
+            font-size: 3rem;
+            font-weight: 700;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .weather-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .metric-box {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .area-nord { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .area-centro { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .area-sud { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    </style>
+</head>
+<body>
+
+<header class="header-bar">
+    <a href="/" class="btn btn-outline-secondary btn-back" aria-label="Torna alla Dashboard">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h1 class="header-logo display-6 fs-4 mb-0">
+        <i class="bi bi-cloud-sun-fill me-2" style="color: #ffd700"></i>
+        Monitoraggio Meteo Live
+    </h1>
+    <div class="live-indicator ms-3">
+        <span class="badge bg-success" id="liveBadge">
+            <span class="pulse-dot"></span> LIVE
+        </span>
+        <small class="text-muted ms-2" style="font-size: 0.75rem;">
+            Aggiornato: <span id="lastUpdateTime">--:--:--</span>
+        </small>
+    </div>
+</header>
+
+<div class="container-fluid py-4">
+
+    <!-- Card Meteo per Area -->
+    <div class="row g-4 mb-4" id="weatherCards">
+        <!-- Popolato dinamicamente via JS -->
+    </div>
+
+    <!-- Grafici Andamento -->
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="dashboard-card p-4">
+                <h3 class="h6 mb-3 fw-bold">
+                    <i class="bi bi-thermometer-half me-2"></i>
+                    Temperatura in Tempo Reale
+                </h3>
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="tempChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="dashboard-card p-4">
+                <h3 class="h6 mb-3 fw-bold">
+                    <i class="bi bi-droplet-fill me-2"></i>
+                    Umidità in Tempo Reale
+                </h3>
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="humidityChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="dashboard-card p-4">
+                <h3 class="h6 mb-3 fw-bold">
+                    <i class="bi bi-wind me-2"></i>
+                    Vento in Tempo Reale
+                </h3>
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="windChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="dashboard-card p-4">
+                <h3 class="h6 mb-3 fw-bold">
+                    <i class="bi bi-brightness-high-fill me-2"></i>
+                    Radiazione Solare in Tempo Reale
+                </h3>
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="solarChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // 🔴 Dati storici per grafici (ultimi 20 punti)
+    const historyLimit = 20;
+    const chartData = {
+        labels: [],
+        temp: { Nord: [], Centro: [], Sud: [] },
+        humidity: { Nord: [], Centro: [], Sud: [] },
+        wind: { Nord: [], Centro: [], Sud: [] },
+        solar: { Nord: [], Centro: [], Sud: [] }
+    };
+
+    // Colori per area
+    const areaColors = {
+        Nord: '#667eea',
+        Centro: '#f5576c',
+        Sud: '#00f2fe'
+    };
+
+    // Inizializza grafici
+    let tempChart, humidityChart, windChart, solarChart;
+
+    function initCharts() {
+        const commonOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 500 },
+            scales: {
+                x: {
+                    display: true,
+                    grid: { display: false }
+                },
+                y: {
+                    display: true,
+                    grid: { color: 'rgba(0,0,0,0.05)' }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { usePointStyle: true, padding: 15 }
+                }
+            }
+        };
+
+        tempChart = new Chart(document.getElementById('tempChart'), {
+            type: 'line',
+            data: {
+                labels: chartData.labels,
+                datasets: Object.keys(areaColors).map(area => ({
+                    label: area,
+                    data: chartData.temp[area],
+                    borderColor: areaColors[area],
+                    backgroundColor: areaColors[area] + '20',
+                    tension: 0.4,
+                    fill: true
+                }))
+            },
+            options: { ...commonOptions, scales: { ...commonOptions.scales, y: { ...commonOptions.scales.y, title: { display: true, text: '°C' }}}}
+        });
+
+        humidityChart = new Chart(document.getElementById('humidityChart'), {
+            type: 'line',
+            data: {
+                labels: chartData.labels,
+                datasets: Object.keys(areaColors).map(area => ({
+                    label: area,
+                    data: chartData.humidity[area],
+                    borderColor: areaColors[area],
+                    backgroundColor: areaColors[area] + '20',
+                    tension: 0.4,
+                    fill: true
+                }))
+            },
+            options: { ...commonOptions, scales: { ...commonOptions.scales, y: { ...commonOptions.scales.y, title: { display: true, text: '%' }}}}
+        });
+
+        windChart = new Chart(document.getElementById('windChart'), {
+            type: 'line',
+            data: {
+                labels: chartData.labels,
+                datasets: Object.keys(areaColors).map(area => ({
+                    label: area,
+                    data: chartData.wind[area],
+                    borderColor: areaColors[area],
+                    backgroundColor: areaColors[area] + '20',
+                    tension: 0.4,
+                    fill: true
+                }))
+            },
+            options: { ...commonOptions, scales: { ...commonOptions.scales, y: { ...commonOptions.scales.y, title: { display: true, text: 'km/h' }}}}
+        });
+
+        solarChart = new Chart(document.getElementById('solarChart'), {
+            type: 'line',
+            data: {
+                labels: chartData.labels,
+                datasets: Object.keys(areaColors).map(area => ({
+                    label: area,
+                    data: chartData.solar[area],
+                    borderColor: areaColors[area],
+                    backgroundColor: areaColors[area] + '20',
+                    tension: 0.4,
+                    fill: true
+                }))
+            },
+            options: { ...commonOptions, scales: { ...commonOptions.scales, y: { ...commonOptions.scales.y, title: { display: true, text: 'W/m²' }}}}
+        });
+    }
+
+    // Connessione SSE per dati meteo
+    function connectWeatherStream() {
+        const eventSource = new EventSource('/api/stream/weather');
+
+        eventSource.addEventListener('weather-update', function(event) {
+            const data = JSON.parse(event.data);
+            console.log('🌤️ Dati meteo aggiornati:', data);
+
+            updateWeatherCards(data);
+            updateCharts(data);
+            updateLastUpdateTime();
+        });
+
+        eventSource.onerror = function() {
+            console.error('❌ Errore streaming meteo');
+            eventSource.close();
+            setTimeout(connectWeatherStream, 5000);
+        };
+    }
+
+    function updateWeatherCards(data) {
+        const container = document.getElementById('weatherCards');
+        container.innerHTML = '';
+
+        Object.entries(data.dataPerArea).forEach(([area, weather]) => {
+            const areaClass = 'area-' + area.toLowerCase();
+            const icon = getWeatherIcon(weather.condizioni);
+
+            const card = `
+                <div class="col-md-4">
+                    <div class="weather-card ${areaClass}">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h4 class="mb-0">${area}</h4>
+                                <small class="weather-label">${weather.condizioni}</small>
+                            </div>
+                            <div class="weather-icon">${icon}</div>
+                        </div>
+
+                        <div class="weather-value mb-2">
+                            ${weather.temperaturaC.toFixed(1)}°C
+                        </div>
+
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="metric-box">
+                                    <i class="bi bi-droplet-fill me-1"></i>
+                                    <strong>${weather.umiditaPct.toFixed(0)}%</strong>
+                                    <div class="weather-label">Umidità</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="metric-box">
+                                    <i class="bi bi-wind me-1"></i>
+                                    <strong>${weather.ventoKmh.toFixed(1)}</strong> km/h
+                                    <div class="weather-label">Vento</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="metric-box">
+                                    <i class="bi bi-cloud-rain-fill me-1"></i>
+                                    <strong>${weather.precipitazioniMm.toFixed(1)}</strong> mm
+                                    <div class="weather-label">Pioggia</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="metric-box">
+                                    <i class="bi bi-brightness-high-fill me-1"></i>
+                                    <strong>${weather.radiazioneSolare.toFixed(0)}</strong> W/m²
+                                    <div class="weather
+    <div class="weather-label">Radiazione</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        container.innerHTML += card;
+    });
+}
+
+function updateCharts(data) {
+    // Aggiungi timestamp
+    const now = new Date();
+    const timeLabel = now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    chartData.labels.push(timeLabel);
+
+    // Aggiungi dati per ogni area
+    Object.entries(data.dataPerArea).forEach(([area, weather]) => {
+        chartData.temp[area].push(weather.temperaturaC);
+        chartData.humidity[area].push(weather.umiditaPct);
+        chartData.wind[area].push(weather.ventoKmh);
+        chartData.solar[area].push(weather.radiazioneSolare);
+    });
+
+    // Mantieni solo ultimi N punti
+    if (chartData.labels.length > historyLimit) {
+        chartData.labels.shift();
+        Object.keys(areaColors).forEach(area => {
+            chartData.temp[area].shift();
+            chartData.humidity[area].shift();
+            chartData.wind[area].shift();
+            chartData.solar[area].shift();
+        });
+    }
+
+    // Aggiorna grafici
+    tempChart.update('none');
+    humidityChart.update('none');
+    windChart.update('none');
+    solarChart.update('none');
+}
+
+function getWeatherIcon(condizioni) {
+    switch(condizioni) {
+        case 'Soleggiato': return '☀️';
+        case 'Nuvoloso': return '☁️';
+        case 'Pioggia': return '🌧️';
+        default: return '🌤️';
+    }
+}
+
+function updateLastUpdateTime() {
+    const timeEl = document.getElementById('lastUpdateTime');
+    if (timeEl) {
+        const now = new Date();
+        timeEl.textContent = now.toLocaleTimeString('it-IT');
+    }
+}
+
+// Avvia tutto
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Inizializzazione dashboard meteo...');
+    initCharts();
+    connectWeatherStream();
+});
+</script>
+
+</body>
+</html>

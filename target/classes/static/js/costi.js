@@ -34,7 +34,7 @@
     ];
     const filtered = filterDatasetsByArea(datasets, areaSel);
 
-    new Chart(el.getContext('2d'), {
+    const costChart = new Chart(el.getContext('2d'), {
       type: 'line',
       data: {
         labels: years,
@@ -92,6 +92,9 @@
         interaction: { mode: 'index', intersect: false }
       }
     });
+
+    // 🔴 ESPORTA riferimento globale
+    window.costAnnualTrendChart = costChart;
   })();
 
   /* ===== ECharts: Scomposizione Costi ===== */
@@ -215,5 +218,8 @@
     window.addEventListener('resize', function () {
       chart.resize();
     });
+
+    // 🔴 ESPORTA riferimento globale
+    window.echBarCostCompositionChart = chart;
   })();
 })();

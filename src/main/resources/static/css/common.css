@@ -401,3 +401,68 @@ footer {
     height: 280px;
   }
 }
+
+/* Badge LIVE animato */
+.live-indicator {
+    display: flex;
+    align-items: center;
+}
+
+.pulse-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #fff;
+    margin-right: 6px;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.3;
+        transform: scale(0.8);
+    }
+}
+
+.live-indicator .badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+/* Animazioni per aggiornamenti live */
+.kpi-value, .kpi-box {
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.kpi-value.updating {
+    transform: scale(1.05);
+    color: var(--primary-green) !important;
+}
+
+/* Pulse per badge LIVE */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.3;
+        transform: scale(0.8);
+    }
+}
+
+/* Effetto glow quando i dati si aggiornano */
+@keyframes glow {
+    0%, 100% { box-shadow: 0 4px 10px rgba(0, 0, 0, .08); }
+    50% { box-shadow: 0 4px 20px rgba(25, 135, 84, 0.3); }
+}
+
+.dashboard-card.updating {
+    animation: glow 1s ease-in-out;
+}

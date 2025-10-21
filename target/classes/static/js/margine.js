@@ -34,7 +34,7 @@
     ];
     const filtered = filterDatasetsByArea(datasets, areaSel);
 
-    new Chart(el.getContext('2d'), {
+    const marginChart = new Chart(el.getContext('2d'), {
       type: 'line',
       data: {
         labels: years,
@@ -92,6 +92,9 @@
         interaction: { mode: 'index', intersect: false }
       }
     });
+
+    // 🔴 ESPORTA RIFERIMENTO
+    window.marginAnnualChart = marginChart;
   })();
 
   /* ===== ECharts: Composizione Prezzo di Vendita ===== */
@@ -210,6 +213,9 @@
       animationDuration: 800,
       animationEasing: 'cubicOut'
     });
+
+    // 🔴 ESPORTA RIFERIMENTO
+    window.echMarginCompositionChart = chart;
 
     window.addEventListener('resize', function () {
       chart.resize();

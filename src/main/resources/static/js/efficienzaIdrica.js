@@ -37,7 +37,7 @@
 
     const filtered = filterDatasetsByArea(datasets, areaSel);
 
-    new Chart(el.getContext('2d'), {
+    const effChart = new Chart(el.getContext('2d'), {
       type: 'line',
       data: {
         labels: years,
@@ -95,6 +95,9 @@
         interaction: { mode: 'index', intersect: false }
       }
     });
+
+    // 🔴 ESPORTA riferimento globale
+    window.efficiencyAnnualTrendChart = effChart;
   })();
 
   /* ===== ECharts: Scatter Produzione vs Consumo Idrico ===== */
@@ -196,5 +199,8 @@
     window.addEventListener('resize', function () {
       chart.resize();
     });
+
+    // 🔴 ESPORTA riferimento globale
+    window.echScatterEfficiencyChart = chart;
   })();
 })();
