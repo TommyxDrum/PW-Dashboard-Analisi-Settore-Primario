@@ -1,0 +1,27 @@
+:root {
+  --kpi-prod-bg: #f7f2ff;
+  --kpi-prod-border: var(--purple);
+  --kpi-water-bg: #eef6ff;
+  --kpi-water-border: var(--secondary-blue);
+  --kpi-eff-bg: #e7fbff;
+  --kpi-eff-border: var(--info-color);
+}
+
+.kpi-box.prod {
+  background-color: var(--kpi-prod-bg);
+  border-left-color: var(--kpi-prod-border);
+}
+
+.kpi-box.water {
+  background-color: var(--kpi-water-bg);
+  border-left-color: var(--kpi-water-border);
+}
+
+.kpi-box.eff {
+  background-color: var(--kpi-eff-bg);
+  border-left-color: var(--kpi-eff-border);
+}
+
+.loading {
+  color: var(--info-color);
+}

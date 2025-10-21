@@ -1,0 +1,27 @@
+:root {
+  --kpi-risk-bg: #fff8e7;
+  --kpi-risk-border: var(--warning-accessible);
+  --kpi-temp-bg: #fff0f1;
+  --kpi-temp-border: #dc3545;
+  --kpi-water-bg: #eef6ff;
+  --kpi-water-border: var(--secondary-blue);
+}
+
+.kpi-box.risk {
+  background-color: var(--kpi-risk-bg);
+  border-left-color: var(--kpi-risk-border);
+}
+
+.kpi-box.temp {
+  background-color: var(--kpi-temp-bg);
+  border-left-color: var(--kpi-temp-border);
+}
+
+.kpi-box.water {
+  background-color: var(--kpi-water-bg);
+  border-left-color: var(--kpi-water-border);
+}
+
+.loading {
+  color: var(--warning-accessible);
+}

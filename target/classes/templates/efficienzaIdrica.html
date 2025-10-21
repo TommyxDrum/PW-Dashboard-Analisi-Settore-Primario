@@ -7,345 +7,11 @@
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+  <link rel="stylesheet" th:href="@{/css/common.css}"/>
+  <link rel="stylesheet" th:href="@{/css/efficienzaIdrica.css}"/>
+
   <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-
-  <style>
-    :root {
-      --primary-green: #198754;
-      --secondary-blue: #0d6efd;
-      --light-bg: #f8f9fa;
-      --purple: #6f42c1;
-      --info-color: #0dcaf0;
-      --warning-accessible: #e09400;
-      --focus-ring: 0 0 0 0.25rem rgba(13, 110, 253, .25);
-      --control-h: 44px;
-      --area-nord: #0d6efd;
-      --area-centro: #D96D00;
-      --area-sud: #10b981;
-      --kpi-prod-bg: #f7f2ff;
-      --kpi-prod-border: var(--purple);
-      --kpi-water-bg: #eef6ff;
-      --kpi-water-border: var(--secondary-blue);
-      --kpi-eff-bg: #e7fbff;
-      --kpi-eff-border: var(--info-color);
-    }
-
-    body {
-      background-color: var(--light-bg);
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      padding-top: 70px;
-    }
-
-    .dashboard-card {
-      border-radius: 1rem;
-      box-shadow: 0 4px 10px rgba(0,0,0,.08);
-      background: #fff;
-      height: 100%;
-      transition: box-shadow 0.3s ease;
-    }
-
-    .dashboard-card:hover {
-      box-shadow: 0 6px 16px rgba(0,0,0,.12);
-    }
-
-    .header-bar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 1040;
-      background: #fff;
-      box-shadow: 0 2px 8px rgba(0,0,0,.08);
-      padding: 0.75rem 1rem;
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-
-    .header-logo {
-      font-weight: 700;
-      color: var(--primary-green);
-      line-height: 1;
-      margin: 0;
-      letter-spacing: -0.5px;
-    }
-
-    .btn-back {
-      height: var(--control-h);
-      width: var(--control-h);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 0.375rem;
-      transition: all 0.2s ease;
-    }
-
-    .btn-back:hover {
-      transform: translateX(-3px);
-    }
-
-    .filters-bar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: flex-end;
-      gap: .75rem;
-      width: 100%;
-      padding-bottom: .25rem;
-    }
-
-    .filters-bar .form-group {
-      flex: 1 1 140px;
-      min-width: 140px;
-    }
-
-    .filters-bar .form-select {
-      height: var(--control-h);
-      padding: 0 2.5rem 0 .875rem;
-      background-position: right .875rem center;
-      border: 1px solid #dee2e6;
-      transition: all 0.2s ease;
-    }
-
-    .filters-bar .form-select:hover {
-      border-color: var(--secondary-blue);
-    }
-
-    .filters-bar .btn-primary {
-      height: var(--control-h);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 1.5rem;
-      flex: 0 0 auto;
-      font-weight: 600;
-      transition: all 0.2s ease;
-    }
-
-    .filters-bar .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
-    }
-
-    .form-select:focus, .btn:focus {
-      box-shadow: var(--focus-ring);
-    }
-
-    .section-header {
-      padding-bottom: .5rem;
-      margin-bottom: 1.25rem;
-      border-bottom: 3px solid var(--secondary-blue);
-      position: relative;
-    }
-
-    .section-header::after {
-      content: '';
-      position: absolute;
-      bottom: -3px;
-      left: 0;
-      width: 60px;
-      height: 3px;
-      background: currentColor;
-      border-radius: 3px 3px 0 0;
-    }
-
-    .section-header.info-border {
-      border-color: var(--info-color);
-    }
-
-    .section-header.info-border::after {
-      background: var(--info-color);
-    }
-
-    .subtitle {
-      color: #5f676d;
-      font-size: .9375rem;
-      line-height: 1.5;
-    }
-
-    .caption {
-      color: #8a8f94;
-      font-size: .8125rem;
-    }
-
-    .kpi-box {
-      padding: 1.25rem;
-      border-radius: .75rem;
-      border-left: 5px solid;
-      transition: all 0.3s ease;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .kpi-box::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 80px;
-      height: 80px;
-      background: currentColor;
-      opacity: 0.03;
-      border-radius: 50%;
-      transform: translate(30%, -30%);
-    }
-
-    .kpi-box:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 20px rgba(0,0,0,.12);
-    }
-
-    .kpi-box.prod {
-      background-color: var(--kpi-prod-bg);
-      border-left-color: var(--kpi-prod-border);
-    }
-
-    .kpi-box.water {
-      background-color: var(--kpi-water-bg);
-      border-left-color: var(--kpi-water-border);
-    }
-
-    .kpi-box.eff {
-      background-color: var(--kpi-eff-bg);
-      border-left-color: var(--kpi-eff-border);
-    }
-
-    .kpi-value {
-      font-size: 2.25rem;
-      font-weight: 700;
-      line-height: 1.2;
-    }
-
-    .kpi-icon {
-      font-size: 1.25rem;
-      margin-right: 0.5rem;
-    }
-
-    .header-line {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      gap: 0.75rem;
-    }
-
-    .header-line .left {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-    }
-
-    .badge {
-      font-weight: 600;
-      padding: 0.5rem 0.875rem;
-      font-size: 0.8125rem;
-    }
-
-    .btn-outline-success {
-      font-weight: 600;
-      transition: all 0.2s ease;
-    }
-
-    .btn-outline-success:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(25, 135, 84, 0.3);
-    }
-
-    .chart-container {
-      position: relative;
-      height: 360px;
-    }
-
-    .loading {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 200px;
-      color: var(--info-color);
-      font-size: 1.125rem;
-      font-weight: 500;
-    }
-
-    .table {
-      font-size: 0.9375rem;
-    }
-
-    .table thead th {
-      font-weight: 600;
-      text-transform: uppercase;
-      font-size: 0.8125rem;
-      letter-spacing: 0.5px;
-      color: #6c757d;
-    }
-
-    .table tbody tr {
-      transition: background-color 0.2s ease;
-    }
-
-    .table tbody tr:hover {
-      background-color: rgba(13, 110, 253, 0.03);
-    }
-
-    .table tfoot th {
-      font-weight: 700;
-      border-top: 2px solid #dee2e6;
-      padding-top: 1rem;
-    }
-
-    @media (max-width: 768px) {
-      .kpi-value {
-        font-size: 1.75rem;
-      }
-
-      .filters-bar {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .filters-bar .form-group {
-        width: 100%;
-        min-width: 100%;
-      }
-
-      .filters-bar .btn-primary {
-        width: 100%;
-      }
-
-      .header-line {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      .chart-container {
-        height: 280px;
-      }
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .dashboard-card {
-      animation: fadeIn 0.5s ease-out;
-    }
-
-    .kpi-box {
-      animation: fadeIn 0.6s ease-out;
-    }
-
-    footer {
-      font-size: 0.875rem;
-      opacity: 0.7;
-    }
-  </style>
 </head>
 <body>
 
@@ -590,34 +256,34 @@
 
 <script>
   (function(){
-    var form = document.getElementById("filterForm");
+    const form = document.getElementById("filterForm");
     if(!form) return;
 
-    var monthSel = document.getElementById("monthSel");
-    var yearSel  = document.getElementById("yearSel");
-    var fromI    = document.getElementById("from");
-    var toI      = document.getElementById("to");
+    const monthSel = document.getElementById("monthSel");
+    const yearSel  = document.getElementById("yearSel");
+    const fromI    = document.getElementById("from");
+    const toI      = document.getElementById("to");
 
     function pad(n){ return n < 10 ? "0"+n : String(n); }
 
     function updateRange(){
-      var y = parseInt(yearSel.value, 10);
-      var m = parseInt(monthSel.value, 10);
+      const y = parseInt(yearSel.value, 10);
+      const m = parseInt(monthSel.value, 10);
       fromI.value = y + "-" + pad(m) + "-01";
-      var lastDay = new Date(y, m, 0).getDate();
+      const lastDay = new Date(y, m, 0).getDate();
       toI.value = y + "-" + pad(m) + "-" + pad(lastDay);
       updateExportLink();
     }
 
     function updateExportLink(){
-      var cropSel = document.getElementById("cropSel");
-      var areaSel = document.getElementById("areaSel");
-      var params = new URLSearchParams();
+      const cropSel = document.getElementById("cropSel");
+      const areaSel = document.getElementById("areaSel");
+      const params = new URLSearchParams();
       if(fromI.value) params.set("from", fromI.value);
       if(toI.value) params.set("to", toI.value);
       if(cropSel && cropSel.value) params.set("crop", cropSel.value);
       if(areaSel && areaSel.value) params.set("area", areaSel.value);
-      var el = document.getElementById("exportLink");
+      const el = document.getElementById("exportLink");
       if(el) el.href = "/export.csv" + (params.toString() ? ("?" + params.toString()) : "");
     }
 
@@ -634,218 +300,24 @@
   })();
 </script>
 
+<script th:src="@{/js/common.js}"></script>
+
 <script th:inline="javascript">
-  (function(){
-    function cssVar(n){
-      var v = getComputedStyle(document.documentElement).getPropertyValue(n);
-      return (v && v.trim()) || n;
-    }
-
-    var C_NORD = cssVar('--area-nord');
-    var C_CENTRO = cssVar('--area-centro');
-    var C_SUD = cssVar('--area-sud');
-
-    var years = [[${years}]];
-    var annualEfficiencyNord = [[${annualEfficiencyNord}]];
-    var annualEfficiencyCentro = [[${annualEfficiencyCentro}]];
-    var annualEfficiencySud = [[${annualEfficiencySud}]];
-    var areaSel = [[${area}]];
-
-    var waterNordM3 = [[${waterNordM3}]];
-    var waterCentroM3 = [[${waterCentroM3}]];
-    var waterSudM3 = [[${waterSudM3}]];
-    var yieldNordT = [[${yieldNordT}]];
-    var yieldCentroT = [[${yieldCentroT}]];
-    var yieldSudT = [[${yieldSudT}]];
-
-    Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
-    Chart.defaults.font.size = 12;
-
-    (function(){
-      var el = document.getElementById('efficiencyAnnualTrend');
-      if(!el) return;
-
-      if(!Array.isArray(years) || years.length === 0){
-        el.parentElement.innerHTML = '<div class="loading"><i class="bi bi-exclamation-circle me-2"></i>Nessun dato storico disponibile</div>';
-        return;
-      }
-
-      var datasets = [
-        {label:'Nord', data:annualEfficiencyNord, borderColor:C_NORD, backgroundColor:C_NORD+'15'},
-        {label:'Centro', data:annualEfficiencyCentro, borderColor:C_CENTRO, backgroundColor:C_CENTRO+'15'},
-        {label:'Sud', data:annualEfficiencySud, borderColor:C_SUD, backgroundColor:C_SUD+'15'}
-      ];
-
-      var filtered = datasets;
-      if(areaSel && String(areaSel).trim().length > 0){
-        filtered = datasets.filter(function(d){
-          return d.label.toLowerCase() === String(areaSel).toLowerCase();
-        });
-      }
-
-      new Chart(el.getContext('2d'), {
-        type: 'line',
-        data: {
-          labels: years,
-          datasets: filtered.map(function(d){
-            return {
-              label: d.label,
-              data: d.data,
-              borderColor: d.borderColor,
-              backgroundColor: d.backgroundColor,
-              pointBackgroundColor: d.borderColor,
-              pointBorderColor: '#fff',
-              pointBorderWidth: 2,
-              pointRadius: 4,
-              pointHoverRadius: 6,
-              borderWidth: 3,
-              tension: 0.35,
-              fill: true
-            };
-          })
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            y: {
-              title: {display:true, text:'Efficienza (Kg/m³)', font:{weight:'600', size:13}},
-              grid: {color:'rgba(0,0,0,0.05)'}
-            },
-            x: {
-              ticks: {autoSkip:true, maxTicksLimit:10},
-              grid: {display:false}
-            }
-          },
-          plugins: {
-            legend: {
-              position: 'top',
-              labels: {usePointStyle:true, padding:15, font:{weight:'500'}}
-            },
-            tooltip: {
-              mode: 'index',
-              intersect: false,
-              backgroundColor: 'rgba(255,255,255,0.95)',
-              titleColor: '#333',
-              bodyColor: '#666',
-              borderColor: '#ddd',
-              borderWidth: 1,
-              padding: 12,
-              callbacks: {
-                label: function(ctx){
-                  return ctx.dataset.label + ': ' + (+ctx.raw).toFixed(2) + ' Kg/m³';
-                }
-              }
-            }
-          },
-          interaction: {mode:'index', intersect:false}
-        }
-      });
-    })();
-
-    (function(){
-      var el = document.getElementById('echScatterEfficiency');
-      if(!el) return;
-
-      var chart = echarts.init(el);
-      var nf0 = new Intl.NumberFormat('it-IT', {maximumFractionDigits:0});
-      var nf2 = new Intl.NumberFormat('it-IT', {maximumFractionDigits:2, minimumFractionDigits:2});
-
-      var data = [
-        {
-          name: 'Nord',
-          value: [Number(waterNordM3) || 0, Number(yieldNordT) || 0],
-          itemStyle: {color: C_NORD}
-        },
-        {
-          name: 'Centro',
-          value: [Number(waterCentroM3) || 0, Number(yieldCentroT) || 0],
-          itemStyle: {color: C_CENTRO}
-        },
-        {
-          name: 'Sud',
-          value: [Number(waterSudM3) || 0, Number(yieldSudT) || 0],
-          itemStyle: {color: C_SUD}
-        }
-      ];
-
-      if(data.every(function(d){ return d.value[0] === 0 && d.value[1] === 0; })){
-        el.innerHTML = '<div class="loading"><i class="bi bi-exclamation-circle me-2"></i>Dati non sufficienti per il confronto</div>';
-        return;
-      }
-
-      chart.setOption({
-        tooltip: {
-          trigger: 'item',
-          backgroundColor: 'rgba(255,255,255,0.95)',
-          borderColor: '#ddd',
-          borderWidth: 1,
-          textStyle: {color: '#333'},
-          padding: 12,
-          formatter: function(p){
-            var efficiency = p.data.value[1] > 0 && p.data.value[0] > 0
-              ? (p.data.value[1] * 1000 / p.data.value[0]).toFixed(2)
-              : '0.00';
-            return '<b>' + p.data.name + '</b><br/>' +
-                   'Consumo: ' + nf0.format(p.data.value[0]) + ' m³<br/>' +
-                   'Produzione: ' + nf0.format(p.data.value[1]) + ' t<br/>' +
-                   'Efficienza: ' + efficiency + ' Kg/m³';
-          }
-        },
-        grid: {
-          left: '12%',
-          right: '8%',
-          bottom: '12%',
-          top: '8%',
-          containLabel: true
-        },
-        xAxis: {
-          type: 'value',
-          name: 'Consumo Idrico (m³)',
-          nameLocation: 'middle',
-          nameGap: 35,
-          nameTextStyle: {fontWeight: '600', fontSize: 13},
-          axisLabel: {color: '#666'},
-          splitLine: {lineStyle: {color: '#f0f0f0'}}
-        },
-        yAxis: {
-          type: 'value',
-          name: 'Produzione (t)',
-          nameLocation: 'middle',
-          nameGap: 50,
-          nameTextStyle: {fontWeight: '600', fontSize: 13},
-          axisLabel: {color: '#666'},
-          splitLine: {lineStyle: {color: '#f0f0f0'}}
-        },
-        series: [{
-          type: 'scatter',
-          symbolSize: 24,
-          data: data,
-          emphasis: {
-            focus: 'series',
-            label: {
-              show: true,
-              formatter: function(p){ return p.data.name; },
-              position: 'top',
-              fontWeight: '600',
-              fontSize: 13
-            },
-            itemStyle: {
-              shadowBlur: 10,
-              shadowColor: 'rgba(0,0,0,0.3)'
-            }
-          }
-        }],
-        animationDuration: 800,
-        animationEasing: 'cubicOut'
-      });
-
-      window.addEventListener('resize', function(){
-        chart.resize();
-      });
-    })();
-  })();
+  window.efficienzaData = {
+    years: [[${years}]],
+    annualEfficiencyNord: [[${annualEfficiencyNord}]],
+    annualEfficiencyCentro: [[${annualEfficiencyCentro}]],
+    annualEfficiencySud: [[${annualEfficiencySud}]],
+    area: [[${area}]],
+    waterNordM3: [[${waterNordM3}]],
+    waterCentroM3: [[${waterCentroM3}]],
+    waterSudM3: [[${waterSudM3}]],
+    yieldNordT: [[${yieldNordT}]],
+    yieldCentroT: [[${yieldCentroT}]],
+    yieldSudT: [[${yieldSudT}]]
+  };
 </script>
+<script th:src="@{/js/efficienzaIdrica.js}"></script>
 
 </body>
 </html>

@@ -35,7 +35,7 @@ public class RischioClimaticoController extends BaseKpiController {
         super(sampleDataService, kpiFilters, kpiService);
     }
 
-    @GetMapping("/rischio-climatico")
+    @GetMapping("/rischioClimatico")
     public String rischioClimaticoKpi(
             @RequestParam(required = false) String area,
             @RequestParam(required = false) String crop,

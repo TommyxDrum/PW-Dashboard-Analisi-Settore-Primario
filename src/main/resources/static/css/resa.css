@@ -1,0 +1,24 @@
+:root {
+  --pie-prod: #800080;
+  --pie-surf: #B8860B;
+  --pie-resa: #6c757d;
+}
+
+.kpi-box.prod {
+  background: #fdf5ff;
+  border-left-color: var(--pie-prod);
+}
+
+.kpi-box.surf {
+  background: #fffaf0;
+  border-left-color: var(--pie-surf);
+}
+
+.kpi-box.resa {
+  background: #f8f9fa;
+  border-left-color: var(--pie-resa);
+}
+
+.loading {
+  color: var(--primary-green);
+}

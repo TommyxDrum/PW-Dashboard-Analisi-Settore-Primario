@@ -1,0 +1,27 @@
+:root {
+  --kpi-price-bg: #eef6ff;
+  --kpi-price-border: var(--secondary-blue);
+  --kpi-cost-bg: #f7f2ff;
+  --kpi-cost-border: var(--purple);
+  --kpi-margin-bg: #f0fdf4;
+  --kpi-margin-border: var(--primary-green);
+}
+
+.kpi-box.price {
+  background: var(--kpi-price-bg);
+  border-left-color: var(--kpi-price-border);
+}
+
+.kpi-box.cost {
+  background: var(--kpi-cost-bg);
+  border-left-color: var(--kpi-cost-border);
+}
+
+.kpi-box.margin {
+  background: var(--kpi-margin-bg);
+  border-left-color: var(--kpi-margin-border);
+}
+
+.loading {
+  color: var(--primary-green);
+}

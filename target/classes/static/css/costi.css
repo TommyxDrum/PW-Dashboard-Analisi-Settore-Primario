@@ -1,0 +1,27 @@
+:root {
+  --kpi-cost-bg: #f7f2ff;
+  --kpi-cost-border: var(--purple);
+  --kpi-labor-bg: #fff0f1;
+  --kpi-labor-border: #dc3545;
+  --kpi-materials-bg: #fff8e7;
+  --kpi-materials-border: var(--warning-accessible);
+}
+
+.kpi-box.cost {
+  background-color: var(--kpi-cost-bg);
+  border-left-color: var(--kpi-cost-border);
+}
+
+.kpi-box.labor {
+  background-color: var(--kpi-labor-bg);
+  border-left-color: var(--kpi-labor-border);
+}
+
+.kpi-box.materials {
+  background-color: var(--kpi-materials-bg);
+  border-left-color: var(--kpi-materials-border);
+}
+
+.loading {
+  color: var(--purple);
+}

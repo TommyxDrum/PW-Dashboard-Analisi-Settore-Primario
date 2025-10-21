@@ -1,0 +1,218 @@
+(function () {
+  const colors = getAreaColors();
+  const C_NORD = colors.NORD;
+  const C_CENTRO = colors.CENTRO;
+  const C_SUD = colors.SUD;
+  const C_COST = cssVar('--purple');
+  const C_MARGIN = cssVar('--primary-green');
+
+  const years = window.margineData.years;
+  const annualMarginNord = window.margineData.annualMarginNord;
+  const annualMarginCentro = window.margineData.annualMarginCentro;
+  const annualMarginSud = window.margineData.annualMarginSud;
+  const areaSel = window.margineData.area;
+
+  const avgCostNord = window.margineData.avgCostNord;
+  const avgCostCentro = window.margineData.avgCostCentro;
+  const avgCostSud = window.margineData.avgCostSud;
+  const avgMarginNord = window.margineData.avgMarginNord;
+  const avgMarginCentro = window.margineData.avgMarginCentro;
+  const avgMarginSud = window.margineData.avgMarginSud;
+
+  /* ===== Grafico Andamento Storico Margine ===== */
+  (function () {
+    const el = document.getElementById('marginAnnualTrend');
+    if (!el) return;
+    if (!years || years.length === 0) {
+      el.parentElement.innerHTML = '<div class="loading"><i class="bi bi-exclamation-circle me-2"></i>Nessun dato storico disponibile</div>';
+      return;
+    }
+    const datasets = [
+      { label: 'Nord', data: annualMarginNord, borderColor: C_NORD, backgroundColor: C_NORD + '15' },
+      { label: 'Centro', data: annualMarginCentro, borderColor: C_CENTRO, backgroundColor: C_CENTRO + '15' },
+      { label: 'Sud', data: annualMarginSud, borderColor: C_SUD, backgroundColor: C_SUD + '15' }
+    ];
+    const filtered = filterDatasetsByArea(datasets, areaSel);
+
+    new Chart(el.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: years,
+        datasets: filtered.map(function (d) {
+          return {
+            label: d.label,
+            data: d.data,
+            borderColor: d.borderColor,
+            backgroundColor: d.backgroundColor,
+            pointBackgroundColor: d.borderColor,
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            borderWidth: 3,
+            tension: 0.35,
+            fill: true
+          };
+        })
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            title: { display: true, text: 'Margine (€/t)', font: { weight: '600', size: 13 } },
+            grid: { color: 'rgba(0,0,0,0.05)' }
+          },
+          x: {
+            ticks: { autoSkip: true, maxTicksLimit: 10 },
+            grid: { display: false }
+          }
+        },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { usePointStyle: true, padding: 15, font: { weight: '500' } }
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            backgroundColor: 'rgba(255,255,255,0.95)',
+            titleColor: '#333',
+            bodyColor: '#666',
+            borderColor: '#ddd',
+            borderWidth: 1,
+            padding: 12,
+            callbacks: {
+              label: function (ctx) {
+                return ctx.dataset.label + ': ' + (+ctx.raw).toFixed(2) + ' €/t';
+              }
+            }
+          }
+        },
+        interaction: { mode: 'index', intersect: false }
+      }
+    });
+  })();
+
+  /* ===== ECharts: Composizione Prezzo di Vendita ===== */
+  (function () {
+    const el = document.getElementById('echBarMarginComposition');
+    if (!el) return;
+    const chart = echarts.init(el);
+    const nf2 = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+    const areas = ['Nord', 'Centro', 'Sud'];
+
+    const dataCost = [avgCostNord, avgCostCentro, avgCostSud];
+    const dataMargin = [avgMarginNord, avgMarginCentro, avgMarginSud];
+
+    if (dataCost.every(function (v) { return v === 0; }) && dataMargin.every(function (v) { return v === 0; })) {
+      el.innerHTML = '<div class="loading"><i class="bi bi-exclamation-circle me-2"></i>Dati non disponibili per il periodo</div>';
+      return;
+    }
+
+    chart.setOption({
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'shadow' },
+        backgroundColor: 'rgba(255,255,255,0.95)',
+        borderColor: '#ddd',
+        borderWidth: 1,
+        textStyle: { color: '#333' },
+        padding: 12,
+        formatter: function (params) {
+          const area = params && params[0] ? params[0].axisValue : '';
+          let cost = 0;
+          let margin = 0;
+          for (let i = 0; i < params.length; i++) {
+            if (params[i].seriesName === 'Costo') {
+              cost = params[i].value || 0;
+            }
+            if (params[i].seriesName === 'Margine') {
+              margin = params[i].value || 0;
+            }
+          }
+          const total = cost + margin;
+          return '<b>' + area + '</b><br/>' +
+            'Prezzo: ' + nf2.format(total) + ' €/t<br/>' +
+            'Costo: ' + nf2.format(cost) + ' €/t<br/>' +
+            'Margine: ' + nf2.format(margin) + ' €/t';
+        }
+      },
+      legend: {
+        data: ['Costo', 'Margine'],
+        bottom: 0,
+        textStyle: { fontWeight: '500' }
+      },
+      grid: { left: '12%', right: '8%', bottom: '15%', top: '10%' },
+      xAxis: {
+        type: 'category',
+        data: areas,
+        axisTick: { alignWithLabel: true },
+        axisLine: { lineStyle: { color: '#ddd' } },
+        axisLabel: { color: '#666', fontWeight: '500' }
+      },
+      yAxis: {
+        type: 'value',
+        name: '€/t',
+        nameTextStyle: { fontWeight: '600', fontSize: 13 },
+        nameGap: 15,
+        axisLabel: {
+          formatter: '€ {value}',
+          color: '#666'
+        },
+        splitLine: { lineStyle: { color: '#f0f0f0' } }
+      },
+      series: [
+        {
+          name: 'Costo',
+          type: 'bar',
+          stack: 'total',
+          barWidth: '50%',
+          label: { show: false },
+          emphasis: {
+            focus: 'series',
+            itemStyle: {
+              shadowBlur: 20,
+              shadowOffsetY: 8
+            }
+          },
+          itemStyle: {
+            color: C_COST,
+            borderRadius: [0, 0, 0, 0],
+            shadowColor: 'rgba(0,0,0,0.1)',
+            shadowBlur: 10,
+            shadowOffsetY: 4
+          },
+          data: dataCost
+        },
+        {
+          name: 'Margine',
+          type: 'bar',
+          stack: 'total',
+          label: { show: false },
+          emphasis: {
+            focus: 'series',
+            itemStyle: {
+              shadowBlur: 20,
+              shadowOffsetY: 8
+            }
+          },
+          itemStyle: {
+            color: C_MARGIN,
+            borderRadius: [6, 6, 0, 0],
+            shadowColor: 'rgba(0,0,0,0.1)',
+            shadowBlur: 10,
+            shadowOffsetY: 4
+          },
+          data: dataMargin
+        }
+      ],
+      animationDuration: 800,
+      animationEasing: 'cubicOut'
+    });
+
+    window.addEventListener('resize', function () {
+      chart.resize();
+    });
+  })();
+})();
