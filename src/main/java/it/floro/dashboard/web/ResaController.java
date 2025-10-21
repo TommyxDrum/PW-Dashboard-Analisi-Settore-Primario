@@ -1,221 +1,142 @@
 package it.floro.dashboard.web;
 
 import it.floro.dashboard.domain.SampleRecord;
-import it.floro.dashboard.simulator.DataSimulator;
+import it.floro.dashboard.service.KpiFilters;
+import it.floro.dashboard.service.KpiService;
+import it.floro.dashboard.service.SampleDataService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.text.Normalizer;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static org.springframework.format.annotation.DateTimeFormat.ISO;
 
+/**
+ * Controller KPI "Resa per ettaro (t/ha)" - ARRICCHITO.
+ * Fornisce tutti i dati necessari per resa.html.
+ */
 @Controller
-public class ResaController {
+public class ResaController extends BaseKpiController {
 
-    private List<SampleRecord> cachedRecords;
-    private static final LocalDate MAX_DATE = LocalDate.now();
-    private static final LocalDate MIN_DATE = MAX_DATE.minusYears(10).withDayOfYear(1);
-
-    private void ensureDataIsLoaded() {
-        if (cachedRecords == null) {
-            long seed = 12345L;
-            int days = (int) ChronoUnit.DAYS.between(MIN_DATE, MAX_DATE) + 1;
-            int fields = 20;
-            cachedRecords = new DataSimulator(seed, MIN_DATE, days, fields).generate();
-        }
+    public ResaController(SampleDataService sampleDataService,
+                          KpiFilters kpiFilters,
+                          KpiService kpiService) {
+        super(sampleDataService, kpiFilters, kpiService);
     }
 
     @GetMapping("/resa")
-    public String resaPage(
-            Model model,
-            @RequestParam(required = false) @DateTimeFormat(iso = ISO.DATE) LocalDate from,
-            @RequestParam(required = false) @DateTimeFormat(iso = ISO.DATE) LocalDate to,
+    public String resaKpi(
+            @RequestParam(required = false) String area,
             @RequestParam(required = false) String crop,
-            @RequestParam(required = false) String area
+            @RequestParam(required = false) @DateTimeFormat(iso = ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) String periodo,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer quarter,
+            Model model
     ) {
+        return processKpiRequest(area, crop, startDate, endDate, periodo,
+                year, month, quarter, model, "resa");
+    }
 
-        ensureDataIsLoaded();
+    @Override
+    protected void populateKpiModel(List<SampleRecord> filtered, Model model) {
+        // KPI Base
+        double resaMedia = kpiService.calcolaResaMedia(filtered);
+        Map<LocalDate, Double> resaGiornaliera = kpiService.serieResaGiornaliera(filtered);
 
-        LocalDate fromDate = (from != null) ? from : MAX_DATE.withDayOfMonth(1);
-        LocalDate toDate   = (to   != null) ? to   : MAX_DATE;
+        model.addAttribute("resaMedia", resaMedia);
+        model.addAttribute("resaGiornaliera", resaGiornaliera);
 
-        if (fromDate.isBefore(MIN_DATE)) fromDate = MIN_DATE;
-        if (toDate.isAfter(MAX_DATE))    toDate   = MAX_DATE;
-        if (toDate.isBefore(fromDate)) {
-            LocalDate tmp = fromDate; fromDate = toDate; toDate = tmp;
-        }
+        // Totali globali
+        double totalYieldT = kpiService.sommaProduzione(filtered);
+        double totalSurfaceHa = kpiService.sommaSuperficie(filtered);
+        double totalResa = totalSurfaceHa > 0 ? totalYieldT / totalSurfaceHa : 0.0;
 
-        String cropFilter = (crop == null || crop.isBlank()) ? null : crop.trim();
-        String areaFilter = (area == null || area.isBlank()) ? null : area.trim();
+        model.addAttribute("totalYieldT", totalYieldT);
+        model.addAttribute("totalSurfaceHa", totalSurfaceHa);
+        model.addAttribute("totalResa", totalResa);
 
-        final LocalDate finalFrom = fromDate;
-        final LocalDate finalTo = toDate;
+        // Serie annuali per area (per il grafico a linee)
+        List<SampleRecord> all = sampleDataService.getAll();
+        List<Integer> years = extractYears(all);
 
-        List<SampleRecord> filtered = cachedRecords.stream()
-                .filter(r -> r.date() != null && !r.date().isBefore(finalFrom) && !r.date().isAfter(finalTo))
-                .filter(r -> cropFilter == null || cropFilter.equalsIgnoreCase(r.crop()))
-                .filter(r -> areaFilter == null || norm(r.area()).contains(norm(areaFilter)))
-                .collect(Collectors.toList());
+        List<SampleRecord> nordAll = filterByArea(all, "Nord");
+        List<SampleRecord> centroAll = filterByArea(all, "Centro");
+        List<SampleRecord> sudAll = filterByArea(all, "Sud");
 
-        List<String> areas = List.of("Nord", "Centro", "Sud");
+        Map<Integer, Double> annualResaNord = kpiService.serieResaAnnuale(nordAll);
+        Map<Integer, Double> annualResaCentro = kpiService.serieResaAnnuale(centroAll);
+        Map<Integer, Double> annualResaSud = kpiService.serieResaAnnuale(sudAll);
 
-        Map<String, List<SampleRecord>> byArea = filtered.stream()
-                .collect(Collectors.groupingBy(r -> normArea(r.area())));
-
-        Map<String, Double> sumYield   = sumBy(byArea, SampleRecord::yieldT);
-        Map<String, Double> sumSurface = sumBy(byArea, SampleRecord::surfaceHa);
-
-        Map<String, Double> resa = new HashMap<>();
-        for (String a : areas) {
-            double y = sumYield.getOrDefault(a, 0d);
-            double s = sumSurface.getOrDefault(a, 0d);
-            resa.put(a, s > 0 ? y / s : 0d);
-        }
-
-        double totalYield   = sumYield.values().stream().mapToDouble(Double::doubleValue).sum();
-        double totalSurface = sumSurface.values().stream().mapToDouble(Double::doubleValue).sum();
-        double totalResa    = totalSurface > 0 ? totalYield / totalSurface : 0d;
-
-        List<ResaRow> rows = areas.stream()
-                .map(a -> new ResaRow(
-                        a,
-                        round2(sumYield.getOrDefault(a, 0d)),
-                        round2(sumSurface.getOrDefault(a, 0d)),
-                        round2(resa.getOrDefault(a, 0d))
-                ))
-                .collect(Collectors.toList());
-
-        // === DATI STORICI PER IL GRAFICO ANNUALE ===
-        List<SampleRecord> historicalRecords = cachedRecords.stream()
-                .filter(r -> r.date() != null)
-                .filter(r -> cropFilter == null || cropFilter.equalsIgnoreCase(r.crop()))
-                .collect(Collectors.toList());
-
-        List<Integer> years = IntStream.rangeClosed(MIN_DATE.getYear(), MAX_DATE.getYear())
-                .boxed()
-                .collect(Collectors.toList());
-
-        Map<String, List<Double>> annualResaByArea = calculateAnnualResaAverage(historicalRecords, years);
-
-        List<String> cropsList = cropsFrom(cachedRecords);
-        List<String> areasList = List.of("Nord", "Centro", "Sud");
-
-        model.addAttribute("from", fromDate);
-        model.addAttribute("to", toDate);
-        model.addAttribute("crop", cropFilter != null ? cropFilter : "");
-        model.addAttribute("area", areaFilter != null ? areaFilter : "");
-
-        model.addAttribute("cropsList", cropsList);
-        model.addAttribute("areasList", areasList);
-
-        model.addAttribute("yieldNordT",   round2(sumYield.getOrDefault("Nord", 0d)));
-        model.addAttribute("yieldCentroT", round2(sumYield.getOrDefault("Centro", 0d)));
-        model.addAttribute("yieldSudT",    round2(sumYield.getOrDefault("Sud", 0d)));
-        model.addAttribute("surfNordHa",   round2(sumSurface.getOrDefault("Nord", 0d)));
-        model.addAttribute("surfCentroHa", round2(sumSurface.getOrDefault("Centro", 0d)));
-        model.addAttribute("surfSudHa",    round2(sumSurface.getOrDefault("Sud", 0d)));
-
-        model.addAttribute("resaRows", rows);
-        model.addAttribute("totalYieldT", round2(totalYield));
-        model.addAttribute("totalSurfaceHa", round2(totalSurface));
-        model.addAttribute("totalResa", round2(totalResa));
-
-        // Dati annuali per il line chart
         model.addAttribute("years", years);
-        model.addAttribute("annualResaNord", annualResaByArea.getOrDefault("Nord", Collections.emptyList()));
-        model.addAttribute("annualResaCentro", annualResaByArea.getOrDefault("Centro", Collections.emptyList()));
-        model.addAttribute("annualResaSud", annualResaByArea.getOrDefault("Sud", Collections.emptyList()));
+        model.addAttribute("annualResaNord", toOrderedList(annualResaNord, years));
+        model.addAttribute("annualResaCentro", toOrderedList(annualResaCentro, years));
+        model.addAttribute("annualResaSud", toOrderedList(annualResaSud, years));
 
-        return "resa";
-    }
+        // Dati per area (periodo filtrato) - per il donut chart
+        List<SampleRecord> nordFiltered = filterByArea(filtered, "Nord");
+        List<SampleRecord> centroFiltered = filterByArea(filtered, "Centro");
+        List<SampleRecord> sudFiltered = filterByArea(filtered, "Sud");
 
-    private Map<String, List<Double>> calculateAnnualResaAverage(
-            List<SampleRecord> records, List<Integer> years) {
+        double yieldNordT = kpiService.sommaProduzione(nordFiltered);
+        double yieldCentroT = kpiService.sommaProduzione(centroFiltered);
+        double yieldSudT = kpiService.sommaProduzione(sudFiltered);
 
-        // Raggruppa per anno e area
-        Map<Integer, Map<String, List<SampleRecord>>> grouped = records.stream()
-                .filter(r -> r.date() != null)
-                .collect(Collectors.groupingBy(
-                        r -> r.date().getYear(),
-                        Collectors.groupingBy(r -> normArea(r.area()))
-                ));
+        double surfNordHa = kpiService.sommaSuperficie(nordFiltered);
+        double surfCentroHa = kpiService.sommaSuperficie(centroFiltered);
+        double surfSudHa = kpiService.sommaSuperficie(sudFiltered);
 
-        Map<String, List<Double>> result = new HashMap<>();
+        model.addAttribute("yieldNordT", yieldNordT);
+        model.addAttribute("yieldCentroT", yieldCentroT);
+        model.addAttribute("yieldSudT", yieldSudT);
+        model.addAttribute("surfNordHa", surfNordHa);
+        model.addAttribute("surfCentroHa", surfCentroHa);
+        model.addAttribute("surfSudHa", surfSudHa);
 
-        for (String area : List.of("Nord", "Centro", "Sud")) {
-            List<Double> annualValues = new ArrayList<>(years.size());
-            for (Integer year : years) {
-                double yearResa = Optional.ofNullable(grouped.get(year))
-                        .map(m -> m.get(area))
-                        .map(list -> {
-                            double totalYield = list.stream()
-                                    .mapToDouble(r -> Optional.ofNullable(r.yieldT()).orElse(0.0))
-                                    .sum();
-                            double totalSurface = list.stream()
-                                    .mapToDouble(r -> Optional.ofNullable(r.surfaceHa()).orElse(0.0))
-                                    .sum();
-                            return totalSurface > 0 ? totalYield / totalSurface : 0.0;
-                        })
-                        .orElse(0.0);
-                annualValues.add(round2(yearResa));
-            }
-            result.put(area, annualValues);
-        }
-
-        return result;
-    }
-
-    private static String norm(String s) {
-        if (s == null) return "";
-        String noAccents = Normalizer.normalize(s.trim(), Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "");
-        return noAccents.toLowerCase();
-    }
-
-    private static String normArea(String area) {
-        if (area == null) return "Altro";
-        String a = norm(area);
-        if (a.contains("nord"))   return "Nord";
-        if (a.contains("centro")) return "Centro";
-        if (a.contains("sud"))    return "Sud";
-        return "Altro";
-    }
-
-    private static Map<String, Double> sumBy(Map<String, List<SampleRecord>> byArea,
-                                             Function<SampleRecord, Double> getter) {
-        Map<String, Double> out = new HashMap<>();
-        byArea.forEach((area, list) ->
-                out.put(area, list.stream().mapToDouble(r -> {
-                    Double val = getter.apply(r);
-                    return val != null ? val : 0.0;
-                }).sum())
+        // Tabella dettagli per area
+        List<ResaRow> resaRows = Arrays.asList(
+                new ResaRow("Nord", yieldNordT, surfNordHa, surfNordHa > 0 ? yieldNordT / surfNordHa : 0),
+                new ResaRow("Centro", yieldCentroT, surfCentroHa, surfCentroHa > 0 ? yieldCentroT / surfCentroHa : 0),
+                new ResaRow("Sud", yieldSudT, surfSudHa, surfSudHa > 0 ? yieldSudT / surfSudHa : 0)
         );
-        return out;
+        model.addAttribute("resaRows", resaRows);
     }
 
-    private static double round2(double v) {
-        return Math.round(v * 100.0) / 100.0;
-    }
-
-    private static List<String> cropsFrom(List<SampleRecord> all) {
-        return all.stream()
-                .map(SampleRecord::crop)
-                .filter(Objects::nonNull)
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .distinct()
-                .sorted()
+    /**
+     * Converte una Map<Integer, Double> in List<Double> ordinata per years.
+     */
+    private List<Double> toOrderedList(Map<Integer, Double> map, List<Integer> years) {
+        return years.stream()
+                .map(y -> map.getOrDefault(y, 0.0))
                 .collect(Collectors.toList());
     }
 
-    public record ResaRow(String area, double yieldT, double surfaceHa, double resa) {}
+    /**
+     * DTO per la tabella dettagli resa
+     */
+    public static class ResaRow {
+        private final String area;
+        private final double yieldT;
+        private final double surfaceHa;
+        private final double resa;
+
+        public ResaRow(String area, double yieldT, double surfaceHa, double resa) {
+            this.area = area;
+            this.yieldT = yieldT;
+            this.surfaceHa = surfaceHa;
+            this.resa = resa;
+        }
+
+        public String getArea() { return area; }
+        public double getYieldT() { return yieldT; }
+        public double getSurfaceHa() { return surfaceHa; }
+        public double getResa() { return resa; }
+    }
 }

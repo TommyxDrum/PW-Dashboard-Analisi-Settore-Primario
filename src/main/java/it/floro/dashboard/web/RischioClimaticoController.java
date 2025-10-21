@@ -1,219 +1,158 @@
 package it.floro.dashboard.web;
 
-import it.floro.dashboard.domain.Kpi;
 import it.floro.dashboard.domain.SampleRecord;
+import it.floro.dashboard.service.KpiFilters;
 import it.floro.dashboard.service.KpiService;
-import it.floro.dashboard.simulator.DataSimulator;
+import it.floro.dashboard.service.SampleDataService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.text.Normalizer;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.function.ToDoubleFunction;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static org.springframework.format.annotation.DateTimeFormat.ISO;
 
+/**
+ * Controller KPI "Rischio Climatico (indice 0-1)" - ARRICCHITO.
+ * NOTA: I dati attuali non hanno scomposizione rischio (temp/water/frost).
+ * Useremo valori stimati basati sul rischio totale.
+ */
 @Controller
-public class RischioClimaticoController {
+public class RischioClimaticoController extends BaseKpiController {
 
-    private final KpiService kpiService;
+    // Stima distribuzione: 50% temp, 30% water, 20% frost
+    private static final double TEMP_WEIGHT = 0.50;
+    private static final double WATER_WEIGHT = 0.30;
+    private static final double FROST_WEIGHT = 0.20;
 
-    public RischioClimaticoController(KpiService kpiService) {
-        this.kpiService = kpiService;
+    public RischioClimaticoController(SampleDataService sampleDataService,
+                                      KpiFilters kpiFilters,
+                                      KpiService kpiService) {
+        super(sampleDataService, kpiFilters, kpiService);
     }
 
-    private List<SampleRecord> cachedRecords;
-    private static final LocalDate MAX_DATE = LocalDate.now();
-    private static final LocalDate MIN_DATE = MAX_DATE.minusYears(10).withDayOfYear(1);
-
-    private void ensureDataIsLoaded() {
-        if (cachedRecords == null) {
-            long seed = 12345L;
-            int days = (int) ChronoUnit.DAYS.between(MIN_DATE, MAX_DATE) + 1;
-            cachedRecords = new DataSimulator(seed, MIN_DATE, days, 20).generate();
-        }
-    }
-
-    // Accetta sia camelCase che kebab-case, con/ senza slash finale
-    @GetMapping({"/rischioClimatico", "/rischioClimatico/", "/rischio-climatico", "/rischio-climatico/"})
-    public String rischioClimaticoPage(
-            Model model,
-            @RequestParam(required = false) @DateTimeFormat(iso = ISO.DATE) LocalDate from,
-            @RequestParam(required = false) @DateTimeFormat(iso = ISO.DATE) LocalDate to,
+    @GetMapping("/rischio-climatico")
+    public String rischioClimaticoKpi(
+            @RequestParam(required = false) String area,
             @RequestParam(required = false) String crop,
-            @RequestParam(required = false) String area
+            @RequestParam(required = false) @DateTimeFormat(iso = ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) String periodo,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer quarter,
+            Model model
     ) {
-        ensureDataIsLoaded();
+        return processKpiRequest(area, crop, startDate, endDate, periodo,
+                year, month, quarter, model, "rischioClimatico");
+    }
 
-        // 1) Filtri (default server-side robusti)
-        LocalDate fromDate = (from != null) ? from : MAX_DATE.withDayOfMonth(1);
-        LocalDate toDate   = (to   != null) ? to   : MAX_DATE;
-        String cropFilter  = (crop == null || crop.isBlank()) ? null : crop.trim();
-        String areaFilter  = (area == null || area.isBlank()) ? null : area.trim();
+    @Override
+    protected void populateKpiModel(List<SampleRecord> filtered, Model model) {
+        // KPI Base
+        double rischioMedio = kpiService.calcolaRischioClimatico(filtered);
+        Map<LocalDate, Double> rischioGiornaliero = kpiService.serieRischioClimaticoGiornaliera(filtered);
 
-        // 2) Records filtrati
-        List<SampleRecord> filteredRecords = cachedRecords.stream()
-                .filter(r -> !r.date().isBefore(fromDate) && !r.date().isAfter(toDate))
-                .filter(r -> cropFilter == null || cropFilter.equalsIgnoreCase(r.crop()))
-                .filter(r -> areaFilter == null || norm(r.area()).contains(norm(areaFilter)))
-                .toList();
+        model.addAttribute("rischioMedio", rischioMedio);
+        model.addAttribute("rischioGiornaliero", rischioGiornaliero);
 
-        // KPI per ogni record (tollerante ai duplicati)
-        Map<SampleRecord, Kpi> kpiMap = filteredRecords.stream()
-                .collect(Collectors.toMap(r -> r, kpiService::compute, (a, b) -> a));
+        // Totali con scomposizione stimata
+        double totalAvgRiskIndex = rischioMedio;
+        double totalAvgRiskTemp = rischioMedio * TEMP_WEIGHT;
+        double totalAvgRiskWater = rischioMedio * WATER_WEIGHT;
+        double totalAvgRiskFrost = rischioMedio * FROST_WEIGHT;
 
-        // Raggruppo KPI per area normalizzata
-        Map<String, List<Kpi>> kpisByArea = kpiMap.entrySet().stream()
-                .collect(Collectors.groupingBy(
-                        e -> normArea(e.getKey().area()),
-                        Collectors.mapping(Map.Entry::getValue, Collectors.toList())
-                ));
+        model.addAttribute("totalAvgRiskIndex", totalAvgRiskIndex);
+        model.addAttribute("totalAvgRiskTemp", totalAvgRiskTemp);
+        model.addAttribute("totalAvgRiskWater", totalAvgRiskWater);
 
-        // Medie per area
-        Map<String, Double> avgRiskIndex = averageKpiBy(kpisByArea, Kpi::climateRiskIdx);
-        Map<String, Double> avgRiskTemp  = averageKpiBy(kpisByArea, Kpi::riskTemperature);
-        Map<String, Double> avgRiskWater = averageKpiBy(kpisByArea, Kpi::riskWaterStress);
-        Map<String, Double> avgRiskFrost = averageKpiBy(kpisByArea, Kpi::riskFrost);
+        // Serie annuali per area
+        List<SampleRecord> all = sampleDataService.getAll();
+        List<Integer> years = extractYears(all);
 
-        // Medie totali periodo filtrato
-        double totalAvgRiskIndex = kpiMap.values().stream().mapToDouble(Kpi::climateRiskIdx).average().orElse(0.0);
-        double totalAvgRiskTemp  = kpiMap.values().stream().mapToDouble(Kpi::riskTemperature).average().orElse(0.0);
-        double totalAvgRiskWater = kpiMap.values().stream().mapToDouble(Kpi::riskWaterStress).average().orElse(0.0);
-        double totalAvgRiskFrost = kpiMap.values().stream().mapToDouble(Kpi::riskFrost).average().orElse(0.0);
+        List<SampleRecord> nordAll = filterByArea(all, "Nord");
+        List<SampleRecord> centroAll = filterByArea(all, "Centro");
+        List<SampleRecord> sudAll = filterByArea(all, "Sud");
 
-        // Righe tabella (Nord/Centro/Sud)
-        List<RischioRow> rows = List.of("Nord", "Centro", "Sud").stream()
-                .map(a -> new RischioRow(
-                        a,
-                        avgRiskIndex.getOrDefault(a, 0d),
-                        avgRiskTemp.getOrDefault(a, 0d),
-                        avgRiskWater.getOrDefault(a, 0d),
-                        avgRiskFrost.getOrDefault(a, 0d)
-                ))
-                .toList();
+        Map<Integer, Double> annualRiskNord = kpiService.serieRischioClimaticoAnnuale(nordAll);
+        Map<Integer, Double> annualRiskCentro = kpiService.serieRischioClimaticoAnnuale(centroAll);
+        Map<Integer, Double> annualRiskSud = kpiService.serieRischioClimaticoAnnuale(sudAll);
 
-        // 3) Andamento annuale (storico intero, filtra coltura se richiesta)
-        List<SampleRecord> historicalRecords = cachedRecords.stream()
-                .filter(r -> cropFilter == null || cropFilter.equalsIgnoreCase(r.crop()))
-                .toList();
-
-        List<Integer> years = IntStream.rangeClosed(MIN_DATE.getYear(), MAX_DATE.getYear()).boxed().toList();
-        Map<String, List<Double>> annualRiskByArea =
-                calculateAnnualKpiAverage(historicalRecords, years, Kpi::climateRiskIdx);
-
-        // 4) Model
-        model.addAttribute("from", fromDate);
-        model.addAttribute("to", toDate);
-        model.addAttribute("crop", cropFilter);
-        model.addAttribute("area", areaFilter);
-        model.addAttribute("cropsList", cropsFrom(cachedRecords));
-        model.addAttribute("areasList", List.of("Nord", "Centro", "Sud"));
-
-        // KPI Cards e Tabella
-        model.addAttribute("totalAvgRiskIndex", round2(totalAvgRiskIndex));
-        model.addAttribute("totalAvgRiskTemp",  round2(totalAvgRiskTemp));
-        model.addAttribute("totalAvgRiskWater", round2(totalAvgRiskWater));
-        model.addAttribute("totalAvgRiskFrost", round2(totalAvgRiskFrost));
-        model.addAttribute("rischioRows", rows);
-
-        // Radar (medie per area)
-        model.addAttribute("riskTempNord",    avgRiskTemp.getOrDefault("Nord", 0d));
-        model.addAttribute("riskWaterNord",   avgRiskWater.getOrDefault("Nord", 0d));
-        model.addAttribute("riskFrostNord",   avgRiskFrost.getOrDefault("Nord", 0d));
-        model.addAttribute("riskTempCentro",  avgRiskTemp.getOrDefault("Centro", 0d));
-        model.addAttribute("riskWaterCentro", avgRiskWater.getOrDefault("Centro", 0d));
-        model.addAttribute("riskFrostCentro", avgRiskFrost.getOrDefault("Centro", 0d));
-        model.addAttribute("riskTempSud",     avgRiskTemp.getOrDefault("Sud", 0d));
-        model.addAttribute("riskWaterSud",    avgRiskWater.getOrDefault("Sud", 0d));
-        model.addAttribute("riskFrostSud",    avgRiskFrost.getOrDefault("Sud", 0d));
-
-        // Linea annuale
         model.addAttribute("years", years);
-        model.addAttribute("annualRiskNord",   annualRiskByArea.getOrDefault("Nord",   Collections.emptyList()));
-        model.addAttribute("annualRiskCentro", annualRiskByArea.getOrDefault("Centro", Collections.emptyList()));
-        model.addAttribute("annualRiskSud",    annualRiskByArea.getOrDefault("Sud",    Collections.emptyList()));
+        model.addAttribute("annualRiskNord", toOrderedList(annualRiskNord, years));
+        model.addAttribute("annualRiskCentro", toOrderedList(annualRiskCentro, years));
+        model.addAttribute("annualRiskSud", toOrderedList(annualRiskSud, years));
 
-        // Il template si chiama rischioClimatico.html
-        return "rischioClimatico";
-    }
+        // Dati per area (periodo filtrato) - per radar chart e tabella
+        List<SampleRecord> nordFiltered = filterByArea(filtered, "Nord");
+        List<SampleRecord> centroFiltered = filterByArea(filtered, "Centro");
+        List<SampleRecord> sudFiltered = filterByArea(filtered, "Sud");
 
-    // --- Helpers KPI ---
-    private Map<String, List<Double>> calculateAnnualKpiAverage(
-            List<SampleRecord> records, List<Integer> years, ToDoubleFunction<Kpi> kpiGetter) {
+        double riskNord = kpiService.calcolaRischioClimatico(nordFiltered);
+        double riskCentro = kpiService.calcolaRischioClimatico(centroFiltered);
+        double riskSud = kpiService.calcolaRischioClimatico(sudFiltered);
 
-        Map<SampleRecord, Kpi> kpiMap = records.stream()
-                .collect(Collectors.toMap(r -> r, kpiService::compute, (a, b) -> a));
+        // Scomposizione stimata per area
+        double riskTempNord = riskNord * TEMP_WEIGHT;
+        double riskTempCentro = riskCentro * TEMP_WEIGHT;
+        double riskTempSud = riskSud * TEMP_WEIGHT;
 
-        Map<Integer, Map<String, List<Kpi>>> grouped = kpiMap.entrySet().stream()
-                .collect(Collectors.groupingBy(
-                        e -> e.getKey().date().getYear(),
-                        Collectors.groupingBy(
-                                e -> normArea(e.getKey().area()),
-                                Collectors.mapping(Map.Entry::getValue, Collectors.toList())
-                        )
-                ));
+        double riskWaterNord = riskNord * WATER_WEIGHT;
+        double riskWaterCentro = riskCentro * WATER_WEIGHT;
+        double riskWaterSud = riskSud * WATER_WEIGHT;
 
-        Map<String, List<Double>> result = new HashMap<>();
-        for (String area : List.of("Nord", "Centro", "Sud")) {
-            List<Double> annualValues = new ArrayList<>(years.size());
-            for (Integer year : years) {
-                double avg = Optional.ofNullable(grouped.get(year))
-                        .map(m -> m.get(area))
-                        .filter(list -> list != null && !list.isEmpty())
-                        .map(list -> list.stream().mapToDouble(kpiGetter).average().orElse(0.0))
-                        .orElse(0.0);
-                annualValues.add(avg);
-            }
-            result.put(area, annualValues);
-        }
-        return result;
-    }
+        double riskFrostNord = riskNord * FROST_WEIGHT;
+        double riskFrostCentro = riskCentro * FROST_WEIGHT;
+        double riskFrostSud = riskSud * FROST_WEIGHT;
 
-    private static Map<String, Double> averageKpiBy(Map<String, List<Kpi>> byArea, ToDoubleFunction<Kpi> getter) {
-        Map<String, Double> out = new HashMap<>();
-        byArea.forEach((area, list) ->
-                out.put(area, list.stream().mapToDouble(getter).average().orElse(0.0))
+        model.addAttribute("riskTempNord", riskTempNord);
+        model.addAttribute("riskTempCentro", riskTempCentro);
+        model.addAttribute("riskTempSud", riskTempSud);
+        model.addAttribute("riskWaterNord", riskWaterNord);
+        model.addAttribute("riskWaterCentro", riskWaterCentro);
+        model.addAttribute("riskWaterSud", riskWaterSud);
+        model.addAttribute("riskFrostNord", riskFrostNord);
+        model.addAttribute("riskFrostCentro", riskFrostCentro);
+        model.addAttribute("riskFrostSud", riskFrostSud);
+
+        // Tabella dettagli
+        List<RischioRow> rischioRows = Arrays.asList(
+                new RischioRow("Nord", riskNord, riskTempNord, riskWaterNord, riskFrostNord),
+                new RischioRow("Centro", riskCentro, riskTempCentro, riskWaterCentro, riskFrostCentro),
+                new RischioRow("Sud", riskSud, riskTempSud, riskWaterSud, riskFrostSud)
         );
-        return out;
+        model.addAttribute("rischioRows", rischioRows);
     }
 
-    // --- Helpers generali ---
-    private static String norm(String s) {
-        if (s == null) return "";
-        return Normalizer.normalize(s.trim(), Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "")
-                .toLowerCase();
+    private List<Double> toOrderedList(Map<Integer, Double> map, List<Integer> years) {
+        return years.stream()
+                .map(y -> map.getOrDefault(y, 0.0))
+                .collect(Collectors.toList());
     }
 
-    private static String normArea(String area) {
-        String a = norm(area);
-        if (a.contains("nord"))   return "Nord";
-        if (a.contains("centro")) return "Centro";
-        if (a.contains("sud"))    return "Sud";
-        return "Altro";
-    }
+    public static class RischioRow {
+        private final String area;
+        private final double riskIndex;
+        private final double riskTemp;
+        private final double riskWater;
+        private final double riskFrost;
 
-    private static double round2(double v) {
-        return Math.round(v * 100.0) / 100.0;
-    }
+        public RischioRow(String area, double riskIndex, double riskTemp, double riskWater, double riskFrost) {
+            this.area = area;
+            this.riskIndex = riskIndex;
+            this.riskTemp = riskTemp;
+            this.riskWater = riskWater;
+            this.riskFrost = riskFrost;
+        }
 
-    private static List<String> cropsFrom(List<SampleRecord> all) {
-        return all.stream()
-                .map(SampleRecord::crop)
-                .filter(Objects::nonNull)
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .distinct()
-                .sorted()
-                .toList();
+        public String getArea() { return area; }
+        public double getRiskIndex() { return riskIndex; }
+        public double getRiskTemp() { return riskTemp; }
+        public double getRiskWater() { return riskWater; }
+        public double getRiskFrost() { return riskFrost; }
     }
-
-    public record RischioRow(String area, double riskIndex, double riskTemp, double riskWater, double riskFrost) {}
 }

@@ -1,110 +1,233 @@
 package it.floro.dashboard.service;
 
-import it.floro.dashboard.domain.Kpi;
 import it.floro.dashboard.domain.SampleRecord;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.util.*;
+import java.util.function.ToDoubleFunction;
+import java.util.stream.Collectors;
+
+/**
+ * Service concreto che centralizza i calcoli dei KPI e le serie temporali.
+ * ARRICCHITO con metodi per serie annuali e aggregazioni totali.
+ */
 @Service
 public class KpiService {
 
-    /** Calcola tutti i KPI derivati da un singolo SampleRecord. */
-    public Kpi compute(SampleRecord r) {
-        // KPI "classici"
-        double yieldPerHa = safeDiv(r.yieldT(), r.surfaceHa());
-        double waterEff   = safeDiv(r.yieldT() * 1000.0, r.waterM3()); // kg/m³
-        double unitCost   = safeDiv(r.costEur(), r.yieldT());
-        double unitMargin = r.priceEurT() - unitCost;
+    // =========================
+    // RESA per ettaro (t/ha)
+    // =========================
 
-        // Fattori di rischio (ora temperatura dipendente dalla coltura)
-        String crop = (r.crop() == null || r.crop().isBlank()) ? "Grano duro" : r.crop().trim();
-        double riskTemp   = calculateRiskTemperature(r.tempC(), crop);
-        double riskWater  = calculateRiskWaterStress(r.rainMm());
-        double riskFrost  = calculateRiskFrost(r.tempC());
-
-        // Indice aggregato
-        double riskIndex  = calculateRiskIndex(riskTemp, riskWater, riskFrost);
-
-        // --- NUOVA MODIFICA: Scomposizione dei costi per l'analisi di dettaglio ---
-        double totalCost = r.costEur();
-        double yield = r.yieldT();
-
-        // Simuliamo una scomposizione del costo totale in percentuali.
-        // Questi valori possono essere resi più complessi in futuro.
-        double unitCostLabor     = safeDiv(totalCost * 0.5, yield); // 50% del costo è manodopera
-        double unitCostMaterials = safeDiv(totalCost * 0.3, yield); // 30% del costo è materiali
-        double unitCostWater     = safeDiv(totalCost * 0.2, yield); // 20% del costo è acqua/altro
-
-        return new Kpi(
-                yieldPerHa,
-                waterEff,
-                unitCost,
-                unitMargin,
-                riskIndex,
-                riskTemp,
-                riskWater,
-                riskFrost,
-                // Aggiunta dei nuovi campi per i costi
-                unitCostLabor,
-                unitCostMaterials,
-                unitCostWater
-        );
+    public double calcolaResaMedia(List<SampleRecord> records) {
+        return safeAverage(records, r -> {
+            double ha = r.surfaceHa();
+            return ha > 0 ? (r.yieldT() / ha) : Double.NaN;
+        });
     }
 
-    // --- Metodi di calcolo per i rischi ---
+    public Map<LocalDate, Double> serieResaGiornaliera(List<SampleRecord> records) {
+        return seriesAverage(records, r -> {
+            double ha = r.surfaceHa();
+            return ha > 0 ? (r.yieldT() / ha) : Double.NaN;
+        });
+    }
 
-    /**
-     * Rischio termico “smooth” per coltura:
-     * - ~0 nella fascia ottimale [minOk..maxOk]
-     * - cresce verso caldo e freddo con pesi 0.6 (hot) e 0.4 (cold)
-     */
-    private double calculateRiskTemperature(double t, String crop) {
-        double minOk, maxOk, maxHot, minCold;
-        switch (crop) {
-            case "Mais" -> { minOk = 22; maxOk = 28; maxHot = 40; minCold = 0; }
-            case "Olivo" -> { minOk = 20; maxOk = 28; maxHot = 42; minCold = 0; }
-            case "Vite" -> { minOk = 18; maxOk = 26; maxHot = 40; minCold = 0; }
-            default /* Grano duro */ -> { minOk = 16; maxOk = 24; maxHot = 38; minCold = 0; }
+    public Map<Integer, Double> serieResaAnnuale(List<SampleRecord> records) {
+        return seriesAnnualAverage(records, r -> {
+            double ha = r.surfaceHa();
+            return ha > 0 ? (r.yieldT() / ha) : Double.NaN;
+        });
+    }
+
+    // =========================
+    // EFFICIENZA IDRICA (kg/m³)
+    // =========================
+
+    public double calcolaEfficienzaIdrica(List<SampleRecord> records) {
+        return safeAverage(records, r -> {
+            double w = r.waterM3();
+            return w > 0 ? (r.yieldT() * 1000.0 / w) : Double.NaN;
+        });
+    }
+
+    public Map<LocalDate, Double> serieEfficienzaIdricaGiornaliera(List<SampleRecord> records) {
+        return seriesAverage(records, r -> {
+            double w = r.waterM3();
+            return w > 0 ? (r.yieldT() * 1000.0 / w) : Double.NaN;
+        });
+    }
+
+    public Map<Integer, Double> serieEfficienzaIdricaAnnuale(List<SampleRecord> records) {
+        return seriesAnnualAverage(records, r -> {
+            double w = r.waterM3();
+            return w > 0 ? (r.yieldT() * 1000.0 / w) : Double.NaN;
+        });
+    }
+
+    // =========================
+    // COSTO UNITARIO (€/t)
+    // =========================
+
+    public double calcolaCostoUnitario(List<SampleRecord> records) {
+        return safeAverage(records, r -> {
+            double y = r.yieldT();
+            return y > 0 ? (r.costEur() / y) : Double.NaN;
+        });
+    }
+
+    public Map<LocalDate, Double> serieCostoUnitarioGiornaliera(List<SampleRecord> records) {
+        return seriesAverage(records, r -> {
+            double y = r.yieldT();
+            return y > 0 ? (r.costEur() / y) : Double.NaN;
+        });
+    }
+
+    public Map<Integer, Double> serieCostoUnitarioAnnuale(List<SampleRecord> records) {
+        return seriesAnnualAverage(records, r -> {
+            double y = r.yieldT();
+            return y > 0 ? (r.costEur() / y) : Double.NaN;
+        });
+    }
+
+    // =========================
+    // MARGINE UNITARIO (€/t)
+    // =========================
+
+    public double calcolaMargineUnitario(List<SampleRecord> records) {
+        return safeAverage(records, r -> {
+            double y = r.yieldT();
+            return y > 0 ? (r.priceEurT() - (r.costEur() / y)) : Double.NaN;
+        });
+    }
+
+    public Map<LocalDate, Double> serieMargineUnitarioGiornaliera(List<SampleRecord> records) {
+        return seriesAverage(records, r -> {
+            double y = r.yieldT();
+            return y > 0 ? (r.priceEurT() - (r.costEur() / y)) : Double.NaN;
+        });
+    }
+
+    public Map<Integer, Double> serieMargineUnitarioAnnuale(List<SampleRecord> records) {
+        return seriesAnnualAverage(records, r -> {
+            double y = r.yieldT();
+            return y > 0 ? (r.priceEurT() - (r.costEur() / y)) : Double.NaN;
+        });
+    }
+
+    // =========================
+    // RISCHIO CLIMATICO (0–1)
+    // =========================
+
+    public double calcolaRischioClimatico(List<SampleRecord> records) {
+        return safeAverage(records, this::rischioClimaticoPoint);
+    }
+
+    public Map<LocalDate, Double> serieRischioClimaticoGiornaliera(List<SampleRecord> records) {
+        return seriesAverage(records, this::rischioClimaticoPoint);
+    }
+
+    public Map<Integer, Double> serieRischioClimaticoAnnuale(List<SampleRecord> records) {
+        return seriesAnnualAverage(records, this::rischioClimaticoPoint);
+    }
+
+    // =========================
+    // AGGREGAZIONI TOTALI
+    // =========================
+
+    public double sommaProduzione(List<SampleRecord> records) {
+        return records.stream()
+                .mapToDouble(SampleRecord::yieldT)
+                .filter(Double::isFinite)
+                .sum();
+    }
+
+    public double sommaSuperficie(List<SampleRecord> records) {
+        return records.stream()
+                .mapToDouble(SampleRecord::surfaceHa)
+                .filter(Double::isFinite)
+                .sum();
+    }
+
+    public double sommaAcqua(List<SampleRecord> records) {
+        return records.stream()
+                .mapToDouble(SampleRecord::waterM3)
+                .filter(Double::isFinite)
+                .sum();
+    }
+
+    public double prezzoMedio(List<SampleRecord> records) {
+        return safeAverage(records, SampleRecord::priceEurT);
+    }
+
+    // =========================
+    // Helpers interni
+    // =========================
+
+    private double rischioClimaticoPoint(SampleRecord r) {
+        double temp  = r.tempC();
+        double hum   = r.humidityPct();
+        double rain  = r.rainMm();
+        double solar = r.solarIdx();
+
+        double score = 0.0;
+        score += normalize(temp, 10, 40) * 0.4;
+        score += (1 - normalize(hum, 30, 90)) * 0.3;
+        score += (1 - normalize(rain, 0, 40)) * 0.2;
+        score += clamp01(solar) * 0.1;
+
+        return clamp01(score);
+    }
+
+    private static double normalize(double value, double min, double max) {
+        if (Double.isNaN(value)) return 0;
+        if (value <= min) return 0;
+        if (value >= max) return 1;
+        return (value - min) / (max - min);
+    }
+
+    private static double clamp01(double v) {
+        if (Double.isNaN(v) || Double.isInfinite(v)) return 0;
+        return Math.max(0, Math.min(1, v));
+    }
+
+    private static double safeAverage(List<SampleRecord> records, ToDoubleFunction<SampleRecord> f) {
+        return records.stream()
+                .mapToDouble(f)
+                .filter(d -> !Double.isNaN(d) && !Double.isInfinite(d))
+                .average()
+                .orElse(0.0);
+    }
+
+    private static Map<LocalDate, Double> seriesAverage(List<SampleRecord> records, ToDoubleFunction<SampleRecord> f) {
+        Map<LocalDate, List<SampleRecord>> grouped = records.stream()
+                .collect(Collectors.groupingBy(SampleRecord::date));
+
+        Map<LocalDate, Double> out = new TreeMap<>();
+        for (Map.Entry<LocalDate, List<SampleRecord>> e : grouped.entrySet()) {
+            double avg = e.getValue().stream()
+                    .mapToDouble(f)
+                    .filter(d -> !Double.isNaN(d) && !Double.isInfinite(d))
+                    .average()
+                    .orElse(0.0);
+            out.put(e.getKey(), avg);
         }
-        double cold = clamp01((minOk - t) / (minOk - minCold + 1e-9));
-        double hot  = clamp01((t - maxOk) / (maxHot - maxOk + 1e-9));
-        return clamp01(0.6 * hot + 0.4 * cold);
+        return out;
     }
 
-    /** Stress idrico: se piove >= 10mm rischio ~0, altrimenti sale linearmente. */
-    private double calculateRiskWaterStress(double rainMm) {
-        final double MAX_RAIN_FOR_RISK = 10.0; // >= 10mm -> rischio 0
-        if (rainMm >= MAX_RAIN_FOR_RISK) return 0.0;
-        return clamp01(1.0 - (rainMm / MAX_RAIN_FOR_RISK));
-    }
+    private static Map<Integer, Double> seriesAnnualAverage(List<SampleRecord> records, ToDoubleFunction<SampleRecord> f) {
+        Map<Integer, List<SampleRecord>> grouped = records.stream()
+                .collect(Collectors.groupingBy(r -> r.date().getYear()));
 
-    /** Rischio gelo: sotto ~2°C cresce fino a 1 a 0°C. */
-    private double calculateRiskFrost(double tempC) {
-        final double MIN_TEMP_FROST = 0.0;
-        final double MAX_TEMP_FROST = 2.0; // rischio sotto ~2°C
-        if (tempC >= MAX_TEMP_FROST) return 0.0;
-        if (tempC <= MIN_TEMP_FROST) return 1.0;
-        double v = 1.0 - (tempC - MIN_TEMP_FROST) / (MAX_TEMP_FROST - MIN_TEMP_FROST);
-        return clamp01(v);
-    }
-
-    /** Media pesata dei rischi componenti. */
-    private double calculateRiskIndex(double riskTemp, double riskWater, double riskFrost) {
-        final double WEIGHT_TEMP  = 0.4;
-        final double WEIGHT_WATER = 0.4;
-        final double WEIGHT_FROST = 0.2;
-        double totalRisk = (riskTemp * WEIGHT_TEMP)
-                + (riskWater * WEIGHT_WATER)
-                + (riskFrost * WEIGHT_FROST);
-        return clamp01(totalRisk);
-    }
-
-    // --- Helper ---
-
-    private double safeDiv(double a, double b) {
-        return (b == 0.0) ? 0.0 : a / b; // evita NaN/Infinity
-    }
-
-    private double clamp01(double v) {
-        return Math.max(0.0, Math.min(1.0, v));
+        Map<Integer, Double> out = new TreeMap<>();
+        for (Map.Entry<Integer, List<SampleRecord>> e : grouped.entrySet()) {
+            double avg = e.getValue().stream()
+                    .mapToDouble(f)
+                    .filter(d -> !Double.isNaN(d) && !Double.isInfinite(d))
+                    .average()
+                    .orElse(0.0);
+            out.put(e.getKey(), avg);
+        }
+        return out;
     }
 }

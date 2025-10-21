@@ -162,23 +162,6 @@ public class DataSimulator {
         return 0.20;
     }
 
-    /**
-     * Calcolo del rischio termico “smooth” per coltura.
-     * 0 circa nella fascia ottimale (minOk..maxOk), cresce verso caldo e freddo.
-     */
-    private double calculateRiskTemperature(double t, String crop) {
-        double minOk, maxOk, maxHot, minCold;
-        switch (crop) {
-            case "Mais" -> { minOk = 22; maxOk = 28; maxHot = 40; minCold = 0; }
-            case "Olivo" -> { minOk = 20; maxOk = 28; maxHot = 42; minCold = 0; }
-            case "Vite" -> { minOk = 18; maxOk = 26; maxHot = 40; minCold = 0; }
-            default /* Grano duro */ -> { minOk = 16; maxOk = 24; maxHot = 38; minCold = 0; }
-        }
-        double cold = clamp01((minOk - t) / (minOk - minCold + 1e-9));
-        double hot  = clamp01((t - maxOk) / (maxHot - maxOk + 1e-9));
-        return clamp01(0.6 * hot + 0.4 * cold);
-    }
-
     public List<SampleRecord> generate() {
         List<SampleRecord> out = new ArrayList<>();
 
@@ -245,12 +228,15 @@ public class DataSimulator {
                     case "Olivo"      -> 450;
                     default /* Vite */-> 600;
                 };
+
+                // FIX: Aggiunto switch expression per assegnare correttamente ogni shock
                 switch (crop) {
                     case "Grano duro" -> priceShockWheat = phiP * priceShockWheat + gauss(0, sigmaP);
-                    case "Mais"       -> priceShockMais   = phiP * priceShockMais   + gauss(0, sigmaP);
-                    case "Olivo"      -> priceShockOlivo  = phiP * priceShockOlivo  + gauss(0, sigmaP);
-                    default /* Vite */-> priceShockVite   = phiP * priceShockVite   + gauss(0, sigmaP);
+                    case "Mais"       -> priceShockMais  = phiP * priceShockMais  + gauss(0, sigmaP);
+                    case "Olivo"      -> priceShockOlivo = phiP * priceShockOlivo + gauss(0, sigmaP);
+                    case "Vite"       -> priceShockVite  = phiP * priceShockVite  + gauss(0, sigmaP);
                 }
+
                 double shock = switch (crop) {
                     case "Grano duro" -> priceShockWheat;
                     case "Mais"       -> priceShockMais;
