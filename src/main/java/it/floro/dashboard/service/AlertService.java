@@ -18,9 +18,9 @@ public class AlertService {
     public AlertService(KpiService kpiService) {
         this.kpiService = kpiService;
 
-        // 🔴 Alert di esempio pre-configurati
+        // Alert di esempio pre-configurati
         configuredAlerts.put("1", new Alert(
-                "1", "RESA", 5.0, "BELOW", "Tutte", true, ""
+                "1", "Resa Media", 5.0, "BELOW", "Tutte", true, ""
         ));
         configuredAlerts.put("2", new Alert(
                 "2", "RISCHIO", 0.7, "ABOVE", "Tutte", true, ""
@@ -76,7 +76,7 @@ public class AlertService {
 
     private double getCurrentKpiValue(String kpiType, List<SampleRecord> records) {
         return switch (kpiType) {
-            case "RESA" -> kpiService.calcolaResaMedia(records);
+            case "Resa Media" -> kpiService.calcolaResaMedia(records);
             case "EFFICIENZA" -> kpiService.calcolaEfficienzaIdrica(records);
             case "COSTO" -> kpiService.calcolaCostoUnitario(records);
             case "MARGINE" -> kpiService.calcolaMargineUnitario(records);

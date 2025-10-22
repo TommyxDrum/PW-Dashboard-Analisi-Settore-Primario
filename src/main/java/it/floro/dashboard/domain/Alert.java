@@ -12,7 +12,7 @@ public record Alert(
     public static Alert createTriggered(String kpiType, double currentValue,
                                         double threshold, String condition) {
         String msg = String.format(
-                "⚠️ Alert %s: valore %.2f %s soglia %.2f",
+                "⚠️ Alert %s: valore %.2f t/ha %s soglia %.2f t/ha",
                 kpiType, currentValue,
                 condition.equals("ABOVE") ? "supera" : "sotto",
                 threshold

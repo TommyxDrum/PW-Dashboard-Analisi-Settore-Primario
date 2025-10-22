@@ -12,43 +12,347 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
     <style>
-        .weather-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 1rem;
-            padding: 2rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        :root {
+            --gradient-nord: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+            --gradient-centro: linear-gradient(135deg, #D96D00 0%, #b85a00 100%);
+            --gradient-sud: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.12);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.16);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
+        body {
+            background: linear-gradient(to bottom, #f8f9fa 0%, #e9ecef 100%);
+            min-height: 100vh;
+        }
+
+        /* Header migliorato con glassmorphism */
+        .header-bar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: var(--shadow-md);
+            padding: 1.25rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: var(--transition);
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            font-weight: 700;
+            background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .btn-back {
+            border-radius: 12px;
+            padding: 0.5rem 1rem;
+            transition: var(--transition);
+            border: 2px solid #e9ecef;
+        }
+
+        .btn-back:hover {
+            transform: translateX(-4px);
+            border-color: #0d6efd;
+            color: #0d6efd;
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Badge LIVE migliorato */
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        #liveBadge {
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 2px 8px rgba(25, 135, 84, 0.3);
+            animation: pulse-badge 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-badge {
+            0%, 100% { box-shadow: 0 2px 8px rgba(25, 135, 84, 0.3); }
+            50% { box-shadow: 0 4px 16px rgba(25, 135, 84, 0.5); }
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            animation: pulse-dot 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.3); }
+        }
+
+        /* Weather Cards migliorate */
+        .weather-card {
+            color: white;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .weather-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            transition: var(--transition);
+            opacity: 0;
+        }
+
+        .weather-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 48px rgba(0,0,0,0.25);
+        }
+
+        .weather-card:hover::before {
+            opacity: 1;
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(-30%, -30%); }
+        }
+
+        .area-nord { background: var(--gradient-nord); }
+        .area-centro { background: var(--gradient-centro); }
+        .area-sud { background: var(--gradient-sud); }
+
         .weather-icon {
-            font-size: 4rem;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            font-size: 4.5rem;
+            filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2));
+            transition: var(--transition);
+        }
+
+        .weather-card:hover .weather-icon {
+            transform: scale(1.1) rotate(5deg);
         }
 
         .weather-value {
-            font-size: 3rem;
-            font-weight: 700;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            font-size: 3.5rem;
+            font-weight: 800;
+            text-shadow: 0 2px 16px rgba(0,0,0,0.2);
+            line-height: 1;
+            margin-bottom: 0.5rem;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .weather-label {
-            font-size: 0.9rem;
-            opacity: 0.9;
+            font-size: 0.85rem;
+            opacity: 0.95;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
+            font-weight: 600;
         }
 
+        /* Metric boxes migliorate */
         .metric-box {
-            background: rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.2);
             backdrop-filter: blur(10px);
-            border-radius: 0.75rem;
+            border-radius: 1rem;
             padding: 1rem;
-            margin-bottom: 1rem;
+            margin-bottom: 0;
+            border: 1px solid rgba(255,255,255,0.3);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
         }
 
-        .area-nord { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .area-centro { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-        .area-sud { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .metric-box::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .weather-card:hover .metric-box::after {
+            left: 100%;
+        }
+
+        .metric-box:hover {
+            background: rgba(255,255,255,0.25);
+            transform: translateY(-2px);
+        }
+
+        .metric-box i {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .metric-box strong {
+            font-size: 1.4rem;
+            display: block;
+            margin-top: 0.25rem;
+        }
+
+        .metric-box .weather-label {
+            font-size: 0.7rem;
+            margin-top: 0.25rem;
+        }
+
+        /* Dashboard cards per grafici */
+        .dashboard-card {
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: var(--shadow-md);
+            transition: var(--transition);
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+        }
+
+        .dashboard-card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-4px);
+        }
+
+        .dashboard-card h3 {
+            color: #2d3748;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 700;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #f1f3f5;
+        }
+
+        .dashboard-card h3 i {
+            font-size: 1.5rem;
+            color: #0d6efd;
+        }
+
+        .chart-container {
+            position: relative;
+            padding: 1rem 0;
+        }
+
+        /* Animazioni di caricamento */
+        .loading-shimmer {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer-loading 1.5s infinite;
+        }
+
+        @keyframes shimmer-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Responsive improvements */
+        @media (max-width: 768px) {
+            .header-bar {
+                padding: 1rem;
+                flex-wrap: wrap;
+            }
+
+            .weather-card {
+                padding: 1.5rem;
+            }
+
+            .weather-value {
+                font-size: 2.5rem;
+            }
+
+            .weather-icon {
+                font-size: 3rem;
+            }
+
+            .metric-box strong {
+                font-size: 1.2rem;
+            }
+
+            .dashboard-card {
+                padding: 1rem !important;
+            }
+
+            .chart-container {
+                height: 250px !important;
+            }
+        }
+
+        /* Miglioramenti per accessibilità */
+        .weather-card:focus-within {
+            outline: 3px solid rgba(255, 255, 255, 0.5);
+            outline-offset: 4px;
+        }
+
+        /* Effetto parallasse leggero per le card */
+        @media (prefers-reduced-motion: no-preference) {
+            .weather-card {
+                will-change: transform;
+            }
+        }
+
+        /* Status indicator aggiuntivo */
+        .status-text {
+            font-size: 0.75rem;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        /* Area title con icona migliorata */
+        .area-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Condizioni meteo badge */
+        .conditions-badge {
+            background: rgba(255,255,255,0.25);
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            display: inline-block;
+            margin-top: 0.25rem;
+        }
     </style>
 </head>
 <body>
@@ -65,13 +369,13 @@
         <span class="badge bg-success" id="liveBadge">
             <span class="pulse-dot"></span> LIVE
         </span>
-        <small class="text-muted ms-2" style="font-size: 0.75rem;">
+        <small class="status-text ms-2">
             Aggiornato: <span id="lastUpdateTime">--:--:--</span>
         </small>
     </div>
 </header>
 
-<div class="container-fluid py-4">
+<div class="container-fluid py-4 px-4">
 
     <!-- Card Meteo per Area -->
     <div class="row g-4 mb-4" id="weatherCards">
@@ -82,8 +386,8 @@
     <div class="row g-4">
         <div class="col-lg-6">
             <div class="dashboard-card p-4">
-                <h3 class="h6 mb-3 fw-bold">
-                    <i class="bi bi-thermometer-half me-2"></i>
+                <h3 class="h6 mb-3">
+                    <i class="bi bi-thermometer-half"></i>
                     Temperatura in Tempo Reale
                 </h3>
                 <div class="chart-container" style="height: 300px;">
@@ -94,8 +398,8 @@
 
         <div class="col-lg-6">
             <div class="dashboard-card p-4">
-                <h3 class="h6 mb-3 fw-bold">
-                    <i class="bi bi-droplet-fill me-2"></i>
+                <h3 class="h6 mb-3">
+                    <i class="bi bi-droplet-fill"></i>
                     Umidità in Tempo Reale
                 </h3>
                 <div class="chart-container" style="height: 300px;">
@@ -106,8 +410,8 @@
 
         <div class="col-lg-6">
             <div class="dashboard-card p-4">
-                <h3 class="h6 mb-3 fw-bold">
-                    <i class="bi bi-wind me-2"></i>
+                <h3 class="h6 mb-3">
+                    <i class="bi bi-wind"></i>
                     Vento in Tempo Reale
                 </h3>
                 <div class="chart-container" style="height: 300px;">
@@ -118,8 +422,8 @@
 
         <div class="col-lg-6">
             <div class="dashboard-card p-4">
-                <h3 class="h6 mb-3 fw-bold">
-                    <i class="bi bi-brightness-high-fill me-2"></i>
+                <h3 class="h6 mb-3">
+                    <i class="bi bi-brightness-high-fill"></i>
                     Radiazione Solare in Tempo Reale
                 </h3>
                 <div class="chart-container" style="height: 300px;">
@@ -146,9 +450,9 @@
 
     // Colori per area
     const areaColors = {
-        Nord: '#667eea',
-        Centro: '#f5576c',
-        Sud: '#00f2fe'
+        Nord: '#0d6efd',
+        Centro: '#D96D00',
+        Sud: '#10b981'
     };
 
     // Inizializza grafici
@@ -158,22 +462,74 @@
         const commonOptions = {
             responsive: true,
             maintainAspectRatio: false,
-            animation: { duration: 500 },
+            animation: {
+                duration: 750,
+                easing: 'easeInOutQuart'
+            },
             scales: {
                 x: {
                     display: true,
-                    grid: { display: false }
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        font: {
+                            size: 11,
+                            weight: '500'
+                        },
+                        color: '#6c757d'
+                    }
                 },
                 y: {
                     display: true,
-                    grid: { color: 'rgba(0,0,0,0.05)' }
+                    grid: {
+                        color: 'rgba(0,0,0,0.04)',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        font: {
+                            size: 11,
+                            weight: '500'
+                        },
+                        color: '#6c757d',
+                        padding: 8
+                    }
                 }
             },
             plugins: {
                 legend: {
                     position: 'top',
-                    labels: { usePointStyle: true, padding: 15 }
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20,
+                        font: {
+                            size: 12,
+                            weight: '600'
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    titleColor: '#2d3748',
+                    bodyColor: '#4a5568',
+                    borderColor: 'rgba(0,0,0,0.1)',
+                    borderWidth: 1,
+                    padding: 12,
+                    boxPadding: 6,
+                    usePointStyle: true,
+                    titleFont: {
+                        size: 13,
+                        weight: '700'
+                    },
+                    bodyFont: {
+                        size: 12,
+                        weight: '600'
+                    }
                 }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
             }
         };
 
@@ -185,12 +541,36 @@
                     label: area,
                     data: chartData.temp[area],
                     borderColor: areaColors[area],
-                    backgroundColor: areaColors[area] + '20',
+                    backgroundColor: areaColors[area] + '15',
                     tension: 0.4,
-                    fill: true
+                    fill: true,
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: areaColors[area],
+                    pointBorderWidth: 2,
+                    pointHoverBorderWidth: 3
                 }))
             },
-            options: { ...commonOptions, scales: { ...commonOptions.scales, y: { ...commonOptions.scales.y, title: { display: true, text: '°C' }}}}
+            options: {
+                ...commonOptions,
+                scales: {
+                    ...commonOptions.scales,
+                    y: {
+                        ...commonOptions.scales.y,
+                        title: {
+                            display: true,
+                            text: '°C',
+                            font: {
+                                size: 12,
+                                weight: '700'
+                            },
+                            color: '#4a5568'
+                        }
+                    }
+                }
+            }
         });
 
         humidityChart = new Chart(document.getElementById('humidityChart'), {
@@ -201,12 +581,36 @@
                     label: area,
                     data: chartData.humidity[area],
                     borderColor: areaColors[area],
-                    backgroundColor: areaColors[area] + '20',
+                    backgroundColor: areaColors[area] + '15',
                     tension: 0.4,
-                    fill: true
+                    fill: true,
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: areaColors[area],
+                    pointBorderWidth: 2,
+                    pointHoverBorderWidth: 3
                 }))
             },
-            options: { ...commonOptions, scales: { ...commonOptions.scales, y: { ...commonOptions.scales.y, title: { display: true, text: '%' }}}}
+            options: {
+                ...commonOptions,
+                scales: {
+                    ...commonOptions.scales,
+                    y: {
+                        ...commonOptions.scales.y,
+                        title: {
+                            display: true,
+                            text: '%',
+                            font: {
+                                size: 12,
+                                weight: '700'
+                            },
+                            color: '#4a5568'
+                        }
+                    }
+                }
+            }
         });
 
         windChart = new Chart(document.getElementById('windChart'), {
@@ -217,12 +621,36 @@
                     label: area,
                     data: chartData.wind[area],
                     borderColor: areaColors[area],
-                    backgroundColor: areaColors[area] + '20',
+                    backgroundColor: areaColors[area] + '15',
                     tension: 0.4,
-                    fill: true
+                    fill: true,
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: areaColors[area],
+                    pointBorderWidth: 2,
+                    pointHoverBorderWidth: 3
                 }))
             },
-            options: { ...commonOptions, scales: { ...commonOptions.scales, y: { ...commonOptions.scales.y, title: { display: true, text: 'km/h' }}}}
+            options: {
+                ...commonOptions,
+                scales: {
+                    ...commonOptions.scales,
+                    y: {
+                        ...commonOptions.scales.y,
+                        title: {
+                            display: true,
+                            text: 'km/h',
+                            font: {
+                                size: 12,
+                                weight: '700'
+                            },
+                            color: '#4a5568'
+                        }
+                    }
+                }
+            }
         });
 
         solarChart = new Chart(document.getElementById('solarChart'), {
@@ -233,12 +661,36 @@
                     label: area,
                     data: chartData.solar[area],
                     borderColor: areaColors[area],
-                    backgroundColor: areaColors[area] + '20',
+                    backgroundColor: areaColors[area] + '15',
                     tension: 0.4,
-                    fill: true
+                    fill: true,
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: areaColors[area],
+                    pointBorderWidth: 2,
+                    pointHoverBorderWidth: 3
                 }))
             },
-            options: { ...commonOptions, scales: { ...commonOptions.scales, y: { ...commonOptions.scales.y, title: { display: true, text: 'W/m²' }}}}
+            options: {
+                ...commonOptions,
+                scales: {
+                    ...commonOptions.scales,
+                    y: {
+                        ...commonOptions.scales.y,
+                        title: {
+                            display: true,
+                            text: 'W/m²',
+                            font: {
+                                size: 12,
+                                weight: '700'
+                            },
+                            color: '#4a5568'
+                        }
+                    }
+                }
+            }
         });
     }
 
@@ -275,110 +727,113 @@
                     <div class="weather-card ${areaClass}">
                         <div class="d-flex justify-content-between align-items-start mb-3">
                             <div>
-                                <h4 class="mb-0">${area}</h4>
-                                <small class="weather-label">${weather.condizioni}</small>
+                                <h4 class="area-title mb-0">${area}</h4>
+                                <span class="conditions-badge">${weather.condizioni}</span>
                             </div>
                             <div class="weather-icon">${icon}</div>
                         </div>
 
-                        <div class="weather-value mb-2">
+                        <div class="weather-value">
                             ${weather.temperaturaC.toFixed(1)}°C
                         </div>
 
-                        <div class="row g-2">
+                        <div class="row g-3 mt-2">
                             <div class="col-6">
                                 <div class="metric-box">
-                                    <i class="bi bi-droplet-fill me-1"></i>
+                                    <i class="bi bi-droplet-fill"></i>
                                     <strong>${weather.umiditaPct.toFixed(0)}%</strong>
                                     <div class="weather-label">Umidità</div>
                                 </div>
                             </div>
                             <div class="col-6">
                                 <div class="metric-box">
-                                    <i class="bi bi-wind me-1"></i>
-                                    <strong>${weather.ventoKmh.toFixed(1)}</strong> km/h
-                                    <div class="weather-label">Vento</div>
+                                    <i class="bi bi-wind"></i>
+                                    <strong>${weather.ventoKmh.toFixed(1)}</strong>
+                                    <div class="weather-label">Vento km/h</div>
                                 </div>
                             </div>
                             <div class="col-6">
                                 <div class="metric-box">
-                                    <i class="bi bi-cloud-rain-fill me-1"></i>
-                                    <strong>${weather.precipitazioniMm.toFixed(1)}</strong> mm
-                                    <div class="weather-label">Pioggia</div>
+                                    <i class="bi bi-cloud-rain-fill"></i>
+                                    <strong>${weather.precipitazioniMm.toFixed(1)}</strong>
+                                    <div class="weather-label">Pioggia mm</div>
                                 </div>
                             </div>
                             <div class="col-6">
                                 <div class="metric-box">
-                                    <i class="bi bi-brightness-high-fill me-1"></i>
-                                    <strong>${weather.radiazioneSolare.toFixed(0)}</strong> W/m²
-                                    <div class="weather
-    <div class="weather-label">Radiazione</div>
+                                    <i class="bi bi-brightness-high-fill"></i>
+                                    <strong>${weather.radiazioneSolare.toFixed(0)}</strong>
+                                    <div class="weather-label">Radiazione W/m²</div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        `;
-        container.innerHTML += card;
-    });
-}
-
-function updateCharts(data) {
-    // Aggiungi timestamp
-    const now = new Date();
-    const timeLabel = now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-    chartData.labels.push(timeLabel);
-
-    // Aggiungi dati per ogni area
-    Object.entries(data.dataPerArea).forEach(([area, weather]) => {
-        chartData.temp[area].push(weather.temperaturaC);
-        chartData.humidity[area].push(weather.umiditaPct);
-        chartData.wind[area].push(weather.ventoKmh);
-        chartData.solar[area].push(weather.radiazioneSolare);
-    });
-
-    // Mantieni solo ultimi N punti
-    if (chartData.labels.length > historyLimit) {
-        chartData.labels.shift();
-        Object.keys(areaColors).forEach(area => {
-            chartData.temp[area].shift();
-            chartData.humidity[area].shift();
-            chartData.wind[area].shift();
-            chartData.solar[area].shift();
+            `;
+            container.innerHTML += card;
         });
     }
 
-    // Aggiorna grafici
-    tempChart.update('none');
-    humidityChart.update('none');
-    windChart.update('none');
-    solarChart.update('none');
-}
-
-function getWeatherIcon(condizioni) {
-    switch(condizioni) {
-        case 'Soleggiato': return '☀️';
-        case 'Nuvoloso': return '☁️';
-        case 'Pioggia': return '🌧️';
-        default: return '🌤️';
-    }
-}
-
-function updateLastUpdateTime() {
-    const timeEl = document.getElementById('lastUpdateTime');
-    if (timeEl) {
+    function updateCharts(data) {
+        // Aggiungi timestamp
         const now = new Date();
-        timeEl.textContent = now.toLocaleTimeString('it-IT');
-    }
-}
+        const timeLabel = now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-// Avvia tutto
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Inizializzazione dashboard meteo...');
-    initCharts();
-    connectWeatherStream();
-});
+        chartData.labels.push(timeLabel);
+
+        // Aggiungi dati per ogni area
+        Object.entries(data.dataPerArea).forEach(([area, weather]) => {
+            chartData.temp[area].push(weather.temperaturaC);
+            chartData.humidity[area].push(weather.umiditaPct);
+            chartData.wind[area].push(weather.ventoKmh);
+            chartData.solar[area].push(weather.radiazioneSolare);
+        });
+
+        // Mantieni solo ultimi N punti
+        if (chartData.labels.length > historyLimit) {
+            chartData.labels.shift();
+            Object.keys(areaColors).forEach(area => {
+                chartData.temp[area].shift();
+                chartData.humidity[area].shift();
+                chartData.wind[area].shift();
+                chartData.solar[area].shift();
+            });
+        }
+
+        // Aggiorna grafici con animazione smooth
+        tempChart.update('none');
+        humidityChart.update('none');
+        windChart.update('none');
+        solarChart.update('none');
+    }
+
+    function getWeatherIcon(condizioni) {
+        const iconMap = {
+            'Soleggiato': '<i class="bi bi-sun-fill" style="color: #ffd700;"></i>',
+            'Nuvoloso': '<i class="bi bi-cloud-fill" style="color: #e0e0e0;"></i>',
+            'Pioggia': '<i class="bi bi-cloud-rain-heavy-fill" style="color: #87ceeb;"></i>',
+            'Parzialmente nuvoloso': '<i class="bi bi-cloud-sun-fill" style="color: #ffd700;"></i>',
+            'Temporale': '<i class="bi bi-cloud-lightning-rain-fill" style="color: #fff;"></i>',
+            'Neve': '<i class="bi bi-cloud-snow-fill" style="color: #fff;"></i>',
+            'Nebbia': '<i class="bi bi-cloud-fog2-fill" style="color: #d3d3d3;"></i>'
+        };
+        return iconMap[condizioni] || '<i class="bi bi-cloud-sun-fill" style="color: #ffd700;"></i>';
+    }
+
+    function updateLastUpdateTime() {
+        const timeEl = document.getElementById('lastUpdateTime');
+        if (timeEl) {
+            const now = new Date();
+            timeEl.textContent = now.toLocaleTimeString('it-IT');
+        }
+    }
+
+    // Avvia tutto
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('🚀 Inizializzazione dashboard meteo...');
+        initCharts();
+        connectWeatherStream();
+    });
 </script>
 
 </body>
