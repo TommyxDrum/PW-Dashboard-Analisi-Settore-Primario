@@ -1,3 +1,4 @@
+// src/main/java/it/floro/dashboard/web/ExportController.java
 package it.floro.dashboard.web;
 
 import it.floro.dashboard.domain.SampleRecord;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -61,38 +63,48 @@ public class ExportController {
 
         // 4) Converte in CSV
         StringBuilder sb = new StringBuilder();
-        sb.append("Data,Area,Coltura,Superficie (ha),Produzione (t),Costo (€),Prezzo (€/t),Efficienza Idrica (kg/m³),Rischio Climatico (0-1)\n");
+        sb.append("Data,Area,Campo,Coltura,Superficie (ha),Temp (°C),Umidità (%),Pioggia (mm),Indice Solare,Produzione (t),Acqua (m³),Costo (€),Prezzo (€/t)\n");
+
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
         for (SampleRecord r : filtered) {
-            sb.append(String.format("%s,%s,%s,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f%n",
-                    r.date(),
+            sb.append(String.format(
+                    "%s,%s,%s,%s,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f%n",
+                    r.date() != null ? r.date().format(dateFormatter) : "",
                     safe(r.area()),
+                    safe(r.field()),
                     safe(r.crop()),
                     r.surfaceHa(),
+                    r.tempC(),
+                    r.humidityPct(),
+                    r.rainMm(),
+                    r.solarIdx(),
                     r.yieldT(),
+                    r.waterM3(),
                     r.costEur(),
-                    r.priceEurT(),
-                    (r.waterM3() > 0 ? (r.yieldT() * 1000 / r.waterM3()) : 0),
-                    r.solarIdx() // opzionalmente puoi sostituire con un indice da KpiService
+                    r.priceEurT()
             ));
         }
 
         byte[] bytes = sb.toString().getBytes(StandardCharsets.UTF_8);
 
-        // 5) Nome file dinamico
-        String filename = String.format("export_%s_%s.csv",
-                (params.area() != null ? params.area() : "all"),
-                (params.crop() != null ? params.crop() : "all")
-        ).replaceAll("\\s+", "_");
+        // 5) Nome file dinamico senza spazi
+        String areaStr = (params.area() != null ? params.area() : "tutte_aree").replaceAll("\\s+", "_");
+        String cropStr = (params.crop() != null ? params.crop() : "tutte_colture").replaceAll("\\s+", "_");
+        String dateStr = params.start() != null ? params.start().format(DateTimeFormatter.ofPattern("yyyyMMdd")) : "data";
+
+        String filename = String.format("export_%s_%s_%s.csv", areaStr, cropStr, dateStr);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-                .contentType(MediaType.TEXT_PLAIN)
+                .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
                 .contentLength(bytes.length)
                 .body(bytes);
     }
 
     private String safe(String s) {
-        return s != null ? s.replace(",", " ") : "";
+        if (s == null || s.isEmpty()) return "";
+        // Rimuove virgole e virgolette per evitare problemi nel CSV
+        return s.replace(",", " ").replace("\"", "");
     }
 }

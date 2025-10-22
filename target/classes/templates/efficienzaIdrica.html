@@ -16,7 +16,7 @@
 <body>
 
 <header class="header-bar">
-  <a href="/" class="btn btn-outline-secondary btn-back" aria-label="Torna alla Dashboard">
+  <a th:href="@{'/'}" class="btn btn-outline-secondary btn-back" aria-label="Torna alla Dashboard">
     <i class="bi bi-arrow-left"></i>
   </a>
   <h1 class="header-logo display-6 fs-4 mb-0">
@@ -33,7 +33,7 @@
 <div class="container-fluid py-4">
 
   <div class="dashboard-card p-3 mb-4">
-    <form id="filterForm" action="/efficienzaIdrica" method="get"
+    <form id="filterForm" th:action="@{/efficienzaIdrica}" method="get"
           class="filters-bar" role="group" aria-label="Filtri efficienza idrica">
       <div class="form-group">
         <label class="form-label small text-muted mb-1 fw-semibold" for="monthSel">Mese</label>
@@ -256,47 +256,63 @@
 
 <script>
   (function(){
-    const form = document.getElementById("filterForm");
-    if(!form) return;
+    function pad(n){ return n < 10 ? "0"+n : n.toString(); }
 
-    const monthSel = document.getElementById("monthSel");
-    const yearSel  = document.getElementById("yearSel");
-    const fromI    = document.getElementById("from");
-    const toI      = document.getElementById("to");
+    function updateExportLink(){
+      const form = document.getElementById("filterForm");
+      if(!form) return;
 
-    function pad(n){ return n < 10 ? "0"+n : String(n); }
+      const fromI   = document.getElementById("from");
+      const toI     = document.getElementById("to");
+      const cropSel = document.getElementById("cropSel");
+      const areaSel = document.getElementById("areaSel");
 
-    function updateRange(){
+      const params = new URLSearchParams();
+      if(fromI && fromI.value) params.set("startDate", fromI.value);
+      if(toI && toI.value)     params.set("endDate", toI.value);
+      if(cropSel && cropSel.value) params.set("crop", cropSel.value);
+      if(areaSel && areaSel.value) params.set("area", areaSel.value);
+
+      const el = document.getElementById("exportLink");
+      if(el){
+        el.href = "/export" + (params.toString() ? ("?" + params.toString()) : "");
+      }
+    }
+
+    function updateDateRange(){
+      const yearSel = document.getElementById("yearSel");
+      const monthSel = document.getElementById("monthSel");
+      const fromI = document.getElementById("from");
+      const toI = document.getElementById("to");
+
+      if(!yearSel || !monthSel || !fromI || !toI) return;
+
       const y = parseInt(yearSel.value, 10);
       const m = parseInt(monthSel.value, 10);
-      fromI.value = y + "-" + pad(m) + "-01";
       const lastDay = new Date(y, m, 0).getDate();
-      toI.value = y + "-" + pad(m) + "-" + pad(lastDay);
+
+      fromI.value = y + "-" + pad(m) + "-01";
+      toI.value   = y + "-" + pad(m) + "-" + pad(lastDay);
+
       updateExportLink();
     }
 
-    function updateExportLink(){
-      const cropSel = document.getElementById("cropSel");
-      const areaSel = document.getElementById("areaSel");
-      const params = new URLSearchParams();
-      if(fromI.value) params.set("from", fromI.value);
-      if(toI.value) params.set("to", toI.value);
-      if(cropSel && cropSel.value) params.set("crop", cropSel.value);
-      if(areaSel && areaSel.value) params.set("area", areaSel.value);
-      const el = document.getElementById("exportLink");
-      if(el) el.href = "/export.csv" + (params.toString() ? ("?" + params.toString()) : "");
-    }
+    document.addEventListener("DOMContentLoaded", function(){
+      updateDateRange();
+      updateExportLink();
 
-    updateRange();
-    form.addEventListener("submit", updateRange);
-    if(document.getElementById("cropSel")) {
-      document.getElementById("cropSel").addEventListener("change", updateExportLink);
-    }
-    if(document.getElementById("areaSel")) {
-      document.getElementById("areaSel").addEventListener("change", updateExportLink);
-    }
-    monthSel.addEventListener("change", updateRange);
-    yearSel.addEventListener("change", updateRange);
+      const form = document.getElementById("filterForm");
+      const monthSel = document.getElementById("monthSel");
+      const yearSel  = document.getElementById("yearSel");
+      const cropSel  = document.getElementById("cropSel");
+      const areaSel  = document.getElementById("areaSel");
+
+      if(monthSel) monthSel.addEventListener("change", updateDateRange);
+      if(yearSel)  yearSel.addEventListener("change", updateDateRange);
+      if(cropSel)  cropSel.addEventListener("change", updateExportLink);
+      if(areaSel)  areaSel.addEventListener("change", updateExportLink);
+      if(form)     form.addEventListener("submit", updateDateRange);
+    });
   })();
 </script>
 
