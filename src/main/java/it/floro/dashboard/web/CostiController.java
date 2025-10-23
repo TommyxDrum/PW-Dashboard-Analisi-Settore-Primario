@@ -17,9 +17,7 @@ import java.util.stream.Collectors;
 import static org.springframework.format.annotation.DateTimeFormat.ISO;
 
 /**
- * Controller KPI "Costo unitario (€/t)" - ARRICCHITO.
- * NOTA: I template si aspettano anche scomposizione manodopera/materiali,
- * che non è presente nei dati attuali. Useremo valori stimati.
+ * Controller KPI "Costo unitario (€/t)"
  */
 @Controller
 public class CostiController extends BaseKpiController {

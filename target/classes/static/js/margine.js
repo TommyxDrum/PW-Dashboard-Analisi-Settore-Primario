@@ -214,7 +214,67 @@
       animationEasing: 'cubicOut'
     });
 
-    // 🔴 ESPORTA RIFERIMENTO
+    (function() {
+          function pad(n) { return n < 10 ? '0' + n : n.toString(); }
+
+          function updateExportLink() {
+            const form = document.getElementById('filterForm');
+            if (!form) return;
+
+            const params = new URLSearchParams();
+            const fromInput = document.getElementById('from');
+            const toInput = document.getElementById('to');
+            const cropSelect = document.getElementById('cropSel');
+            const areaSelect = document.getElementById('areaSel');
+
+            if (fromInput && fromInput.value) params.set('startDate', fromInput.value);
+            if (toInput && toInput.value) params.set('endDate', toInput.value);
+            if (cropSelect && cropSelect.value) params.set('crop', cropSelect.value);
+            if (areaSelect && areaSelect.value) params.set('area', areaSelect.value);
+
+            const exportLink = document.getElementById('exportLink');
+            if (exportLink) {
+              exportLink.href = '/export' + (params.toString() ? '?' + params.toString() : '');
+            }
+          }
+
+          function updateDateRange() {
+            const yearSel = document.getElementById('yearSel');
+            const monthSel = document.getElementById('monthSel');
+            const fromInput = document.getElementById('from');
+            const toInput = document.getElementById('to');
+
+            if (!yearSel || !monthSel || !fromInput || !toInput) return;
+
+            const year = parseInt(yearSel.value, 10);
+            const month = parseInt(monthSel.value, 10);
+            const lastDay = new Date(year, month, 0).getDate();
+
+            fromInput.value = year + '-' + pad(month) + '-01';
+            toInput.value = year + '-' + pad(month) + '-' + pad(lastDay);
+
+            updateExportLink();
+          }
+
+          document.addEventListener('DOMContentLoaded', function() {
+            updateDateRange();
+            updateExportLink();
+
+            const monthSel = document.getElementById('monthSel');
+            const yearSel = document.getElementById('yearSel');
+            const cropSel = document.getElementById('cropSel');
+            const areaSel = document.getElementById('areaSel');
+            const form = document.getElementById('filterForm');
+
+            if (monthSel) monthSel.addEventListener('change', updateDateRange);
+            if (yearSel) yearSel.addEventListener('change', updateDateRange);
+            if (cropSel) cropSel.addEventListener('change', updateExportLink);
+            if (areaSel) areaSel.addEventListener('change', updateExportLink);
+            if (form) form.addEventListener('submit', updateDateRange);
+          });
+        })();
+
+    // ESPORTA RIFERIMENTO
     window.echMarginCompositionChart = chart;
 
     window.addEventListener('resize', function () {

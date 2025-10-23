@@ -96,7 +96,7 @@
       }
     });
 
-    // 🔴 ESPORTA riferimento globale
+    // ESPORTA riferimento globale
     window.efficiencyAnnualTrendChart = effChart;
   })();
 
@@ -200,7 +200,67 @@
       chart.resize();
     });
 
-    // 🔴 ESPORTA riferimento globale
+     (function(){
+        function pad(n){ return n < 10 ? "0"+n : n.toString(); }
+
+        function updateExportLink(){
+          const form = document.getElementById("filterForm");
+          if(!form) return;
+
+          const fromI   = document.getElementById("from");
+          const toI     = document.getElementById("to");
+          const cropSel = document.getElementById("cropSel");
+          const areaSel = document.getElementById("areaSel");
+
+          const params = new URLSearchParams();
+          if(fromI && fromI.value) params.set("startDate", fromI.value);
+          if(toI && toI.value)     params.set("endDate", toI.value);
+          if(cropSel && cropSel.value) params.set("crop", cropSel.value);
+          if(areaSel && areaSel.value) params.set("area", areaSel.value);
+
+          const el = document.getElementById("exportLink");
+          if(el){
+            el.href = "/export" + (params.toString() ? ("?" + params.toString()) : "");
+          }
+        }
+
+        function updateDateRange(){
+          const yearSel = document.getElementById("yearSel");
+          const monthSel = document.getElementById("monthSel");
+          const fromI = document.getElementById("from");
+          const toI = document.getElementById("to");
+
+          if(!yearSel || !monthSel || !fromI || !toI) return;
+
+          const y = parseInt(yearSel.value, 10);
+          const m = parseInt(monthSel.value, 10);
+          const lastDay = new Date(y, m, 0).getDate();
+
+          fromI.value = y + "-" + pad(m) + "-01";
+          toI.value   = y + "-" + pad(m) + "-" + pad(lastDay);
+
+          updateExportLink();
+        }
+
+        document.addEventListener("DOMContentLoaded", function(){
+          updateDateRange();
+          updateExportLink();
+
+          const form = document.getElementById("filterForm");
+          const monthSel = document.getElementById("monthSel");
+          const yearSel  = document.getElementById("yearSel");
+          const cropSel  = document.getElementById("cropSel");
+          const areaSel  = document.getElementById("areaSel");
+
+          if(monthSel) monthSel.addEventListener("change", updateDateRange);
+          if(yearSel)  yearSel.addEventListener("change", updateDateRange);
+          if(cropSel)  cropSel.addEventListener("change", updateExportLink);
+          if(areaSel)  areaSel.addEventListener("change", updateExportLink);
+          if(form)     form.addEventListener("submit", updateDateRange);
+        });
+      })();
+
+    // ESPORTA riferimento globale
     window.echScatterEfficiencyChart = chart;
   })();
 })();

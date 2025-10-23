@@ -122,72 +122,51 @@
   })();
 
   // ====== GRAFICO EFFICIENZA POLARE (Chart.js polarArea) ======
-  (function buildEffPolar() {
-    const el = document.getElementById('effPolar');
-    if (!el) return;
+(function buildEffPolar() {
+  const el = document.getElementById('effPolar');
+  if (!el) return;
 
-    const L = ['Nord', 'Centro', 'Sud'];
-    const V = [effNordKgM3, effCentroKgM3, effSudKgM3];
-    const C = colorsAll.slice();
+  // 1) Se esiste già un chart su questo canvas, distruggilo
+  const existing = Chart.getChart(el); // funziona da Chart.js v3+
+  if (existing) existing.destroy();
 
-    let labelsUsed = L, valuesUsed = V, colorsUsed = C;
-    if (areaSel && String(areaSel).trim()) {
-      const idx = ({nord:0, centro:1, sud:2})[String(areaSel).toLowerCase()];
-      if (Number.isInteger(idx)) {
-        labelsUsed = [L[idx]];
-        valuesUsed = [V[idx]];
-        colorsUsed = [C[idx]];
-      }
-    }
+  // ... prepara labels, values, colors come già fai ...
+  const L = ['Nord', 'Centro', 'Sud'];
+  const V = [effNordKgM3, effCentroKgM3, effSudKgM3].map(x => +x);
+  const C = colorsAll.slice(0, 3);
+  const vmax = Math.max(...V.filter(Number.isFinite), 100);
 
-    const vmax = Math.max(...valuesUsed.filter(Number.isFinite), 100);
-
-    effPolarChart = new Chart(el.getContext('2d'), {
-      type: 'polarArea',
-      data: {
-        labels: labelsUsed,
-        datasets: [{
-          data: valuesUsed,
-          backgroundColor: colorsUsed.map(c => c + '40'),
-          borderColor: colorsUsed,
-          borderWidth: 3
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: 'rgba(255,255,255,0.95)',
-            titleColor: '#333', bodyColor: '#666',
-            borderColor: '#ddd', borderWidth: 1, padding: 12,
-            callbacks: { label: (ctx) => `${ctx.label}: ${(+ctx.raw).toFixed(2)} Kg/m³` }
-          }
-        },
-        scales: {
-          r: {
-            suggestedMin: 0, suggestedMax: vmax * 1.15,
-            ticks: { stepSize: Math.max(5, Math.round(vmax / 5)), callback: v => v + ' Kg/m³', font: { size: 11 } },
-            grid: { color: 'rgba(0,0,0,0.08)' }
-          }
+  // 2) Crea il nuovo chart passando direttamente il canvas (non il context)
+  const chart = new Chart(el, {
+    type: 'polarArea',
+    data: {
+      labels: L,
+      datasets: [{
+        data: V,
+        backgroundColor: C.map(c => c.match(/^#([0-9a-f]{6})$/i) ? `${c}40` : c),
+        borderColor: C,
+        borderWidth: 3
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        r: {
+          suggestedMin: 0, suggestedMax: vmax * 1.15,
+          ticks: { stepSize: Math.max(5, Math.round(vmax / 5)), callback: v => v + ' Kg/m³' }
         }
       }
-    });
-
-    window.effPolarChart = effPolarChart;
-
-    const legendContainer = document.getElementById('effLegend');
-    if (legendContainer) {
-      legendContainer.innerHTML =
-        `<div class="chart-legend" role="list" aria-label="Legenda aree geografiche">
-          ${labelsUsed.map(label => (
-            `<span class="item ${label.toLowerCase()}" role="listitem">
-              <span class="legend-dot"></span><span>${label}</span>
-            </span>`
-          )).join('')}
-        </div>`;
     }
-  })();
+  });
+
+  // (opzionale) salva un riferimento sul canvas
+  el._chart = chart;
+
+  // ... resto della tua logica (legenda ecc.) ...
+})();
+
+
 
   // ====== GRAFICI ECHARTS (Margine, Costi) ======
   (function buildECharts() {
@@ -497,6 +476,44 @@
       default:           return '🌤️';
     }
   }
+   <!-- Script per aggiornamento dinamico link export -->
+  (function () {
+      function updateExportLink() {
+        const form = document.getElementById('filterForm');
+        if (!form) return;
+
+        const params = new URLSearchParams();
+        const fromInput = document.getElementById('from');
+        const toInput = document.getElementById('to');
+        const cropSelect = document.getElementById('cropSel');
+        const areaSelect = document.getElementById('areaSel');
+
+        if (fromInput && fromInput.value) params.set('startDate', fromInput.value);
+        if (toInput && toInput.value) params.set('endDate', toInput.value);
+        if (cropSelect && cropSelect.value) params.set('crop', cropSelect.value);
+        if (areaSelect && areaSelect.value) params.set('area', areaSelect.value);
+
+        const exportLink = document.getElementById('exportLink');
+        if (exportLink) {
+          exportLink.href = '/export' + (params.toString() ? '?' + params.toString() : '');
+        }
+      }
+
+      // Aggiorna link al caricamento e quando cambiano i filtri
+      document.addEventListener('DOMContentLoaded', function () {
+        updateExportLink();
+
+        const monthSel = document.getElementById('monthSel');
+        const yearSel = document.getElementById('yearSel');
+        const cropSel = document.getElementById('cropSel');
+        const areaSel = document.getElementById('areaSel');
+
+        if (monthSel) monthSel.addEventListener('change', updateExportLink);
+        if (yearSel) yearSel.addEventListener('change', updateExportLink);
+        if (cropSel) cropSel.addEventListener('change', updateExportLink);
+        if (areaSel) areaSel.addEventListener('change', updateExportLink);
+      });
+    })();
 
   // ====== LIFECYCLE ======
   document.addEventListener('DOMContentLoaded', () => {

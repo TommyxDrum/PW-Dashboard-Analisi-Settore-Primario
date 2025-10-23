@@ -2,63 +2,63 @@
 <!DOCTYPE html>
 <html lang="it" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard Agronomica - Performance e Rischio</title>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Dashboard Agronomica - Performance e Rischio</title>
 
-  <!-- Bootstrap / Icons -->
-  <link
-          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-          rel="stylesheet"
-  />
-  <link
-          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
-          rel="stylesheet"
-  />
+    <!-- Bootstrap / Icons -->
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+    />
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+            rel="stylesheet"
+    />
 
-  <!-- Stili comuni + pagina -->
-  <link rel="stylesheet" th:href="@{/css/common.css}" />
-  <link rel="stylesheet" th:href="@{/css/index.css}" />
+    <!-- Stili comuni + pagina -->
+    <link rel="stylesheet" th:href="@{/css/common.css}"/>
+    <link rel="stylesheet" th:href="@{/css/index.css}"/>
 
-  <!-- Chart libs -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <!-- Chart libs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 </head>
 <body>
 <header class="header-bar" role="banner">
-  <button
-          class="btn menu-toggle"
-          type="button"
-          data-bs-toggle="offcanvas"
-          data-bs-target="#offcanvasWithBothOptions"
-          aria-controls="offcanvasWithBothOptions"
-          aria-expanded="false"
-          aria-label="Apri Menu KPI"
-  >
-    <i class="bi bi-list" aria-hidden="true"></i>
-  </button>
+    <button
+            class="btn menu-toggle"
+            type="button"
+            data-bs-toggle="offcanvas"
+            data-bs-target="#offcanvasWithBothOptions"
+            aria-controls="offcanvasWithBothOptions"
+            aria-expanded="false"
+            aria-label="Apri Menu KPI"
+    >
+        <i class="bi bi-list" aria-hidden="true"></i>
+    </button>
 
-  <h1 class="header-logo display-6 fs-3">AgrItalia</h1>
+    <h1 class="header-logo display-6 fs-3">AgrItalia</h1>
 
-  <div class="live-indicator ms-3">
+    <div class="live-indicator ms-3">
         <span class="badge bg-success" id="liveBadge">
           <span class="pulse-dot"></span> LIVE
         </span>
-    <small class="text-muted ms-2" style="font-size: 0.75rem">
-      Aggiornato: <span id="lastUpdateTime">--:--:--</span>
-    </small>
-  </div>
+        <small class="text-muted ms-2" style="font-size: 0.75rem">
+            Aggiornato: <span id="lastUpdateTime">--:--:--</span>
+        </small>
+    </div>
 
-  <a
-          href="#"
-          id="exportLink"
-          class="btn btn-outline-success ms-auto"
-          title="Esporta Dati CSV"
-          aria-label="Esporta Dati in formato CSV"
-  >
-    <i class="bi bi-download me-1"></i>
-    <span class="d-none d-sm-inline">Export</span>
-  </a>
+    <a
+            href="#"
+            id="exportLink"
+            class="btn btn-outline-success ms-auto"
+            title="Esporta Dati CSV"
+            aria-label="Esporta Dati in formato CSV"
+    >
+        <i class="bi bi-download me-1"></i>
+        <span class="d-none d-sm-inline">Export</span>
+    </a>
 </header>
 
 <div id="alertContainer" class="container-fluid pt-2"></div>
@@ -71,422 +71,427 @@
         id="offcanvasWithBothOptions"
         aria-labelledby="offcanvasWithBothOptionsLabel"
 >
-  <div class="offcanvas-header border-bottom">
-    <h5 class="offcanvas-title fw-bold" id="offcanvasWithBothOptionsLabel">
-      <i class="bi bi-grid-3x3-gap-fill me-2 text-success"></i>Menu KPI
-    </h5>
-    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Chiudi Menu"></button>
-  </div>
-
-  <div class="offcanvas-body d-flex flex-column">
-    <nav aria-label="Navigazione sezioni Dashboard" class="flex-grow-1">
-      <ul class="nav nav-pills flex-column">
-        <li class="nav-item">
-          <a
-                  href="/"
-                  class="nav-link active"
-                  aria-current="page"
-                  style="background-color: var(--primary-green); color: white"
-          >
-            <i class="bi bi-speedometer me-3"></i>Dashboard Principale
-          </a>
-        </li>
-
-        <li class="nav-item mt-3 mb-2">
-          <small
-                  class="text-muted text-uppercase fw-bold px-3"
-                  style="font-size: 0.75rem; letter-spacing: 0.5px"
-          >Sezioni</small
-          >
-        </li>
-
-        <li class="nav-item">
-          <a href="/resa" class="nav-link">
-            <i class="bi bi-graph-up-arrow me-3"></i>Andamento Resa
-          </a>
-        </li>
-        <li class="nav-item">
-          <a href="/efficienzaIdrica" class="nav-link">
-            <i class="bi bi-droplet-fill me-3"></i>Efficienza Idrica
-          </a>
-        </li>
-        <li class="nav-item">
-          <a href="/margine" class="nav-link">
-            <i class="bi bi-currency-euro me-3"></i>Margini
-          </a>
-        </li>
-        <li class="nav-item">
-          <a href="/costi" class="nav-link">
-            <i class="bi bi-tag-fill me-3"></i>Costi
-          </a>
-        </li>
-        <li class="nav-item">
-          <a href="/rischioClimatico" class="nav-link">
-            <i class="bi bi-cloud-lightning-fill me-3"></i>Rischio Climatico
-          </a>
-        </li>
-        <li class="nav-item">
-          <a href="/meteo" class="nav-link">
-            <i class="bi bi-cloud-sun-fill me-3"></i>Meteo Live
-          </a>
-        </li>
-      </ul>
-    </nav>
-
-    <div class="mt-auto pt-3 border-top">
-      <small class="text-muted d-block text-center">
-        <i class="bi bi-shield-check me-1"></i>
-        Data Analytics Platform v1.0
-      </small>
+    <div class="offcanvas-header border-bottom">
+        <h5 class="offcanvas-title fw-bold" id="offcanvasWithBothOptionsLabel">
+            <i class="bi bi-grid-3x3-gap-fill me-2 text-success"></i>Menu KPI
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Chiudi Menu"></button>
     </div>
-  </div>
+
+    <div class="offcanvas-body d-flex flex-column">
+        <nav aria-label="Navigazione sezioni Dashboard" class="flex-grow-1">
+            <ul class="nav nav-pills flex-column">
+                <li class="nav-item">
+                    <a
+                            href="/"
+                            class="nav-link active"
+                            aria-current="page"
+                            style="background-color: var(--primary-green); color: white"
+                    >
+                        <i class="bi bi-speedometer me-3"></i>Dashboard Principale
+                    </a>
+                </li>
+
+                <li class="nav-item mt-3 mb-2">
+                    <small
+                            class="text-muted text-uppercase fw-bold px-3"
+                            style="font-size: 0.75rem; letter-spacing: 0.5px"
+                    >Sezioni</small
+                    >
+                </li>
+
+                <li class="nav-item">
+                    <a href="/resa" class="nav-link">
+                        <i class="bi bi-graph-up-arrow me-3"></i>Andamento Resa
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/efficienzaIdrica" class="nav-link">
+                        <i class="bi bi-droplet-fill me-3"></i>Efficienza Idrica
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/margine" class="nav-link">
+                        <i class="bi bi-currency-euro me-3"></i>Margini
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/costi" class="nav-link">
+                        <i class="bi bi-tag-fill me-3"></i>Costi
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/rischioClimatico" class="nav-link">
+                        <i class="bi bi-cloud-lightning-fill me-3"></i>Rischio Climatico
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/meteo" class="nav-link">
+                        <i class="bi bi-cloud-sun-fill me-3"></i>Meteo Live
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="mt-auto pt-3 border-top">
+            <small class="text-muted d-block text-center">
+                <i class="bi bi-shield-check me-1"></i>
+                Data Analytics Platform v1.0
+            </small>
+        </div>
+    </div>
 </div>
 
 <!-- 🔸 Mini widget meteo -->
 <div class="row g-4 mb-4">
-  <div class="col-12">
-    <div class="dashboard-card p-3">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <h3 class="h6 mb-0 fw-bold">
-          <i class="bi bi-cloud-sun-fill me-2 text-warning"></i>
-          Condizioni Meteo Attuali
-        </h3>
-        <a href="/meteo" class="btn btn-sm btn-outline-primary">
-          Dettagli <i class="bi bi-arrow-right ms-1"></i>
-        </a>
-      </div>
-      <div class="row g-3" id="weatherMiniCards"></div>
+    <div class="col-12">
+        <div class="dashboard-card p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h3 class="h6 mb-0 fw-bold">
+                    <i class="bi bi-cloud-sun-fill me-2 text-warning"></i>
+                    Condizioni Meteo Attuali
+                </h3>
+                <a href="/meteo" class="btn btn-sm btn-outline-primary">
+                    Dettagli <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+            <div class="row g-3" id="weatherMiniCards"></div>
+        </div>
     </div>
-  </div>
 </div>
 
 <div class="container-fluid py-4">
-  <!-- Barra filtri -->
-  <div class="dashboard-card p-3 mb-4">
-    <form
-            id="filterForm"
-            action="/"
-            method="get"
-            class="filters-bar"
-            aria-label="Filtri avanzati per la dashboard"
-    >
-      <div class="form-group">
-        <label for="monthSel" class="form-label small text-muted mb-1 fw-semibold">Mese</label>
-        <select id="monthSel" class="form-select" aria-label="Seleziona mese">
-          <option value="1" th:selected="${from != null and #temporals.month(from) == 1 }">Gennaio</option>
-          <option value="2" th:selected="${from != null and #temporals.month(from) == 2 }">Febbraio</option>
-          <option value="3" th:selected="${from != null and #temporals.month(from) == 3 }">Marzo</option>
-          <option value="4" th:selected="${from != null and #temporals.month(from) == 4 }">Aprile</option>
-          <option value="5" th:selected="${from != null and #temporals.month(from) == 5 }">Maggio</option>
-          <option value="6" th:selected="${from != null and #temporals.month(from) == 6 }">Giugno</option>
-          <option value="7" th:selected="${from != null and #temporals.month(from) == 7 }">Luglio</option>
-          <option value="8" th:selected="${from != null and #temporals.month(from) == 8 }">Agosto</option>
-          <option value="9" th:selected="${from != null and #temporals.month(from) == 9 }">Settembre</option>
-          <option value="10" th:selected="${from != null and #temporals.month(from) == 10}">Ottobre</option>
-          <option value="11" th:selected="${from != null and #temporals.month(from) == 11}">Novembre</option>
-          <option value="12" th:selected="${from != null and #temporals.month(from) == 12}">Dicembre</option>
-        </select>
-      </div>
+    <!-- Barra filtri -->
+    <div class="dashboard-card p-3 mb-4">
+        <form
+                id="filterForm"
+                action="/"
+                method="get"
+                class="filters-bar"
+                aria-label="Filtri avanzati per la dashboard"
+        >
+            <div class="form-group">
+                <label for="monthSel" class="form-label small text-muted mb-1 fw-semibold">Mese</label>
+                <select id="monthSel" class="form-select" aria-label="Seleziona mese">
+                    <option value="1" th:selected="${from != null and #temporals.month(from) == 1 }">Gennaio</option>
+                    <option value="2" th:selected="${from != null and #temporals.month(from) == 2 }">Febbraio</option>
+                    <option value="3" th:selected="${from != null and #temporals.month(from) == 3 }">Marzo</option>
+                    <option value="4" th:selected="${from != null and #temporals.month(from) == 4 }">Aprile</option>
+                    <option value="5" th:selected="${from != null and #temporals.month(from) == 5 }">Maggio</option>
+                    <option value="6" th:selected="${from != null and #temporals.month(from) == 6 }">Giugno</option>
+                    <option value="7" th:selected="${from != null and #temporals.month(from) == 7 }">Luglio</option>
+                    <option value="8" th:selected="${from != null and #temporals.month(from) == 8 }">Agosto</option>
+                    <option value="9" th:selected="${from != null and #temporals.month(from) == 9 }">Settembre</option>
+                    <option value="10" th:selected="${from != null and #temporals.month(from) == 10}">Ottobre</option>
+                    <option value="11" th:selected="${from != null and #temporals.month(from) == 11}">Novembre</option>
+                    <option value="12" th:selected="${from != null and #temporals.month(from) == 12}">Dicembre</option>
+                </select>
+            </div>
 
-      <div class="form-group">
-        <label for="yearSel" class="form-label small text-muted mb-1 fw-semibold">Anno</label>
-        <select id="yearSel" class="form-select" aria-label="Seleziona anno">
-          <option
-                  th:each="y : ${#numbers.sequence(2015, 2025)}"
-                  th:value="${y}"
-                  th:text="${y}"
-                  th:selected="${from != null ? #temporals.year(from) == y : y == #temporals.year(#temporals.createNow())}"
-          >
-            2025
-          </option>
-        </select>
-      </div>
+            <div class="form-group">
+                <label for="yearSel" class="form-label small text-muted mb-1 fw-semibold">Anno</label>
+                <select id="yearSel" class="form-select" aria-label="Seleziona anno">
+                    <option
+                            th:each="y : ${#numbers.sequence(2015, 2025)}"
+                            th:value="${y}"
+                            th:text="${y}"
+                            th:selected="${from != null ? #temporals.year(from) == y : y == #temporals.year(#temporals.createNow())}"
+                    >
+                        2025
+                    </option>
+                </select>
+            </div>
 
-      <div class="form-group" style="min-width: 180px">
-        <label for="cropSel" class="form-label small text-muted mb-1 fw-semibold">Coltura</label>
-        <select id="cropSel" name="crop" class="form-select" aria-label="Seleziona coltura">
-          <option value="">Tutte le colture</option>
-          <option
-                  th:each="c : ${cropsList != null ? cropsList : {'Grano duro','Mais','Olivo','Vite'}}"
-                  th:value="${c}"
-                  th:text="${c}"
-                  th:selected="${c == crop}"
-          >
-            Coltura
-          </option>
-        </select>
-      </div>
+            <div class="form-group" style="min-width: 180px">
+                <label for="cropSel" class="form-label small text-muted mb-1 fw-semibold">Coltura</label>
+                <select id="cropSel" name="crop" class="form-select" aria-label="Seleziona coltura">
+                    <option value="">Tutte le colture</option>
+                    <option
+                            th:each="c : ${cropsList != null ? cropsList : {'Grano duro','Mais','Olivo','Vite'}}"
+                            th:value="${c}"
+                            th:text="${c}"
+                            th:selected="${c == crop}"
+                    >
+                        Coltura
+                    </option>
+                </select>
+            </div>
 
-      <div class="form-group" style="min-width: 180px">
-        <label for="areaSel" class="form-label small text-muted mb-1 fw-semibold">Area</label>
-        <select id="areaSel" name="area" class="form-select" aria-label="Seleziona area geografica">
-          <option value="">Tutte le aree</option>
-          <option
-                  th:each="a : ${areasList != null ? areasList : {'Nord','Centro','Sud'}}"
-                  th:value="${a}"
-                  th:text="${a}"
-                  th:selected="${a == area}"
-          >
-            Area
-          </option>
-        </select>
-      </div>
+            <div class="form-group" style="min-width: 180px">
+                <label for="areaSel" class="form-label small text-muted mb-1 fw-semibold">Area</label>
+                <select id="areaSel" name="area" class="form-select" aria-label="Seleziona area geografica">
+                    <option value="">Tutte le aree</option>
+                    <option
+                            th:each="a : ${areasList != null ? areasList : {'Nord','Centro','Sud'}}"
+                            th:value="${a}"
+                            th:text="${a}"
+                            th:selected="${a == area}"
+                    >
+                        Area
+                    </option>
+                </select>
+            </div>
 
-      <button type="submit" class="btn btn-primary">
-        <i class="bi bi-funnel me-2" aria-hidden="true"></i>
-        <span>Applica</span>
-      </button>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-funnel me-2" aria-hidden="true"></i>
+                <span>Applica</span>
+            </button>
 
-      <input type="hidden" id="from" name="from" th:value="${#temporals.format(from,'yyyy-MM-dd')}" />
-      <input type="hidden" id="to" name="to" th:value="${#temporals.format(to,'yyyy-MM-dd')}" />
-    </form>
-  </div>
+            <input type="hidden" id="from" name="from" th:value="${#temporals.format(from,'yyyy-MM-dd')}"/>
+            <input type="hidden" id="to" name="to" th:value="${#temporals.format(to,'yyyy-MM-dd')}"/>
+        </form>
+    </div>
 
-  <!-- KPI Cards -->
-  <div class="row g-4 mb-4">
-    <div class="col-12 col-sm-6 col-lg-4 col-xl" role="region" aria-labelledby="kpiYield">
-      <div class="kpi-box">
-        <h2 id="kpiYield" class="visually-hidden">Resa Media</h2>
-        <p class="small text-muted mb-2 fw-semibold">
-          <i class="bi bi-bar-chart-line-fill text-success kpi-icon" aria-hidden="true"></i>
-          RESA MEDIA
-        </p>
-        <div class="d-flex align-items-baseline">
+    <!-- KPI Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-sm-6 col-lg-4 col-xl" role="region" aria-labelledby="kpiYield">
+            <div class="kpi-box">
+                <h2 id="kpiYield" class="visually-hidden">Resa Media</h2>
+                <p class="small text-muted mb-2 fw-semibold">
+                    <i class="bi bi-bar-chart-line-fill text-success kpi-icon" aria-hidden="true"></i>
+                    RESA MEDIA
+                </p>
+                <div class="d-flex align-items-baseline">
               <span
                       class="kpi-value text-success"
                       th:text="${#numbers.formatDecimal(avgYieldHa,1,'POINT',2,'COMMA')}"
               >0,00</span
               >
-          <span class="ms-2 text-muted fw-medium">t/ha</span>
+                    <span class="ms-2 text-muted fw-medium">t/ha</span>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
 
-    <div class="col-12 col-sm-6 col-lg-4 col-xl" role="region" aria-labelledby="kpiEff">
-      <div class="kpi-box blue">
-        <h2 id="kpiEff" class="visually-hidden">Efficienza Idrica</h2>
-        <p class="small text-muted mb-2 fw-semibold">
-          <i class="bi bi-water text-primary kpi-icon" aria-hidden="true"></i>
-          EFFICIENZA IDRICA
-        </p>
-        <div class="d-flex align-items-baseline">
+        <div class="col-12 col-sm-6 col-lg-4 col-xl" role="region" aria-labelledby="kpiEff">
+            <div class="kpi-box blue">
+                <h2 id="kpiEff" class="visually-hidden">Efficienza Idrica</h2>
+                <p class="small text-muted mb-2 fw-semibold">
+                    <i class="bi bi-water text-primary kpi-icon" aria-hidden="true"></i>
+                    EFFICIENZA IDRICA
+                </p>
+                <div class="d-flex align-items-baseline">
               <span
                       class="kpi-value text-primary"
                       th:text="${#numbers.formatDecimal(avgEff,1,'POINT',2,'COMMA')}"
               >0,00</span
               >
-          <span class="ms-2 text-muted fw-medium">Kg/m³</span>
+                    <span class="ms-2 text-muted fw-medium">Kg/m³</span>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
 
-    <div class="col-12 col-sm-6 col-lg-4 col-xl" role="region" aria-labelledby="kpiCost">
-      <div class="kpi-box purple">
-        <h2 id="kpiCost" class="visually-hidden">Costo Unitario</h2>
-        <p class="small text-muted mb-2 fw-semibold">
-          <i class="bi bi-cash-coin kpi-icon" style="color: var(--purple)" aria-hidden="true"></i>
-          COSTO UNITARIO
-        </p>
-        <div class="d-flex align-items-baseline">
+        <div class="col-12 col-sm-6 col-lg-4 col-xl" role="region" aria-labelledby="kpiCost">
+            <div class="kpi-box purple">
+                <h2 id="kpiCost" class="visually-hidden">Costo Unitario</h2>
+                <p class="small text-muted mb-2 fw-semibold">
+                    <i class="bi bi-cash-coin kpi-icon" style="color: var(--purple)" aria-hidden="true"></i>
+                    COSTO UNITARIO
+                </p>
+                <div class="d-flex align-items-baseline">
               <span
                       class="kpi-value"
                       style="color: var(--purple)"
                       th:text="${#numbers.formatDecimal(avgCost,1,'POINT',2,'COMMA')}"
               >0,00</span
               >
-          <span class="ms-2 text-muted fw-medium">€/t</span>
+                    <span class="ms-2 text-muted fw-medium">€/t</span>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
 
-    <div class="col-12 col-sm-6 col-lg-4 col-xl" role="region" aria-labelledby="kpiMargin">
-      <div class="kpi-box info">
-        <h2 id="kpiMargin" class="visually-hidden">Margine Unitario</h2>
-        <p class="small text-muted mb-2 fw-semibold">
-          <i class="bi bi-graph-up-arrow text-info kpi-icon" aria-hidden="true"></i>
-          MARGINE UNITARIO
-        </p>
-        <div class="d-flex align-items-baseline">
+        <div class="col-12 col-sm-6 col-lg-4 col-xl" role="region" aria-labelledby="kpiMargin">
+            <div class="kpi-box info">
+                <h2 id="kpiMargin" class="visually-hidden">Margine Unitario</h2>
+                <p class="small text-muted mb-2 fw-semibold">
+                    <i class="bi bi-graph-up-arrow text-info kpi-icon" aria-hidden="true"></i>
+                    MARGINE UNITARIO
+                </p>
+                <div class="d-flex align-items-baseline">
               <span
                       class="kpi-value text-info"
                       th:text="${#numbers.formatDecimal(avgMargin,1,'POINT',2,'COMMA')}"
               >0,00</span
               >
-          <span class="ms-2 text-muted fw-medium">€/t</span>
+                    <span class="ms-2 text-muted fw-medium">€/t</span>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
 
-    <div class="col-12 col-sm-6 col-lg-4 col-xl" role="region" aria-labelledby="kpiRisk">
-      <div class="kpi-box risk" th:with="risk=${avgRisk}">
-        <h2 id="kpiRisk" class="visually-hidden">Rischio Climatico</h2>
-        <p class="small text-muted mb-2 fw-semibold">
-          <i
-                  class="bi bi-exclamation-triangle-fill kpi-icon"
-                  style="color: var(--warning-accessible)"
-                  aria-hidden="true"
-          ></i>
-          RISCHIO CLIMATICO
-        </p>
-        <div class="d-flex align-items-baseline">
+        <div class="col-12 col-sm-6 col-lg-4 col-xl" role="region" aria-labelledby="kpiRisk">
+            <div class="kpi-box risk" th:with="risk=${avgRisk}">
+                <h2 id="kpiRisk" class="visually-hidden">Rischio Climatico</h2>
+                <p class="small text-muted mb-2 fw-semibold">
+                    <i
+                            class="bi bi-exclamation-triangle-fill kpi-icon"
+                            style="color: var(--warning-accessible)"
+                            aria-hidden="true"
+                    ></i>
+                    RISCHIO CLIMATICO
+                </p>
+                <div class="d-flex align-items-baseline">
               <span
                       class="kpi-value"
                       style="color: var(--warning-accessible)"
                       th:text="${#numbers.formatDecimal(risk,1,'POINT',2,'COMMA')}"
               >0,00</span
               >
-          <span class="ms-2 text-muted fw-medium">Indice</span>
+                    <span class="ms-2 text-muted fw-medium">Indice</span>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Charts Row 1 -->
-  <div class="row g-4 mb-4">
-    <div class="col-lg-8">
-      <div class="dashboard-card p-4">
-        <div class="d-flex flex-wrap justify-content-between align-items-center section-header success-border mb-3">
-          <div class="d-flex align-items-center gap-2">
-            <h2 class="h6 mb-0 fw-bold text-success">Andamento Resa (t/ha)</h2>
-            <span
-                    class="badge bg-success bg-opacity-10 text-success"
-                    th:text="${crop != null && !crop.isEmpty() ? crop : 'Tutte le Colture'}"
-            >Tutte le Colture</span
-            >
-          </div>
-          <a
-                  href="/resa"
-                  class="btn btn-sm btn-detail-link"
-                  style="border-color: var(--primary-green)"
-                  aria-label="Vai alla pagina Resa"
-          >
-            Dettagli <i class="bi bi-arrow-right ms-1"></i>
-          </a>
-        </div>
-        <div class="chart-container">
-          <canvas
-                  id="yieldMinMax"
-                  role="img"
-                  aria-label="Grafico a linee che mostra l'andamento della resa per ettaro nel tempo."
-          ></canvas>
-        </div>
-        <div id="yieldLegend"></div>
-      </div>
     </div>
 
-    <div class="col-lg-4">
-      <div class="dashboard-card p-4">
-        <div class="d-flex flex-wrap justify-content-between align-items-center section-header mb-3">
-          <div class="d-flex align-items-center gap-2">
-            <h2 class="h6 mb-0 fw-bold text-primary">Efficienza Idrica (Kg/m³)</h2>
-            <span
-                    class="badge bg-primary bg-opacity-10 text-primary"
-                    th:text="${crop != null && !crop.isEmpty() ? crop : 'Tutte le Colture'}"
-            >Tutte le Colture</span
-            >
-          </div>
-          <a
-                  href="/efficienzaIdrica"
-                  class="btn btn-sm btn-detail-link"
-                  style="border-color: var(--secondary-blue)"
-                  aria-label="Vai alla pagina Risorse Idriche"
-          >
-            Dettagli <i class="bi bi-arrow-right ms-1"></i>
-          </a>
+    <!-- Charts Row 1 -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <div class="dashboard-card p-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center section-header success-border mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <h2 class="h6 mb-0 fw-bold text-success">Andamento Resa (t/ha)</h2>
+                        <span
+                                class="badge bg-success bg-opacity-10 text-success"
+                                th:text="${crop != null && !crop.isEmpty() ? crop : 'Tutte le Colture'}"
+                        >Tutte le Colture</span
+                        >
+                    </div>
+                    <a
+                            href="/resa"
+                            class="btn btn-sm btn-detail-link"
+                            style="border-color: var(--primary-green)"
+                            aria-label="Vai alla pagina Resa"
+                    >
+                        Dettagli <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="chart-container">
+                    <canvas
+                            id="yieldMinMax"
+                            role="img"
+                            aria-label="Grafico a linee che mostra l'andamento della resa per ettaro nel tempo."
+                    ></canvas>
+                </div>
+                <div id="yieldLegend"></div>
+            </div>
         </div>
-        <div class="chart-container">
-          <canvas
-                  id="effPolar"
-                  role="img"
-                  aria-label="Grafico ad area polare che confronta l'efficienza idrica tra le aree."
-          ></canvas>
+
+        <div class="col-lg-4">
+            <div class="dashboard-card p-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center section-header mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <h2 class="h6 mb-0 fw-bold text-primary">Efficienza Idrica (Kg/m³)</h2>
+                        <span
+                                class="badge bg-primary bg-opacity-10 text-primary"
+                                th:text="${crop != null && !crop.isEmpty() ? crop : 'Tutte le Colture'}"
+                        >Tutte le Colture</span
+                        >
+                    </div>
+                    <a
+                            href="/efficienzaIdrica"
+                            class="btn btn-sm btn-detail-link"
+                            style="border-color: var(--secondary-blue)"
+                            aria-label="Vai alla pagina Risorse Idriche"
+                    >
+                        Dettagli <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="chart-container">
+                    <canvas
+                            id="effPolar"
+                            role="img"
+                            aria-label="Grafico ad area polare che confronta l'efficienza idrica tra le aree."
+                    ></canvas>
+                </div>
+                <div id="effLegend"></div>
+            </div>
         </div>
-        <div id="effLegend"></div>
-      </div>
     </div>
-  </div>
 
-  <!-- Rischio Climatico -->
-  <div class="row g-4 mb-4">
-    <div class="col-12">
-      <div class="dashboard-card p-4" role="region" aria-label="Indicatori di Rischio Climatico per Area">
-        <div class="d-flex flex-wrap justify-content-between align-items-center section-header warning-border mb-3">
-          <h2 class="h6 mb-0 fw-bold" style="color: var(--warning-accessible)">
-            <i class="bi bi-cloud-lightning-fill me-2"></i> Rischio Climatico per Area
-          </h2>
-          <a
-                  href="/rischioClimatico"
-                  class="btn btn-sm btn-detail-link"
-                  style="border-color: var(--warning-accessible)"
-                  aria-label="Vai alla pagina Rischio Climatico"
-          >
-            Dettagli <i class="bi bi-arrow-right ms-1"></i>
-          </a>
-        </div>
+    <!-- Rischio Climatico -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="dashboard-card p-4" role="region" aria-label="Indicatori di Rischio Climatico per Area">
+                <div class="d-flex flex-wrap justify-content-between align-items-center section-header warning-border mb-3">
+                    <h2 class="h6 mb-0 fw-bold" style="color: var(--warning-accessible)">
+                        <i class="bi bi-cloud-lightning-fill me-2"></i> Rischio Climatico per Area
+                    </h2>
+                    <a
+                            href="/rischioClimatico"
+                            class="btn btn-sm btn-detail-link"
+                            style="border-color: var(--warning-accessible)"
+                            aria-label="Vai alla pagina Rischio Climatico"
+                    >
+                        Dettagli <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
 
-        <div class="chartjs-like-legend mb-4" role="list" aria-label="Legenda livelli di rischio">
+                <div class="chartjs-like-legend mb-4" role="list" aria-label="Legenda livelli di rischio">
               <span class="item legend-low" role="listitem">
                 <span class="swatch" aria-hidden="true"></span> Basso (&lt; 0,4)
               </span>
-          <span class="item legend-mid" role="listitem">
+                    <span class="item legend-mid" role="listitem">
                 <span class="swatch" aria-hidden="true"></span> Medio (0,4 – 0,7)
               </span>
-          <span class="item legend-high" role="listitem">
+                    <span class="item legend-high" role="listitem">
                 <span class="swatch" aria-hidden="true"></span> Alto (&gt; 0,7)
               </span>
-        </div>
+                </div>
 
-        <div id="riskGauges" class="row g-4"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Charts Row 2 -->
-  <div class="row g-4">
-    <div class="col-lg-6">
-      <div class="dashboard-card p-4">
-        <div class="d-flex flex-wrap justify-content-between align-items-center section-header mb-3">
-          <h2 class="h6 mb-0 fw-bold text-info">
-            <i class="bi bi-graph-up-arrow me-2"></i> Margine per Area (€/t)
-          </h2>
-          <span
-                  class="badge bg-success bg-opacity-10 text-success"
-                  th:text="${crop != null && !crop.isEmpty() ? crop : 'Tutte le Colture'}"
-          >Tutte le Colture</span
-          >
-          <a href="/margine" class="btn btn-sm btn-detail-link" style="border-color: var(--info-color)" aria-label="Vai alla pagina Margine">
-            Dettagli <i class="bi bi-arrow-right ms-1"></i>
-          </a>
+                <div id="riskGauges" class="row g-4"></div>
+            </div>
         </div>
-        <div id="echMargin" class="chart-container" role="img" aria-label="Grafico a barre del margine unitario per area."></div>
-      </div>
     </div>
 
-    <div class="col-lg-6">
-      <div class="dashboard-card p-4">
-        <div class="d-flex flex-wrap justify-content-between align-items-center section-header purple-border mb-3">
-          <h2 class="h6 mb-0 fw-bold" style="color: var(--purple)">
-            <i class="bi bi-tag-fill me-2"></i> Costi per Area (€/t)
-          </h2>
-          <span
-                  class="badge bg-success bg-opacity-10 text-success"
-                  th:text="${crop != null && !crop.isEmpty() ? crop : 'Tutte le Colture'}"
-          >Tutte le Colture</span
-          >
-          <a href="/costi" class="btn btn-sm btn-detail-link" style="border-color: var(--purple)" aria-label="Vai alla pagina Costi">
-            Dettagli <i class="bi bi-arrow-right ms-1"></i>
-          </a>
+    <!-- Charts Row 2 -->
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="dashboard-card p-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center section-header mb-3">
+                    <h2 class="h6 mb-0 fw-bold text-info">
+                        <i class="bi bi-graph-up-arrow me-2"></i> Margine per Area (€/t)
+                    </h2>
+                    <span
+                            class="badge bg-success bg-opacity-10 text-success"
+                            th:text="${crop != null && !crop.isEmpty() ? crop : 'Tutte le Colture'}"
+                    >Tutte le Colture</span
+                    >
+                    <a href="/margine" class="btn btn-sm btn-detail-link" style="border-color: var(--info-color)"
+                       aria-label="Vai alla pagina Margine">
+                        Dettagli <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div id="echMargin" class="chart-container" role="img"
+                     aria-label="Grafico a barre del margine unitario per area."></div>
+            </div>
         </div>
-        <div id="echCost" class="chart-container" role="img" aria-label="Grafico a barre del costo unitario per area."></div>
-      </div>
-    </div>
-  </div>
 
-  <footer class="text-center py-4 mt-5 border-top">
-    <p class="text-muted small mb-0">
-      &copy; <span th:text="${#temporals.year(#temporals.createNow())}">2025</span> AgrItalia S.p.A. | Dashboard Agronomica
-    </p>
-  </footer>
+        <div class="col-lg-6">
+            <div class="dashboard-card p-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center section-header purple-border mb-3">
+                    <h2 class="h6 mb-0 fw-bold" style="color: var(--purple)">
+                        <i class="bi bi-tag-fill me-2"></i> Costi per Area (€/t)
+                    </h2>
+                    <span
+                            class="badge bg-success bg-opacity-10 text-success"
+                            th:text="${crop != null && !crop.isEmpty() ? crop : 'Tutte le Colture'}"
+                    >Tutte le Colture</span
+                    >
+                    <a href="/costi" class="btn btn-sm btn-detail-link" style="border-color: var(--purple)"
+                       aria-label="Vai alla pagina Costi">
+                        Dettagli <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div id="echCost" class="chart-container" role="img"
+                     aria-label="Grafico a barre del costo unitario per area."></div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center py-4 mt-5 border-top">
+        <p class="text-muted small mb-0">
+            &copy; <span th:text="${#temporals.year(#temporals.createNow())}">2025</span> AgrItalia S.p.A. | Dashboard
+            Agronomica
+        </p>
+    </footer>
 </div>
 
 <!-- JS -->
@@ -495,72 +500,30 @@
 
 <!-- Dati server → finestra -->
 <script th:inline="javascript">
-  window.dashboardData = {
-    labels: [[${labels}]],
-    yieldsNord: [[${yieldsNord}]],
-    yieldsCentro: [[${yieldsCentro}]],
-    yieldsSud: [[${yieldsSud}]],
-    area: [[${area}]],
-    avgEff: [[${avgEff}]],
-    effMaxScale: [[${effMaxScale}]],
-    avgCost: [[${avgCost}]],
-    avgMargin: [[${avgMargin}]],
-    effNordKgM3: [[${effNordKgM3}]],
-    effCentroKgM3: [[${effCentroKgM3}]],
-    effSudKgM3: [[${effSudKgM3}]],
-    costNord: [[${costNord}]],
-    costCentro: [[${costCentro}]],
-    costSud: [[${costSud}]],
-    marginNord: [[${marginNord}]],
-    marginCentro: [[${marginCentro}]],
-    marginSud: [[${marginSud}]],
-    riskNord: [[${riskNord}]],
-    riskCentro: [[${riskCentro}]],
-    riskSud: [[${riskSud}]]
-  };
+    window.dashboardData = {
+      labels: [[${labels}]],
+      yieldsNord: [[${yieldsNord}]],
+      yieldsCentro: [[${yieldsCentro}]],
+      yieldsSud: [[${yieldsSud}]],
+      area: [[${area}]],
+      avgEff: [[${avgEff}]],
+      effMaxScale: [[${effMaxScale}]],
+      avgCost: [[${avgCost}]],
+      avgMargin: [[${avgMargin}]],
+      effNordKgM3: [[${effNordKgM3}]],
+      effCentroKgM3: [[${effCentroKgM3}]],
+      effSudKgM3: [[${effSudKgM3}]],
+      costNord: [[${costNord}]],
+      costCentro: [[${costCentro}]],
+      costSud: [[${costSud}]],
+      marginNord: [[${marginNord}]],
+      marginCentro: [[${marginCentro}]],
+      marginSud: [[${marginSud}]],
+      riskNord: [[${riskNord}]],
+      riskCentro: [[${riskCentro}]],
+      riskSud: [[${riskSud}]]
+    };
 </script>
-
-<!-- Script per aggiornamento dinamico link export -->
-<script>
-  (function () {
-    function updateExportLink() {
-      const form = document.getElementById('filterForm');
-      if (!form) return;
-
-      const params = new URLSearchParams();
-      const fromInput = document.getElementById('from');
-      const toInput = document.getElementById('to');
-      const cropSelect = document.getElementById('cropSel');
-      const areaSelect = document.getElementById('areaSel');
-
-      if (fromInput && fromInput.value) params.set('startDate', fromInput.value);
-      if (toInput && toInput.value) params.set('endDate', toInput.value);
-      if (cropSelect && cropSelect.value) params.set('crop', cropSelect.value);
-      if (areaSelect && areaSelect.value) params.set('area', areaSelect.value);
-
-      const exportLink = document.getElementById('exportLink');
-      if (exportLink) {
-        exportLink.href = '/export' + (params.toString() ? '?' + params.toString() : '');
-      }
-    }
-
-    // Aggiorna link al caricamento e quando cambiano i filtri
-    document.addEventListener('DOMContentLoaded', function () {
-      updateExportLink();
-
-      const monthSel = document.getElementById('monthSel');
-      const yearSel = document.getElementById('yearSel');
-      const cropSel = document.getElementById('cropSel');
-      const areaSel = document.getElementById('areaSel');
-
-      if (monthSel) monthSel.addEventListener('change', updateExportLink);
-      if (yearSel) yearSel.addEventListener('change', updateExportLink);
-      if (cropSel) cropSel.addEventListener('change', updateExportLink);
-      if (areaSel) areaSel.addEventListener('change', updateExportLink);
-    });
-  })();
-</script>
-
 <!-- Unico file JS della pagina -->
 <script th:src="@{/js/index.js}"></script>
 </body>
