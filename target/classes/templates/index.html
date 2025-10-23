@@ -40,15 +40,6 @@
 
     <h1 class="header-logo display-6 fs-3">AgrItalia</h1>
 
-    <div class="live-indicator ms-3">
-        <span class="badge bg-success" id="liveBadge">
-          <span class="pulse-dot"></span> LIVE
-        </span>
-        <small class="text-muted ms-2" style="font-size: 0.75rem">
-            Aggiornato: <span id="lastUpdateTime">--:--:--</span>
-        </small>
-    </div>
-
     <a
             href="#"
             id="exportLink"
@@ -147,10 +138,20 @@
     <div class="col-12">
         <div class="dashboard-card p-3">
             <div class="d-flex justify-content-between align-items-center mb-2">
-                <h3 class="h6 mb-0 fw-bold">
-                    <i class="bi bi-cloud-sun-fill me-2 text-warning"></i>
-                    Condizioni Meteo Attuali
-                </h3>
+                <div class="d-flex align-items-center gap-2">
+                    <h3 class="h6 mb-0 fw-bold">
+                        <i class="bi bi-cloud-sun-fill me-2 text-warning"></i>
+                        Condizioni Meteo Attuali
+                    </h3>
+                    <div class="live-indicator">
+                        <span class="badge bg-success" id="liveBadge">
+                          <span class="pulse-dot"></span> LIVE
+                        </span>
+                        <small class="text-muted ms-2" style="font-size: 0.75rem">
+                            Aggiornato: <span id="lastUpdateTime">--:--:--</span>
+                        </small>
+                    </div>
+                </div>
                 <a href="/meteo" class="btn btn-sm btn-outline-primary">
                     Dettagli <i class="bi bi-arrow-right ms-1"></i>
                 </a>

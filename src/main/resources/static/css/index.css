@@ -47,6 +47,15 @@
 .legend-mid .swatch{ border-color:var(--risk-mid-accessible); background-color:rgba(224,148,0,.25); }
 .legend-high .swatch{ border-color:var(--risk-red); background-color:rgba(220,53,69,.25); }
 
+/* 🎯 SOLUZIONE EFFICACE: Ridurre spazio tra meteo e filtri */
+body > .row.g-4.mb-4 {
+  margin-bottom: 0 !important;
+}
+
+body > .container-fluid.py-4 {
+  padding-top: 0.75rem !important;
+}
+
 @media (max-width:768px){
   .section-header{ flex-direction:column; align-items:flex-start!important; gap:.5rem; }
   .btn-detail-link{ width:100%; justify-content:center; }
