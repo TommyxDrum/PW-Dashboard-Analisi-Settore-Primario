@@ -32,21 +32,22 @@
 
 <div class="container-fluid py-4">
 
+  <!-- Filtri -->
   <div class="dashboard-card p-3 mb-4">
     <form id="filterForm" th:action="@{/rischioClimatico}" method="get"
           class="filters-bar" role="group" aria-label="Filtri rischio climatico">
       <div class="form-group">
         <label class="form-label small text-muted mb-1 fw-semibold" for="monthSel">Mese</label>
         <select id="monthSel" class="form-select" aria-label="Seleziona mese">
-          <option value="1" th:selected="${from!=null and #temporals.month(from)==1 }">Gennaio</option>
-          <option value="2" th:selected="${from!=null and #temporals.month(from)==2 }">Febbraio</option>
-          <option value="3" th:selected="${from!=null and #temporals.month(from)==3 }">Marzo</option>
-          <option value="4" th:selected="${from!=null and #temporals.month(from)==4 }">Aprile</option>
-          <option value="5" th:selected="${from!=null and #temporals.month(from)==5 }">Maggio</option>
-          <option value="6" th:selected="${from!=null and #temporals.month(from)==6 }">Giugno</option>
-          <option value="7" th:selected="${from!=null and #temporals.month(from)==7 }">Luglio</option>
-          <option value="8" th:selected="${from!=null and #temporals.month(from)==8 }">Agosto</option>
-          <option value="9" th:selected="${from!=null and #temporals.month(from)==9 }">Settembre</option>
+          <option value="1"  th:selected="${from!=null and #temporals.month(from)==1 }">Gennaio</option>
+          <option value="2"  th:selected="${from!=null and #temporals.month(from)==2 }">Febbraio</option>
+          <option value="3"  th:selected="${from!=null and #temporals.month(from)==3 }">Marzo</option>
+          <option value="4"  th:selected="${from!=null and #temporals.month(from)==4 }">Aprile</option>
+          <option value="5"  th:selected="${from!=null and #temporals.month(from)==5 }">Maggio</option>
+          <option value="6"  th:selected="${from!=null and #temporals.month(from)==6 }">Giugno</option>
+          <option value="7"  th:selected="${from!=null and #temporals.month(from)==7 }">Luglio</option>
+          <option value="8"  th:selected="${from!=null and #temporals.month(from)==8 }">Agosto</option>
+          <option value="9"  th:selected="${from!=null and #temporals.month(from)==9 }">Settembre</option>
           <option value="10" th:selected="${from!=null and #temporals.month(from)==10}">Ottobre</option>
           <option value="11" th:selected="${from!=null and #temporals.month(from)==11}">Novembre</option>
           <option value="12" th:selected="${from!=null and #temporals.month(from)==12}">Dicembre</option>
@@ -68,8 +69,7 @@
         <select id="cropSel" name="crop" class="form-select" aria-label="Seleziona coltura">
           <option value="">Tutte le colture</option>
           <option th:each="c:${cropsList}" th:value="${c}" th:text="${c}"
-                  th:selected="${c==crop}">Coltura
-          </option>
+                  th:selected="${c==crop}">Coltura</option>
         </select>
       </div>
       <div class="form-group" style="min-width:180px">
@@ -77,8 +77,7 @@
         <select id="areaSel" name="area" class="form-select" aria-label="Seleziona area">
           <option value="">Tutte le aree</option>
           <option th:each="a:${areasList}" th:value="${a}" th:text="${a}"
-                  th:selected="${a==area}">Area
-          </option>
+                  th:selected="${a==area}">Area</option>
         </select>
       </div>
       <button type="submit" class="btn btn-primary">
@@ -92,6 +91,7 @@
     </form>
   </div>
 
+  <!-- Card KPI -->
   <div class="row g-4 mb-4">
     <div class="col-12 col-md-4">
       <div class="kpi-box risk">
@@ -112,7 +112,7 @@
           <i class="bi bi-thermometer-half kpi-icon" style="color: var(--kpi-temp-border)"></i>
           RISCHIO TERMICO
         </p>
-        <div class="d-flex align-items-baseline">
+        <div class="d-flex alignments-baseline">
           <span class="kpi-value" style="color: var(--kpi-temp-border)"
                 th:text="${#numbers.formatDecimal(totalAvgRiskTemp,1,'POINT',2,'COMMA')}">0,00</span>
           <span class="ms-2 text-muted fw-medium">(0-1)</span>
@@ -125,7 +125,7 @@
           <i class="bi bi-cloud-drizzle-fill kpi-icon" style="color: var(--kpi-water-border)"></i>
           STRESS IDRICO
         </p>
-        <div class="d-flex align-items-baseline">
+        <div class="d-flex alignments-baseline">
           <span class="kpi-value" style="color: var(--kpi-water-border)"
                 th:text="${#numbers.formatDecimal(totalAvgRiskWater,1,'POINT',2,'COMMA')}">0,00</span>
           <span class="ms-2 text-muted fw-medium">(0-1)</span>
@@ -134,16 +134,18 @@
     </div>
   </div>
 
+  <!-- Sezione grafici: mensile + radar -->
   <div class="dashboard-card p-4 mb-4">
     <div class="row g-4">
+      <!-- Grafico mensile -->
       <div class="col-lg-7">
         <div class="section-header warning-border header-line">
           <div class="left">
             <h2 class="h6 mb-0 fw-bold" style="color: var(--warning-accessible)">
               <i class="bi bi-graph-up me-2"></i>
-              Andamento Storico del Rischio Climatico
+              Andamento Storico del Rischio Climatico Mensile
             </h2>
-            <span class="badge" style="background-color: rgba(224, 148, 0, 0.15); color: #b87500"
+            <span class="badge" style="background-color: rgba(224,148,0,0.15); color:#b87500"
                   th:text="${crop != null && !#strings.isEmpty(crop) ? crop : 'Tutte le Colture'}">
               Tutte le Colture
             </span>
@@ -151,13 +153,14 @@
         </div>
         <p class="subtitle mb-3">
           Evoluzione dell'<strong>indice di rischio climatico</strong> (0=basso, 1=alto)
-          per area geografica nel corso degli anni.
+          per area geografica nel mese selezionato (valori giornalieri).
         </p>
         <div class="chart-container">
-          <canvas id="riskAnnualTrend" role="img"
-                  aria-label="Grafico a linee sull'andamento dell'indice di rischio negli anni."></canvas>
+          <canvas id="riskMonthlyTrend" role="img"
+                  aria-label="Grafico a linee sull'andamento dell'indice di rischio giornaliero nel mese selezionato."></canvas>
         </div>
       </div>
+      <!-- Grafico radar -->
       <div class="col-lg-5">
         <div class="section-header primary-border header-line">
           <div class="left">
@@ -181,6 +184,31 @@
     </div>
   </div>
 
+  <!-- Sezione grafico annuale -->
+  <div class="dashboard-card p-4 mb-4">
+    <div class="section-header warning-border header-line">
+      <div class="left">
+        <h2 class="h6 mb-0 fw-bold" style="color: var(--warning-accessible)">
+          <i class="bi bi-graph-up me-2"></i>
+          Andamento Storico del Rischio Climatico Annuale
+        </h2>
+        <span class="badge" style="background-color: rgba(224,148,0,0.15); color:#b87500"
+              th:text="${crop != null && !#strings.isEmpty(crop) ? crop : 'Tutte le Colture'}">
+          Tutte le Colture
+        </span>
+      </div>
+    </div>
+    <p class="subtitle mb-3">
+      Evoluzione dell'<strong>indice di rischio climatico</strong> (0=basso, 1=alto)
+      per area geografica nel corso degli anni.
+    </p>
+    <div class="chart-container">
+      <canvas id="riskAnnualTrend" role="img"
+              aria-label="Grafico a linee sull'andamento dell'indice di rischio negli anni."></canvas>
+    </div>
+  </div>
+
+  <!-- Tabella dettagli -->
   <div class="dashboard-card p-4">
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
       <h3 class="h6 mb-0 fw-bold" style="color: var(--warning-accessible)">
@@ -188,7 +216,7 @@
         Dettaglio Rischio per Fattore
       </h3>
       <span class="badge bg-secondary"
-            th:text="${crop!=null and !#strings.isEmpty(crop) ? crop : 'Tutte le colture'}">
+            th:text="${crop != null && !#strings.isEmpty(crop) ? crop : 'Tutte le colture'}">
         Tutte le colture
       </span>
     </div>
@@ -209,17 +237,13 @@
             <span class="fw-semibold" th:text="${r.area}">Area</span>
           </td>
           <td class="text-end fw-bold"
-              th:text="${#numbers.formatDecimal(r.riskIndex,1,'POINT',2,'COMMA')}">0,00
-          </td>
+              th:text="${#numbers.formatDecimal(r.riskIndex,1,'POINT',2,'COMMA')}">0,00</td>
           <td class="text-end"
-              th:text="${#numbers.formatDecimal(r.riskTemp,1,'POINT',2,'COMMA')}">0,00
-          </td>
+              th:text="${#numbers.formatDecimal(r.riskTemp,1,'POINT',2,'COMMA')}">0,00</td>
           <td class="text-end"
-              th:text="${#numbers.formatDecimal(r.riskWater,1,'POINT',2,'COMMA')}">0,00
-          </td>
+              th:text="${#numbers.formatDecimal(r.riskWater,1,'POINT',2,'COMMA')}">0,00</td>
           <td class="text-end"
-              th:text="${#numbers.formatDecimal(r.riskFrost,1,'POINT',2,'COMMA')}">0,00
-          </td>
+              th:text="${#numbers.formatDecimal(r.riskFrost,1,'POINT',2,'COMMA')}">0,00</td>
         </tr>
         </tbody>
       </table>
@@ -256,10 +280,14 @@
     riskWaterSud: [[${riskWaterSud}]],
     riskFrostNord: [[${riskFrostNord}]],
     riskFrostCentro: [[${riskFrostCentro}]],
-    riskFrostSud: [[${riskFrostSud}]]
+    riskFrostSud: [[${riskFrostSud}]],
+    // Serie mensile per grafico giornaliero del rischio climatico
+    dailyLabels: [[${dailyLabels}]],
+    dailyRiskNord: [[${dailyRiskNord}]],
+    dailyRiskCentro: [[${dailyRiskCentro}]],
+    dailyRiskSud: [[${dailyRiskSud}]]
   };
 </script>
-
 <script th:src="@{/js/rischioClimatico.js}"></script>
 
 </body>

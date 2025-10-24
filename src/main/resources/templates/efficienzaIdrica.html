@@ -35,6 +35,7 @@
   <div class="dashboard-card p-3 mb-4">
     <form id="filterForm" th:action="@{/efficienzaIdrica}" method="get"
           class="filters-bar" role="group" aria-label="Filtri efficienza idrica">
+      <!-- Filtri mese, anno, coltura, area -->
       <div class="form-group">
         <label class="form-label small text-muted mb-1 fw-semibold" for="monthSel">Mese</label>
         <select id="monthSel" class="form-select" aria-label="Seleziona mese">
@@ -95,6 +96,7 @@
     </form>
   </div>
 
+  <!-- Card KPI -->
   <div class="row g-4 mb-4">
     <div class="col-12 col-md-4">
       <div class="kpi-box prod">
@@ -139,14 +141,16 @@
     </div>
   </div>
 
+  <!-- Sezione grafici: mensile + scatter -->
   <div class="dashboard-card p-4 mb-4">
     <div class="row g-4">
+      <!-- Grafico mensile -->
       <div class="col-lg-7">
         <div class="section-header info-border header-line">
           <div class="left">
             <h2 class="h6 mb-0 fw-bold" style="color: var(--info-color)">
               <i class="bi bi-graph-up me-2"></i>
-              Andamento Efficienza Idrica Annuale
+              Andamento Efficienza Idrica Mensile
             </h2>
             <span class="badge bg-info bg-opacity-10 text-info"
                   th:text="${crop != null && !crop.isEmpty() ? crop : 'Tutte le Colture'}">
@@ -157,14 +161,15 @@
 
         <p class="subtitle mb-3">
           Evoluzione dell'<strong>efficienza idrica (Kg/m³)</strong> per area geografica
-          negli ultimi anni, in base alla coltura selezionata.
+          nel mese selezionato (valori giornalieri).
         </p>
         <div class="chart-container">
-          <canvas id="efficiencyAnnualTrend" role="img"
-                  aria-label="Grafico a linee sull'andamento dell'efficienza idrica negli anni."></canvas>
+          <canvas id="efficiencyMonthlyTrend" role="img"
+                  aria-label="Grafico a linee sull'andamento dell'efficienza idrica giornaliera nel mese selezionato."></canvas>
         </div>
       </div>
 
+      <!-- Grafico scatter produzione vs consumo idrico -->
       <div class="col-lg-5">
         <div class="section-header header-line">
           <div class="left">
@@ -188,6 +193,31 @@
     </div>
   </div>
 
+  <!-- Sezione grafico annuale -->
+  <div class="dashboard-card p-4 mb-4">
+    <div class="section-header info-border header-line">
+      <div class="left">
+        <h2 class="h6 mb-0 fw-bold" style="color: var(--info-color)">
+          <i class="bi bi-graph-up me-2"></i>
+          Andamento Efficienza Idrica Annuale
+        </h2>
+        <span class="badge bg-info bg-opacity-10 text-info"
+              th:text="${crop != null && !crop.isEmpty() ? crop : 'Tutte le Colture'}">
+          Tutte le Colture
+        </span>
+      </div>
+    </div>
+    <p class="subtitle mb-3">
+      Evoluzione dell'<strong>efficienza idrica (Kg/m³)</strong> per area geografica
+      nel corso degli anni.
+    </p>
+    <div class="chart-container">
+      <canvas id="efficiencyAnnualTrend" role="img"
+              aria-label="Grafico a linee sull'andamento dell'efficienza idrica negli anni."></canvas>
+    </div>
+  </div>
+
+  <!-- Tabella dettagli -->
   <div class="dashboard-card p-4">
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
       <h3 class="h6 mb-0 fw-bold" style="color: var(--info-color)">
@@ -253,7 +283,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
 <script th:src="@{/js/common.js}"></script>
 
 <script th:inline="javascript">
@@ -268,7 +297,12 @@
     waterSudM3: [[${waterSudM3}]],
     yieldNordT: [[${yieldNordT}]],
     yieldCentroT: [[${yieldCentroT}]],
-    yieldSudT: [[${yieldSudT}]]
+    yieldSudT: [[${yieldSudT}]],
+    // Serie mensile per grafico giornaliero dell'efficienza idrica
+    dailyLabels: [[${dailyLabels}]],
+    dailyEfficiencyNord: [[${dailyEfficiencyNord}]],
+    dailyEfficiencyCentro: [[${dailyEfficiencyCentro}]],
+    dailyEfficiencySud: [[${dailyEfficiencySud}]]
   };
 </script>
 <script th:src="@{/js/efficienzaIdrica.js}"></script>

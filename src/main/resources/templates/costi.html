@@ -131,14 +131,16 @@
     </div>
   </div>
 
+  <!-- Sezione grafici: mensile + composizione -->
   <div class="dashboard-card p-4 mb-4">
     <div class="row g-4">
+      <!-- Grafico mensile -->
       <div class="col-lg-7">
         <div class="section-header purple-border header-line">
           <div class="left">
             <h2 class="h6 mb-0 fw-bold" style="color:var(--purple)">
               <i class="bi bi-graph-up me-2"></i>
-              Andamento Storico del Costo
+              Andamento Storico del Costo Mensile
             </h2>
             <span class="badge bg-secondary bg-opacity-10" style="color:var(--purple)"
                   th:text="${crop!=null and !#strings.isEmpty(crop) ? crop : 'Tutte le Colture'}">
@@ -148,13 +150,14 @@
         </div>
         <p class="subtitle mb-3">
           Evoluzione del <strong>costo di produzione unitario (€/t)</strong>
-          per area geografica nel corso degli anni.
+          per area geografica nel mese selezionato (valori giornalieri).
         </p>
         <div class="chart-container">
-          <canvas id="costAnnualTrend" role="img"
-                  aria-label="Grafico a linee sull'andamento del costo negli anni."></canvas>
+          <canvas id="costMonthlyTrend" role="img"
+                  aria-label="Grafico a linee sull'andamento del costo giornaliero nel mese selezionato."></canvas>
         </div>
       </div>
+      <!-- Grafico composizione costi -->
       <div class="col-lg-5">
         <div class="section-header primary-border header-line">
           <div class="left">
@@ -178,6 +181,31 @@
     </div>
   </div>
 
+  <!-- Sezione grafico annuale -->
+  <div class="dashboard-card p-4 mb-4">
+    <div class="section-header purple-border header-line">
+      <div class="left">
+        <h2 class="h6 mb-0 fw-bold" style="color:var(--purple)">
+          <i class="bi bi-graph-up me-2"></i>
+          Andamento Storico del Costo Annuale
+        </h2>
+        <span class="badge bg-secondary bg-opacity-10" style="color:var(--purple)"
+              th:text="${crop!=null and !#strings.isEmpty(crop) ? crop : 'Tutte le Colture'}">
+          Tutte le Colture
+        </span>
+      </div>
+    </div>
+    <p class="subtitle mb-3">
+      Evoluzione del <strong>costo di produzione unitario (€/t)</strong>
+      per area geografica nel corso degli anni.
+    </p>
+    <div class="chart-container">
+      <canvas id="costAnnualTrend" role="img"
+              aria-label="Grafico a linee sull'andamento del costo negli anni."></canvas>
+    </div>
+  </div>
+
+  <!-- Tabella dettagli -->
   <div class="dashboard-card p-4">
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
       <h3 class="h6 mb-0 fw-bold" style="color:var(--purple)">
@@ -243,11 +271,14 @@
     avgCostLaborSud: [[${avgCostLaborSud}]],
     avgCostMaterialsNord: [[${avgCostMaterialsNord}]],
     avgCostMaterialsCentro: [[${avgCostMaterialsCentro}]],
-    avgCostMaterialsSud: [[${avgCostMaterialsSud}]]
+    avgCostMaterialsSud: [[${avgCostMaterialsSud}]],
+    // Serie mensile per grafico giornaliero del costo
+    dailyLabels: [[${dailyLabels}]],
+    dailyCostNord: [[${dailyCostNord}]],
+    dailyCostCentro: [[${dailyCostCentro}]],
+    dailyCostSud: [[${dailyCostSud}]]
   };
 </script>
-
-<!-- Script per aggiornamento dinamico link export -->
 
 <script th:src="@{/js/costi.js}"></script>
 

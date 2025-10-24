@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -270,6 +271,84 @@ public class MargineController extends BaseKpiController {
                 new MargineRow("Sud", priceSud, costSud, marginSud)
         );
         model.addAttribute("margineRows", margineRows);
+
+        // ===== SERIE MENSILE PER AREA (Margine giornaliero) =====
+        // Costruiamo una serie giornaliera del margine per la vista mensile. La logica è:
+        // 1. Identificare l'anno e il mese selezionati. In assenza di parametri espliciti,
+        //    si utilizza la data del primo record filtrato come riferimento.
+        // 2. Calcolare le serie giornaliere per Nord/Centro/Sud utilizzando KpiService.
+        // 3. Filtrare tali serie per l'anno/mese selezionato e allineare le liste di valori
+        //    affinché abbiano lo stesso numero di elementi (uno per ogni giorno del mese).
+        // 4. Trasformare i giorni in etichette (stringhe) e aggiungere il risultato al Model.
+        if (!filtered.isEmpty()) {
+            // Ordina le date filtrate e prendi la prima per individuare il mese selezionato
+            Optional<LocalDate> maybeFirst = filtered.stream()
+                    .map(SampleRecord::date)
+                    .filter(Objects::nonNull)
+                    .sorted()
+                    .findFirst();
+            if (maybeFirst.isPresent()) {
+                LocalDate firstDate = maybeFirst.get();
+                YearMonth selectedYearMonth = YearMonth.from(firstDate);
+
+                // Serie giornaliera di margine per ciascuna area
+                Map<LocalDate, Double> giornNord = kpiService.serieMargineUnitarioGiornaliera(nordFiltered);
+                Map<LocalDate, Double> giornCentro = kpiService.serieMargineUnitarioGiornaliera(centroFiltered);
+                Map<LocalDate, Double> giornSud = kpiService.serieMargineUnitarioGiornaliera(sudFiltered);
+
+                // Filtra le mappe per includere solo le date del mese selezionato
+                Map<LocalDate, Double> meseNord = filterByYearMonth(giornNord, selectedYearMonth);
+                Map<LocalDate, Double> meseCentro = filterByYearMonth(giornCentro, selectedYearMonth);
+                Map<LocalDate, Double> meseSud = filterByYearMonth(giornSud, selectedYearMonth);
+
+                // Colleziona tutti i giorni presenti in almeno una delle mappe (TreeSet mantiene ordine crescente)
+                Set<Integer> daySet = new TreeSet<>();
+                meseNord.keySet().forEach(d -> daySet.add(d.getDayOfMonth()));
+                meseCentro.keySet().forEach(d -> daySet.add(d.getDayOfMonth()));
+                meseSud.keySet().forEach(d -> daySet.add(d.getDayOfMonth()));
+                // Se non ci sono dati per il mese, mostra almeno il primo giorno
+                if (daySet.isEmpty()) {
+                    daySet.add(1);
+                }
+
+                // Genera etichette per Chart.js (es. "1", "2", ...)
+                List<String> dailyLabels = daySet.stream()
+                        .map(String::valueOf)
+                        .collect(Collectors.toList());
+
+                // Allinea i valori di margine ai giorni del mese; se assente usa 0.0
+                List<Double> dailyMarginNord = daySet.stream()
+                        .map(g -> {
+                            LocalDate d = LocalDate.of(selectedYearMonth.getYear(), selectedYearMonth.getMonthValue(), g);
+                            return meseNord.getOrDefault(d, 0.0);
+                        })
+                        .collect(Collectors.toList());
+                List<Double> dailyMarginCentro = daySet.stream()
+                        .map(g -> {
+                            LocalDate d = LocalDate.of(selectedYearMonth.getYear(), selectedYearMonth.getMonthValue(), g);
+                            return meseCentro.getOrDefault(d, 0.0);
+                        })
+                        .collect(Collectors.toList());
+                List<Double> dailyMarginSud = daySet.stream()
+                        .map(g -> {
+                            LocalDate d = LocalDate.of(selectedYearMonth.getYear(), selectedYearMonth.getMonthValue(), g);
+                            return meseSud.getOrDefault(d, 0.0);
+                        })
+                        .collect(Collectors.toList());
+
+                // Aggiungi serie mensile al Model per il rendering in Thymeleaf/JS
+                model.addAttribute("dailyLabels", dailyLabels);
+                model.addAttribute("dailyMarginNord", dailyMarginNord);
+                model.addAttribute("dailyMarginCentro", dailyMarginCentro);
+                model.addAttribute("dailyMarginSud", dailyMarginSud);
+            }
+        } else {
+            // Dataset vuoto: aggiunge liste vuote per evitare errori in template
+            model.addAttribute("dailyLabels", Collections.emptyList());
+            model.addAttribute("dailyMarginNord", Collections.emptyList());
+            model.addAttribute("dailyMarginCentro", Collections.emptyList());
+            model.addAttribute("dailyMarginSud", Collections.emptyList());
+        }
     }
 
     // ========================================================================
@@ -307,6 +386,25 @@ public class MargineController extends BaseKpiController {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Filtra una mappa di serie temporale giornaliera per includere solo le date
+     * appartenenti a uno specifico YearMonth. Mantiene l'ordinamento delle date.
+     *
+     * @param timeSeries mappa <LocalDate, Double> con serie giornaliera
+     * @param yearMonth mese e anno da mantenere
+     * @return mappa filtrata con solo le date del mese specificato
+     */
+    private Map<LocalDate, Double> filterByYearMonth(Map<LocalDate, Double> timeSeries, YearMonth yearMonth) {
+        return timeSeries.entrySet().stream()
+                .filter(e -> YearMonth.from(e.getKey()).equals(yearMonth))
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (a, b) -> a,
+                        TreeMap::new
+                ));
+    }
+
     // ========================================================================
     // INNER CLASS: MargineRow
     // ========================================================================
@@ -329,12 +427,12 @@ public class MargineController extends BaseKpiController {
      * Interpretazione economica:
      * - Margine positivo: profitto lordo per tonnellata
      * - Margine negativo: perdita per tonnellata (situazione critica)
-     * - Margine zero: break-even (no profitto, no perdita)
-     * ```
+     * - Margine zero: break-even (nessun profitto né perdita)
+     *
      * Analisi dei dati:
      * - Confrontare margini tra aree rivela disparità di redditività
-     * - Margini alti in un'area possono indicare: prezzi alti O costi bassi
-     * - Margini bassi possono indicare: prezzi bassi (mercato) O costi alti (inefficienza)
+     * - Margini alti in un'area possono indicare: prezzi alti o costi bassi
+     * - Margini bassi possono indicare: prezzi bassi (mercato) o costi alti (inefficienza)
      */
     public static class MargineRow {
 
@@ -370,9 +468,9 @@ public class MargineController extends BaseKpiController {
          * Costruttore per creare una riga di dati di margine.
          *
          * @param area Area geografica
-         * @param price Prezzo medio (€/t)
-         * @param cost Costo medio (€/t)
-         * @param margin Margine calcolato (€/t)
+         * @param price Prezzo medio
+         * @param cost Costo medio
+         * @param margin Margine medio (prezzo - cost)
          */
         public MargineRow(String area, double price, double cost, double margin) {
             this.area = area;
@@ -381,52 +479,18 @@ public class MargineController extends BaseKpiController {
             this.margin = margin;
         }
 
-        /**
-         * Getter: area geografica.
-         * Utilizzato in template Thymeleaf: ${row.area}
-         */
         public String getArea() {
             return area;
         }
 
-        /**
-         * Getter: prezzo di vendita medio.
-         * Utilizzato in template Thymeleaf: ${row.price}
-         *
-         * Nota: il prezzo è influenzato dal mercato (fattore esterno),
-         * ma anche dalla qualità del prodotto (fattore interno).
-         */
         public double getPrice() {
             return price;
         }
 
-        /**
-         * Getter: costo di produzione medio.
-         * Utilizzato in template Thymeleaf: ${row.cost}
-         *
-         * Nota: il costo è principalmente controllabile dall'azienda
-         * attraverso efficienza operativa (reduce waste, optimize inputs).
-         */
         public double getCost() {
             return cost;
         }
 
-        /**
-         * Getter: margine unitario calcolato (profitto lordo per tonnellata).
-         * Utilizzato in template Thymeleaf: ${row.margin}
-         *
-         * Formula: margin = price - cost
-         *
-         * Interpretazione:
-         * - Valore alto (es. 80-150 €/t): buona redditività
-         * - Valore moderato (es. 30-80 €/t): redditività accettabile
-         * - Valore basso/negativo (es. < 0 €/t): critico, insostenibile
-         *
-         * Per migliorare il margine:
-         * 1. Aumentare il prezzo: vendere a prezzo più alto (qualità, branding)
-         * 2. Ridurre il costo: migliorare efficienza operativa
-         * 3. Mix di entrambi: strategia ottimale a lungo termine
-         */
         public double getMargin() {
             return margin;
         }

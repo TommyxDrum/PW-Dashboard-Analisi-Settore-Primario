@@ -22,6 +22,12 @@
   const totalSurfaceHa = window.resaData.totalSurfaceHa;
   const totalResa = window.resaData.totalResa;
 
+  // Dati per la serie mensile di resa (giornaliera)
+  const dailyLabels = window.resaData.dailyLabels;
+  const dailyResaNord = window.resaData.dailyResaNord;
+  const dailyResaCentro = window.resaData.dailyResaCentro;
+  const dailyResaSud = window.resaData.dailyResaSud;
+
   /* Popolamento Card KPI */
   (function () {
     document.getElementById('totalValueProd').textContent = formatters.nfCompact.format(toNum(totalYieldT));
@@ -103,8 +109,92 @@
       }
     });
 
-    // 🔴 ESPORTA riferimento globale
     window.resaAnnualTrendChart = resaChart;
+  })();
+
+  /* ===== Line Chart: Andamento Resa Mensile ===== */
+  (function () {
+    const el = document.getElementById('resaMonthlyTrend');
+    if (!el) return;
+    // Se non ci sono etichette o dati, mostra un messaggio di avviso
+    if (!dailyLabels || dailyLabels.length === 0) {
+      el.parentElement.innerHTML = '<div class="loading"><i class="bi bi-exclamation-circle me-2"></i>Dati non disponibili per il periodo selezionato</div>';
+      return;
+    }
+    // Prepara datasets per ciascuna area
+    const datasets = [
+      { label: 'Nord', data: dailyResaNord, borderColor: C_NORD, backgroundColor: C_NORD + '15' },
+      { label: 'Centro', data: dailyResaCentro, borderColor: C_CENTRO, backgroundColor: C_CENTRO + '15' },
+      { label: 'Sud', data: dailyResaSud, borderColor: C_SUD, backgroundColor: C_SUD + '15' }
+    ];
+    const filtered = filterDatasetsByArea(datasets, areaSel);
+    // Determina il range per l'asse Y (con margine)
+    const allVals = filtered.flatMap(d => Array.isArray(d.data) ? d.data : []).filter(Number.isFinite);
+    const yMin0 = allVals.length > 0 ? Math.min(...allVals) : 0;
+    const yMax0 = allVals.length > 0 ? Math.max(...allVals) : 0;
+    const span = Math.max(0, yMax0 - yMin0);
+    const pad = span > 0 ? span * 0.10 : (yMax0 || 1) * 0.10;
+    const dailyChart = new Chart(el.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: dailyLabels,
+        datasets: filtered.map(function (d) {
+          return {
+            label: d.label,
+            data: d.data,
+            borderColor: d.borderColor,
+            backgroundColor: d.backgroundColor,
+            pointBackgroundColor: d.borderColor,
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            borderWidth: 3,
+            tension: 0.35,
+            fill: true
+          };
+        })
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            min: yMin0 - pad,
+            max: yMax0 + pad,
+            title: { display: true, text: 'Resa (t/ha)', font: { weight: '600', size: 13 } },
+            grid: { color: 'rgba(0,0,0,0.05)' }
+          },
+          x: {
+            ticks: { autoSkip: true, maxTicksLimit: 15 },
+            grid: { display: false }
+          }
+        },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { usePointStyle: true, padding: 15, font: { weight: '500' } }
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            backgroundColor: 'rgba(255,255,255,0.95)',
+            titleColor: '#333',
+            bodyColor: '#666',
+            borderColor: '#ddd',
+            borderWidth: 1,
+            padding: 12,
+            callbacks: {
+              label: function (ctx) {
+                return ctx.dataset.label + ': ' + (+ctx.raw).toFixed(2) + ' t/ha';
+              }
+            }
+          }
+        },
+        interaction: { mode: 'index', intersect: false }
+      }
+    });
+    window.resaMonthlyTrendChart = dailyChart;
   })();
 
   /* ===== Donut Chart: Composizione Produzione ===== */
@@ -146,7 +236,7 @@
         label: {
           show: true,
           position: 'outside',
-          formatter: '{b}\n{d}%',
+          formatter: '{b}\\n{d}%',
           fontSize: 14,
           color: '#495057',
           fontWeight: '500'
@@ -229,7 +319,6 @@
           });
         })();
 
-    // ESPORTA riferimento globale
     window.echDonutYieldChart = donutChart;
   })();
 })();

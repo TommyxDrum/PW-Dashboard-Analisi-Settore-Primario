@@ -133,12 +133,13 @@
 
     <div class="dashboard-card p-4 mb-4">
         <div class="row g-4">
+            <!-- Grafico mensile -->
             <div class="col-lg-7">
                 <div class="section-header success-border header-line">
                     <div class="left">
                         <h2 class="h6 mb-0 fw-bold text-success">
                             <i class="bi bi-graph-up me-2"></i>
-                            Andamento Storico del Margine
+                            Andamento Storico del Margine Mensile
                         </h2>
                         <span class="badge bg-success bg-opacity-10 text-success"
                               th:text="${crop!=null and !#strings.isEmpty(crop)? crop : 'Tutte le Colture'}">
@@ -147,14 +148,15 @@
                     </div>
                 </div>
                 <p class="subtitle mb-3">
-                    Evoluzione del <strong>margine di profitto unitario (€/t)</strong>
-                    per area geografica nel corso degli anni.
+                    Evoluzione del <strong>margine di profitto unitario (€/t)</strong> per area geografica
+                    nel mese selezionato (valori giornalieri).
                 </p>
                 <div class="chart-container">
-                    <canvas id="marginAnnualTrend" role="img"
-                            aria-label="Grafico a linee sull'andamento del margine negli anni."></canvas>
+                    <canvas id="marginMonthlyTrend" role="img"
+                            aria-label="Grafico a linee sull'andamento del margine giornaliero nel mese selezionato."></canvas>
                 </div>
             </div>
+            <!-- Grafico composizione prezzo vendita -->
             <div class="col-lg-5">
                 <div class="section-header primary-border header-line">
                     <div class="left">
@@ -175,6 +177,30 @@
                 <div id="echBarMarginComposition" class="chart-container"
                      role="img" aria-label="Grafico a barre impilate costo vs margine per area."></div>
             </div>
+        </div>
+    </div>
+
+    <!-- Grafico annuale spostato sotto: copre tutta la larghezza -->
+    <div class="dashboard-card p-4 mb-4">
+        <div class="section-header success-border header-line">
+            <div class="left">
+                <h2 class="h6 mb-0 fw-bold text-success">
+                    <i class="bi bi-graph-up me-2"></i>
+                    Andamento Storico del Margine Annuale
+                </h2>
+                <span class="badge bg-success bg-opacity-10 text-success"
+                      th:text="${crop!=null and !#strings.isEmpty(crop)? crop : 'Tutte le Colture'}">
+          Tutte le Colture
+        </span>
+            </div>
+        </div>
+        <p class="subtitle mb-3">
+            Evoluzione del <strong>margine di profitto unitario (€/t)</strong>
+            per area geografica nel corso degli anni.
+        </p>
+        <div class="chart-container">
+            <canvas id="marginAnnualTrend" role="img"
+                    aria-label="Grafico a linee sull'andamento del margine annuale."></canvas>
         </div>
     </div>
 
@@ -243,10 +269,14 @@
       avgCostSud: [[${avgCostSud}]],
       avgMarginNord: [[${avgMarginNord}]],
       avgMarginCentro: [[${avgMarginCentro}]],
-      avgMarginSud: [[${avgMarginSud}]]
+      avgMarginSud: [[${avgMarginSud}]],
+      // Serie mensile per grafico giornaliero
+      dailyLabels: [[${dailyLabels}]],
+      dailyMarginNord: [[${dailyMarginNord}]],
+      dailyMarginCentro: [[${dailyMarginCentro}]],
+      dailyMarginSud: [[${dailyMarginSud}]]
     };
 </script>
-
 
 <script th:src="@{/js/margine.js}"></script>
 

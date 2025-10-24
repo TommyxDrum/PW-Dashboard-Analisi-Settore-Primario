@@ -51,46 +51,13 @@ public class CostiController extends BaseKpiController {
     // COSTANTI DI CONFIGURAZIONE
     // ========================================================================
 
-    /**
-     * Rapporto stimato di manodopera sul costo totale.
-     *
-     * Assunzione: il 60% del costo unitario è dovuto a:
-     * - Manodopera diretta (raccolta, potatura, manutenzione)
-     * - Contributi sociali
-     * - Supervisione e coordinamento
-     *
-     * Nota: È una stima semplificata. In realtà, il dataset SampleRecord
-     * contiene scomposizioni più dettagliate (fixedCost, inputsCost, waterCost),
-     * ma per la view utilizziamo questa approssimazione per chiarezza.
-     */
     private static final double LABOR_RATIO = 0.60;
-
-    /**
-     * Rapporto stimato di materiali sul costo totale.
-     *
-     * Assunzione: il 40% del costo unitario è dovuto a:
-     * - Sementi/propaguli
-     * - Fertilizzanti
-     * - Pesticidi/fungicidi
-     * - Carburante per meccanizzazione
-     * - Ammortamenti attrezzature
-     *
-     * Nota: LABOR_RATIO + MATERIALS_RATIO = 1.0
-     */
     private static final double MATERIALS_RATIO = 0.40;
 
     // ========================================================================
     // COSTRUTTORE
     // ========================================================================
 
-    /**
-     * Costruttore con dependency injection.
-     * Delegato a BaseKpiController via super().
-     *
-     * @param sampleDataService Service per accesso dati
-     * @param kpiFilters Service per filtri e normalizzzazione
-     * @param kpiService Service per calcolo KPI
-     */
     public CostiController(SampleDataService sampleDataService,
                            KpiFilters kpiFilters,
                            KpiService kpiService) {
@@ -101,46 +68,6 @@ public class CostiController extends BaseKpiController {
     // ENDPOINT HTTP
     // ========================================================================
 
-    /**
-     * Endpoint GET /costi: visualizza il dashboard del costo unitario.
-     *
-     * Metodo HTTP: GET
-     * Mapping: /costi
-     * Risposta: HTML renderizzato (Thymeleaf template "costi.html")
-     *
-     * Parametri query (tutti opzionali):
-     * - area: filtro area geografica (es. "Nord", "Centro", "Sud")
-     * - crop: filtro coltura (es. "Grano duro", "Mais")
-     * - startDate: data inizio intervallo (formato ISO: YYYY-MM-DD)
-     * - endDate: data fine intervallo (formato ISO: YYYY-MM-DD)
-     * - periodo: periodo aggregazione ("giorno", "mese", "trimestre", "anno", "custom")
-     * - year: anno per aggregazione annuale (es. 2024)
-     * - month: mese per aggregazione mensile (es. 5)
-     * - quarter: trimestre per aggregazione trimestrale (es. 2)
-     *
-     * Esempio URL:
-     * GET /costi?area=Sud&crop=Vite&periodo=anno&year=2024
-     *
-     * Flusso:
-     * 1. Delega a BaseKpiController.processKpiRequest()
-     * 2. processKpiRequest esegue il template method:
-     *    - Recupera dataset
-     *    - Applica filtri
-     *    - Chiama populateKpiModel() (implementato in questa classe)
-     *    - Popola attributi comuni
-     * 3. Ritorna il nome della view "costi" da renderizzare
-     *
-     * @param area Area geografica (opzionale)
-     * @param crop Coltura (opzionale)
-     * @param startDate Data inizio (opzionale, deserializzato da ISO.DATE)
-     * @param endDate Data fine (opzionale, deserializzato da ISO.DATE)
-     * @param periodo Periodo aggregazione (opzionale)
-     * @param year Anno (opzionale)
-     * @param month Mese (opzionale)
-     * @param quarter Trimestre (opzionale)
-     * @param model Spring Model per aggiungere attributi view
-     * @return Nome della view Thymeleaf ("costi")
-     */
     @GetMapping("/costi")
     public String costoUnitarioKpi(
             @RequestParam(required = false) String area,
@@ -161,58 +88,17 @@ public class CostiController extends BaseKpiController {
     // HOOK ASTRATTO - IMPLEMENTAZIONE
     // ========================================================================
 
-    /**
-     * Implementazione dell'hook astratto di BaseKpiController.
-     *
-     * Responsabilità:
-     * - Calcolare KPI specifici del costo unitario
-     * - Aggregare dati per diverse granularità temporali e geografiche
-     * - Popolare il Model con attributi per la view Thymeleaf
-     *
-     * Struttura della popopolazione (7 sezioni):
-     *
-     * SEZIONE 1: KPI BASE (Aggregato sul periodo filtrato)
-     * - costoUnitMedio: media dei costi per tonnellata
-     * - costoUnitGiorno: serie temporale giornaliera
-     *
-     * SEZIONE 2: SCOMPOSIZIONE TOTALE (Stima)
-     * - Costo totale medio
-     * - Costo manodopera (60% stima)
-     * - Costo materiali (40% stima)
-     *
-     * SEZIONE 3: SERIE ANNUALI PER AREA
-     * - Costo unitario annuale per Nord, Centro, Sud
-     * - Utilizzato per grafici trend multi-anno
-     *
-     * SEZIONE 4: KPI PER AREA (Periodo filtrato)
-     * - Costo unitario medio per ogni area
-     * - Scomposizione manodopera/materiali per area
-     * - Utilizzato per bar chart confronto aree
-     *
-     * SEZIONE 5: TABELLA DETTAGLI
-     * - Righe CostiRow con dati aggregati per area
-     * - Visualizzazione tabellare nel dashboard
-     *
-     * @param filtered Lista di record post-filtri (area, crop, date)
-     * @param model Spring Model dove aggiungere attributi
-     */
     @Override
     protected void populateKpiModel(List<SampleRecord> filtered, Model model) {
 
         // ===== SEZIONE 1: KPI BASE (Aggregato sul periodo filtrato) =====
-
-        // Costo unitario medio aggregato su tutti i record filtrati
         double costoUnitMedio = kpiService.calcolaCostoUnitario(filtered);
-
-        // Serie temporale giornaliera: data → costo unitario medio giornaliero
         Map<LocalDate, Double> costoUnitGiorno = kpiService.serieCostoUnitarioGiornaliera(filtered);
 
         model.addAttribute("costoUnitMedio", costoUnitMedio);
         model.addAttribute("costoUnitGiorno", costoUnitGiorno);
 
         // ===== SEZIONE 2: SCOMPOSIZIONE TOTALE (Stima) =====
-        // Applica ratios di scomposizione (60% manodopera, 40% materiali)
-
         double totalAvgCost = costoUnitMedio;
         double totalAvgCostLabor = totalAvgCost * LABOR_RATIO;
         double totalAvgCostMaterials = totalAvgCost * MATERIALS_RATIO;
@@ -222,48 +108,38 @@ public class CostiController extends BaseKpiController {
         model.addAttribute("totalAvgCostMaterials", totalAvgCostMaterials);
 
         // ===== SEZIONE 3: SERIE ANNUALI PER AREA =====
-        // Recupera il dataset completo per aggregazioni multi-anno
-
         List<SampleRecord> all = sampleDataService.getAll();
         List<Integer> years = extractYears(all);
 
-        // Filtra dataset completo per ogni area (senza altre restrizioni)
-        // In questo modo calcoliamo il costo per ogni anno per ogni area
-        List<SampleRecord> nordAll = filterByArea(all, "Nord");
+        List<SampleRecord> nordAll   = filterByArea(all, "Nord");
         List<SampleRecord> centroAll = filterByArea(all, "Centro");
-        List<SampleRecord> sudAll = filterByArea(all, "Sud");
+        List<SampleRecord> sudAll    = filterByArea(all, "Sud");
 
-        // Calcola serie annuali di costo per ogni area
-        Map<Integer, Double> annualCostNord = kpiService.serieCostoUnitarioAnnuale(nordAll);
+        Map<Integer, Double> annualCostNord   = kpiService.serieCostoUnitarioAnnuale(nordAll);
         Map<Integer, Double> annualCostCentro = kpiService.serieCostoUnitarioAnnuale(centroAll);
-        Map<Integer, Double> annualCostSud = kpiService.serieCostoUnitarioAnnuale(sudAll);
+        Map<Integer, Double> annualCostSud    = kpiService.serieCostoUnitarioAnnuale(sudAll);
 
-        // Converte le mappe in liste ordinate per facilità di utilizzo in Thymeleaf
         model.addAttribute("years", years);
         model.addAttribute("annualCostNord", toOrderedList(annualCostNord, years));
         model.addAttribute("annualCostCentro", toOrderedList(annualCostCentro, years));
         model.addAttribute("annualCostSud", toOrderedList(annualCostSud, years));
 
         // ===== SEZIONE 4: KPI PER AREA (Periodo filtrato) =====
-        // Applica gli stessi filtri (area, crop, date) ma disaggregati per area geografica
-
-        List<SampleRecord> nordFiltered = filterByArea(filtered, "Nord");
+        List<SampleRecord> nordFiltered   = filterByArea(filtered, "Nord");
         List<SampleRecord> centroFiltered = filterByArea(filtered, "Centro");
-        List<SampleRecord> sudFiltered = filterByArea(filtered, "Sud");
+        List<SampleRecord> sudFiltered    = filterByArea(filtered, "Sud");
 
-        // Costo unitario medio per area (sul periodo filtrato)
-        double costNord = kpiService.calcolaCostoUnitario(nordFiltered);
+        double costNord   = kpiService.calcolaCostoUnitario(nordFiltered);
         double costCentro = kpiService.calcolaCostoUnitario(centroFiltered);
-        double costSud = kpiService.calcolaCostoUnitario(sudFiltered);
+        double costSud    = kpiService.calcolaCostoUnitario(sudFiltered);
 
-        // Scomposizione stimata (60% manodopera, 40% materiali) per area
-        double avgCostLaborNord = costNord * LABOR_RATIO;
+        double avgCostLaborNord   = costNord   * LABOR_RATIO;
         double avgCostLaborCentro = costCentro * LABOR_RATIO;
-        double avgCostLaborSud = costSud * LABOR_RATIO;
+        double avgCostLaborSud    = costSud    * LABOR_RATIO;
 
-        double avgCostMaterialsNord = costNord * MATERIALS_RATIO;
+        double avgCostMaterialsNord   = costNord   * MATERIALS_RATIO;
         double avgCostMaterialsCentro = costCentro * MATERIALS_RATIO;
-        double avgCostMaterialsSud = costSud * MATERIALS_RATIO;
+        double avgCostMaterialsSud    = costSud    * MATERIALS_RATIO;
 
         model.addAttribute("avgCostLaborNord", avgCostLaborNord);
         model.addAttribute("avgCostLaborCentro", avgCostLaborCentro);
@@ -273,93 +149,109 @@ public class CostiController extends BaseKpiController {
         model.addAttribute("avgCostMaterialsSud", avgCostMaterialsSud);
 
         // ===== SEZIONE 5: TABELLA DETTAGLI =====
-        // Aggrega i dati per area in una lista di CostiRow per visualizzazione tabellare
-
         List<CostiRow> costiRows = Arrays.asList(
                 new CostiRow("Nord", costNord, avgCostLaborNord, avgCostMaterialsNord),
                 new CostiRow("Centro", costCentro, avgCostLaborCentro, avgCostMaterialsCentro),
                 new CostiRow("Sud", costSud, avgCostLaborSud, avgCostMaterialsSud)
         );
         model.addAttribute("costiRows", costiRows);
+
+        // ===== SERIE MENSILE PER AREA (Costo giornaliero) =====
+        if (!filtered.isEmpty()) {
+            Optional<LocalDate> maybeFirst = filtered.stream()
+                    .map(SampleRecord::date)
+                    .filter(Objects::nonNull)
+                    .sorted()
+                    .findFirst();
+            if (maybeFirst.isPresent()) {
+                LocalDate firstDate = maybeFirst.get();
+                java.time.YearMonth selectedYearMonth = java.time.YearMonth.from(firstDate);
+
+                Map<LocalDate, Double> giornNord   = kpiService.serieCostoUnitarioGiornaliera(nordFiltered);
+                Map<LocalDate, Double> giornCentro = kpiService.serieCostoUnitarioGiornaliera(centroFiltered);
+                Map<LocalDate, Double> giornSud    = kpiService.serieCostoUnitarioGiornaliera(sudFiltered);
+
+                Map<LocalDate, Double> meseNord   = filterByYearMonth(giornNord, selectedYearMonth);
+                Map<LocalDate, Double> meseCentro = filterByYearMonth(giornCentro, selectedYearMonth);
+                Map<LocalDate, Double> meseSud    = filterByYearMonth(giornSud, selectedYearMonth);
+
+                Set<Integer> daySet = new TreeSet<>();
+                meseNord.keySet().forEach(d -> daySet.add(d.getDayOfMonth()));
+                meseCentro.keySet().forEach(d -> daySet.add(d.getDayOfMonth()));
+                meseSud.keySet().forEach(d -> daySet.add(d.getDayOfMonth()));
+                if (daySet.isEmpty()) daySet.add(1);
+
+                List<String> dailyLabels = daySet.stream()
+                        .map(String::valueOf)
+                        .collect(Collectors.toList());
+
+                List<Double> dailyCostNord = daySet.stream()
+                        .map(g -> {
+                            LocalDate d = LocalDate.of(
+                                    selectedYearMonth.getYear(), selectedYearMonth.getMonthValue(), g);
+                            return meseNord.getOrDefault(d, 0.0);
+                        })
+                        .collect(Collectors.toList());
+                List<Double> dailyCostCentro = daySet.stream()
+                        .map(g -> {
+                            LocalDate d = LocalDate.of(
+                                    selectedYearMonth.getYear(), selectedYearMonth.getMonthValue(), g);
+                            return meseCentro.getOrDefault(d, 0.0);
+                        })
+                        .collect(Collectors.toList());
+                List<Double> dailyCostSud = daySet.stream()
+                        .map(g -> {
+                            LocalDate d = LocalDate.of(
+                                    selectedYearMonth.getYear(), selectedYearMonth.getMonthValue(), g);
+                            return meseSud.getOrDefault(d, 0.0);
+                        })
+                        .collect(Collectors.toList());
+
+                model.addAttribute("dailyLabels", dailyLabels);
+                model.addAttribute("dailyCostNord", dailyCostNord);
+                model.addAttribute("dailyCostCentro", dailyCostCentro);
+                model.addAttribute("dailyCostSud", dailyCostSud);
+            }
+        } else {
+            model.addAttribute("dailyLabels", Collections.emptyList());
+            model.addAttribute("dailyCostNord", Collections.emptyList());
+            model.addAttribute("dailyCostCentro", Collections.emptyList());
+            model.addAttribute("dailyCostSud", Collections.emptyList());
+        }
     }
 
     // ========================================================================
     // METODI HELPER PRIVATI
     // ========================================================================
 
-    /**
-     * Converte una mappa (anno → valore) in una lista ordinata per anni.
-     *
-     * Utilizzo: trasformare il risultato di serieCostoUnitarioAnnuale()
-     * in un formato facilmente iterabile in Thymeleaf.
-     *
-     * Algoritmo:
-     * 1. Itera su ogni anno della lista "years" in ordine
-     * 2. Per ogni anno, recupera il valore dalla mappa
-     * 3. Se l'anno non è presente nella mappa, usa 0.0 come default
-     * 4. Ritorna una lista ordinata per anno
-     *
-     * Esempio:
-     * - map = {2020: 250, 2022: 270}
-     * - years = [2020, 2021, 2022]
-     * - output = [250, 0.0, 270]
-     *
-     * Vantaggio: il risultato ha sempre la stessa lunghezza di "years",
-     * e il valore alla posizione i corrisponde a years.get(i).
-     * Questo facilita l'allineamento con assi X in grafici Chart.js.
-     *
-     * @param map Mappa anno → valore (es. output di serieCostoUnitarioAnnuale)
-     * @param years Lista di anni in ordine crescente
-     * @return Lista di valori ordinati per anno (0.0 per anni mancanti)
-     */
     private List<Double> toOrderedList(Map<Integer, Double> map, List<Integer> years) {
         return years.stream()
                 .map(y -> map.getOrDefault(y, 0.0))
                 .collect(Collectors.toList());
     }
 
+    private Map<LocalDate, Double> filterByYearMonth(Map<LocalDate, Double> timeSeries,
+                                                     java.time.YearMonth yearMonth) {
+        return timeSeries.entrySet().stream()
+                .filter(e -> java.time.YearMonth.from(e.getKey()).equals(yearMonth))
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (a, b) -> a,
+                        TreeMap::new
+                ));
+    }
+
     // ========================================================================
     // INNER CLASS: CostiRow
     // ========================================================================
 
-    /**
-     * Record di dati per una riga della tabella di costi per area.
-     *
-     * Responsabilità:
-     * - Contenere i dati aggregati di costo per una singola area
-     * - Fornire getter accessibili da Thymeleaf
-     * - Facilitare rendering tabellare nel dashboard
-     */
     public static class CostiRow {
-
-        /**
-         * Area geografica ("Nord", "Centro", "Sud").
-         */
         private final String area;
-
-        /**
-         * Costo unitario totale medio per l'area in euro per tonnellata.
-         */
         private final double totalCost;
-
-        /**
-         * Costo manodopera stimato (60% del totale) in euro per tonnellata.
-         */
         private final double laborCost;
-
-        /**
-         * Costo materiali stimato (40% del totale) in euro per tonnellata.
-         */
         private final double materialsCost;
 
-        /**
-         * Costruttore per creare una riga di dati di costo.
-         *
-         * @param area Area geografica
-         * @param totalCost Costo totale medio (€/t)
-         * @param laborCost Costo manodopera (€/t)
-         * @param materialsCost Costo materiali (€/t)
-         */
         public CostiRow(String area, double totalCost, double laborCost, double materialsCost) {
             this.area = area;
             this.totalCost = totalCost;
@@ -367,35 +259,9 @@ public class CostiController extends BaseKpiController {
             this.materialsCost = materialsCost;
         }
 
-        /**
-         * Getter: area geografica.
-         */
-        public String getArea() {
-            return area;
-        }
-
-        /**
-         * Getter: costo totale unitario.
-         * Utilizzato in template Thymeleaf: ${row.totalCost}
-         */
-        public double getTotalCost() {
-            return totalCost;
-        }
-
-        /**
-         * Getter: costo manodopera.
-         * Utilizzato in template Thymeleaf: ${row.laborCost}
-         */
-        public double getLaborCost() {
-            return laborCost;
-        }
-
-        /**
-         * Getter: costo materiali.
-         * Utilizzato in template Thymeleaf: ${row.materialsCost}
-         */
-        public double getMaterialsCost() {
-            return materialsCost;
-        }
+        public String getArea() { return area; }
+        public double getTotalCost() { return totalCost; }
+        public double getLaborCost() { return laborCost; }
+        public double getMaterialsCost() { return materialsCost; }
     }
 }

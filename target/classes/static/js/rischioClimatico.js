@@ -1,37 +1,44 @@
 (function () {
   const colors = getAreaColors();
-  const C_NORD = colors.NORD;
+  const C_NORD   = colors.NORD;
   const C_CENTRO = colors.CENTRO;
-  const C_SUD = colors.SUD;
+  const C_SUD    = colors.SUD;
 
-  const years = window.rischioData.years;
-  const annualRiskNord = window.rischioData.annualRiskNord;
+  const years  = window.rischioData.years;
+  const annualRiskNord   = window.rischioData.annualRiskNord;
   const annualRiskCentro = window.rischioData.annualRiskCentro;
-  const annualRiskSud = window.rischioData.annualRiskSud;
+  const annualRiskSud    = window.rischioData.annualRiskSud;
   const areaSel = window.rischioData.area;
 
-  const riskTempNord = window.rischioData.riskTempNord;
+  const riskTempNord   = window.rischioData.riskTempNord;
   const riskTempCentro = window.rischioData.riskTempCentro;
-  const riskTempSud = window.rischioData.riskTempSud;
-  const riskWaterNord = window.rischioData.riskWaterNord;
-  const riskWaterCentro = window.rischioData.riskWaterCentro;
-  const riskWaterSud = window.rischioData.riskWaterSud;
-  const riskFrostNord = window.rischioData.riskFrostNord;
-  const riskFrostCentro = window.rischioData.riskFrostCentro;
-  const riskFrostSud = window.rischioData.riskFrostSud;
+  const riskTempSud    = window.rischioData.riskTempSud;
+  const riskWaterNord  = window.rischioData.riskWaterNord;
+  const riskWaterCentro= window.rischioData.riskWaterCentro;
+  const riskWaterSud   = window.rischioData.riskWaterSud;
+  const riskFrostNord  = window.rischioData.riskFrostNord;
+  const riskFrostCentro= window.rischioData.riskFrostCentro;
+  const riskFrostSud   = window.rischioData.riskFrostSud;
 
-  /* ===== Grafico Andamento Storico Rischio Climatico ===== */
+  // Serie giornaliera per il grafico mensile del rischio climatico
+  const dailyLabels     = window.rischioData.dailyLabels;
+  const dailyRiskNord   = window.rischioData.dailyRiskNord;
+  const dailyRiskCentro = window.rischioData.dailyRiskCentro;
+  const dailyRiskSud    = window.rischioData.dailyRiskSud;
+
+  /* ===== Grafico Andamento Rischio Climatico Annuale ===== */
   (function () {
     const el = document.getElementById('riskAnnualTrend');
     if (!el) return;
     if (!years || years.length === 0) {
-      el.parentElement.innerHTML = '<div class="loading"><i class="bi bi-exclamation-circle me-2"></i>Nessun dato storico disponibile</div>';
+      el.parentElement.innerHTML =
+        '<div class="loading"><i class="bi bi-exclamation-circle me-2"></i>Nessun dato storico disponibile</div>';
       return;
     }
     const datasets = [
-      { label: 'Nord', data: annualRiskNord, borderColor: C_NORD, backgroundColor: C_NORD + '15' },
+      { label: 'Nord',   data: annualRiskNord,   borderColor: C_NORD,   backgroundColor: C_NORD + '15' },
       { label: 'Centro', data: annualRiskCentro, borderColor: C_CENTRO, backgroundColor: C_CENTRO + '15' },
-      { label: 'Sud', data: annualRiskSud, borderColor: C_SUD, backgroundColor: C_SUD + '15' }
+      { label: 'Sud',    data: annualRiskSud,    borderColor: C_SUD,    backgroundColor: C_SUD + '15' }
     ];
     const filtered = filterDatasetsByArea(datasets, areaSel);
 
@@ -42,7 +49,7 @@
         datasets: filtered.map(function (d) {
           return {
             label: d.label,
-            data: d.data,
+            data:  d.data,
             borderColor: d.borderColor,
             backgroundColor: d.backgroundColor,
             pointBackgroundColor: d.borderColor,
@@ -97,11 +104,108 @@
     });
   })();
 
+  /* ===== Line Chart: Andamento Rischio Climatico Mensile ===== */
+  (function () {
+    const el = document.getElementById('riskMonthlyTrend');
+    if (!el) return;
+    if (!dailyLabels || dailyLabels.length === 0) {
+      el.parentElement.innerHTML =
+        '<div class="loading"><i class="bi bi-exclamation-circle me-2"></i>Dati non disponibili per il periodo selezionato</div>';
+      return;
+    }
+    const datasets = [
+      { label: 'Nord',   data: dailyRiskNord,   borderColor: C_NORD,   backgroundColor: C_NORD + '15' },
+      { label: 'Centro', data: dailyRiskCentro, borderColor: C_CENTRO, backgroundColor: C_CENTRO + '15' },
+      { label: 'Sud',    data: dailyRiskSud,    borderColor: C_SUD,    backgroundColor: C_SUD + '15' }
+    ];
+    const filtered = filterDatasetsByArea(datasets, areaSel);
+    // Calcola min/max con margine e clamp nel range [0,1]
+    const allVals = filtered.flatMap(function (d) {
+      return Array.isArray(d.data) ? d.data : [];
+    }).filter(function (v) {
+      return typeof v === 'number' && !isNaN(v);
+    });
+    let yMin0 = 0;
+    let yMax0 = 0;
+    if (allVals.length > 0) {
+      yMin0 = Math.min.apply(null, allVals);
+      yMax0 = Math.max.apply(null, allVals);
+    }
+    const span = Math.max(0, yMax0 - yMin0);
+    const pad  = span > 0 ? span * 0.10 : 0.05;
+    const yMin = Math.max(0, yMin0 - pad);
+    const yMax = Math.min(1, yMax0 + pad);
+    const ctx  = el.getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: dailyLabels,
+        datasets: filtered.map(function (d) {
+          return {
+            label: d.label,
+            data:  d.data,
+            borderColor: d.borderColor,
+            backgroundColor: d.backgroundColor,
+            pointBackgroundColor: d.borderColor,
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            borderWidth: 3,
+            tension: 0.35,
+            fill: true
+          };
+        })
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            min: yMin,
+            max: yMax,
+            title: { display: true, text: 'Indice di Rischio (0-1)', font: { weight: '600', size: 13 } },
+            grid: { color: 'rgba(0,0,0,0.05)' }
+          },
+          x: {
+            ticks: { autoSkip: true, maxTicksLimit: 15 },
+            grid: { display: false }
+          }
+        },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { usePointStyle: true, padding: 15, font: { weight: '500' } }
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            backgroundColor: 'rgba(255,255,255,0.95)',
+            titleColor: '#333',
+            bodyColor: '#666',
+            borderColor: '#ddd',
+            borderWidth: 1,
+            padding: 12,
+            callbacks: {
+              label: function (ctx) {
+                return ctx.dataset.label + ': ' + (+ctx.raw).toFixed(2);
+              }
+            }
+          }
+        },
+        interaction: { mode: 'index', intersect: false }
+      }
+    });
+    // Espone riferimento globale per eventuali export o debug
+    window.riskMonthlyTrendChart = chart;
+  })();
+
   /* ===== ECharts: Radar Profilo Rischio ===== */
   (function () {
     const el = document.getElementById('echRadarRiskProfile');
     if (!el) return;
     const chart = echarts.init(el);
+
     const data = [
       {
         name: 'Nord',
@@ -132,7 +236,8 @@
     if (filteredData.every(function (d) {
       return d.value.every(function (v) { return v === 0; });
     })) {
-      el.innerHTML = '<div class="loading"><i class="bi bi-exclamation-circle me-2"></i>Dati di rischio non disponibili</div>';
+      el.innerHTML =
+        '<div class="loading"><i class="bi bi-exclamation-circle me-2"></i>Dati di rischio non disponibili</div>';
       return;
     }
 
@@ -161,8 +266,8 @@
       radar: {
         indicator: [
           { name: 'Rischio\nTermico', max: 1 },
-          { name: 'Stress\nIdrico', max: 1 },
-          { name: 'Rischio\nGelo', max: 1 }
+          { name: 'Stress\nIdrico',   max: 1 },
+          { name: 'Rischio\nGelo',    max: 1 }
         ],
         shape: 'circle',
         center: ['50%', '45%'],
@@ -201,66 +306,68 @@
       chart.resize();
     });
 
+    // Gestione dei filtri e export: data range e parametri URL
     (function() {
-        function pad(n) { return n < 10 ? '0' + n : n.toString(); }
+      function pad(n) { return n < 10 ? '0' + n : n.toString(); }
 
-        function updateExportLink() {
-          const form = document.getElementById('filterForm');
-          if (!form) return;
+      function updateExportLink() {
+        const form  = document.getElementById('filterForm');
+        if (!form) return;
 
-          const params = new URLSearchParams();
-          const fromInput = document.getElementById('from');
-          const toInput = document.getElementById('to');
-          const cropSelect = document.getElementById('cropSel');
-          const areaSelect = document.getElementById('areaSel');
+        const params = new URLSearchParams();
+        const fromInput  = document.getElementById('from');
+        const toInput    = document.getElementById('to');
+        const cropSelect = document.getElementById('cropSel');
+        const areaSelect = document.getElementById('areaSel');
 
-          if (fromInput && fromInput.value) params.set('startDate', fromInput.value);
-          if (toInput && toInput.value) params.set('endDate', toInput.value);
-          if (cropSelect && cropSelect.value) params.set('crop', cropSelect.value);
-          if (areaSelect && areaSelect.value) params.set('area', areaSelect.value);
+        if (fromInput && fromInput.value) params.set('startDate', fromInput.value);
+        if (toInput && toInput.value)     params.set('endDate',   toInput.value);
+        if (cropSelect && cropSelect.value) params.set('crop', cropSelect.value);
+        if (areaSelect && areaSelect.value) params.set('area', areaSelect.value);
 
-          const exportLink = document.getElementById('exportLink');
-          if (exportLink) {
-            exportLink.href = '/export' + (params.toString() ? '?' + params.toString() : '');
-          }
+        const exportLink = document.getElementById('exportLink');
+        if (exportLink) {
+          exportLink.href = '/export' + (params.toString() ? '?' + params.toString() : '');
         }
+      }
 
-        function updateDateRange() {
-          const yearSel = document.getElementById('yearSel');
-          const monthSel = document.getElementById('monthSel');
-          const fromInput = document.getElementById('from');
-          const toInput = document.getElementById('to');
+      function updateDateRange() {
+        const yearSel  = document.getElementById('yearSel');
+        const monthSel = document.getElementById('monthSel');
+        const fromInput= document.getElementById('from');
+        const toInput  = document.getElementById('to');
 
-          if (!yearSel || !monthSel || !fromInput || !toInput) return;
+        if (!yearSel || !monthSel || !fromInput || !toInput) return;
 
-          const year = parseInt(yearSel.value, 10);
-          const month = parseInt(monthSel.value, 10);
-          const lastDay = new Date(year, month, 0).getDate();
+        const year  = parseInt(yearSel.value, 10);
+        const month = parseInt(monthSel.value, 10);
+        const lastDay = new Date(year, month, 0).getDate();
 
-          fromInput.value = year + '-' + pad(month) + '-01';
-          toInput.value = year + '-' + pad(month) + '-' + pad(lastDay);
+        fromInput.value = year + '-' + pad(month) + '-01';
+        toInput.value   = year + '-' + pad(month) + '-' + pad(lastDay);
 
-          updateExportLink();
-        }
+        updateExportLink();
+      }
 
-        document.addEventListener('DOMContentLoaded', function() {
-          updateDateRange();
-          updateExportLink();
+      document.addEventListener('DOMContentLoaded', function() {
+        updateDateRange();
+        updateExportLink();
 
-          const monthSel = document.getElementById('monthSel');
-          const yearSel = document.getElementById('yearSel');
-          const cropSel = document.getElementById('cropSel');
-          const areaSel = document.getElementById('areaSel');
-          const form = document.getElementById('filterForm');
+        const monthSel = document.getElementById('monthSel');
+        const yearSel  = document.getElementById('yearSel');
+        const cropSel  = document.getElementById('cropSel');
+        const areaSel  = document.getElementById('areaSel');
+        const form     = document.getElementById('filterForm');
 
-          if (monthSel) monthSel.addEventListener('change', updateDateRange);
-          if (yearSel) yearSel.addEventListener('change', updateDateRange);
-          if (cropSel) cropSel.addEventListener('change', updateExportLink);
-          if (areaSel) areaSel.addEventListener('change', updateExportLink);
-          if (form) form.addEventListener('submit', updateDateRange);
-        });
-      })();
+        if (monthSel) monthSel.addEventListener('change', updateDateRange);
+        if (yearSel)  yearSel.addEventListener('change', updateDateRange);
+        if (cropSel)  cropSel.addEventListener('change', updateExportLink);
+        if (areaSel)  areaSel.addEventListener('change', updateExportLink);
+        if (form)     form.addEventListener('submit', updateDateRange);
+      });
+    })();
 
-    window.echScatterEfficiencyChart = chart;
+    // Espone riferimento globale per il radar del rischio
+    window.echRadarRiskProfileChart = chart;
   })();
 })();

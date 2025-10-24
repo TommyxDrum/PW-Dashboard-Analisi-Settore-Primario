@@ -19,6 +19,12 @@
   const avgMarginCentro = window.margineData.avgMarginCentro;
   const avgMarginSud = window.margineData.avgMarginSud;
 
+  // Dati per il grafico giornaliero (serie mensile)
+  const dailyLabels = window.margineData.dailyLabels;
+  const dailyMarginNord = window.margineData.dailyMarginNord;
+  const dailyMarginCentro = window.margineData.dailyMarginCentro;
+  const dailyMarginSud = window.margineData.dailyMarginSud;
+
   /* ===== Grafico Andamento Storico Margine ===== */
   (function () {
     const el = document.getElementById('marginAnnualTrend');
@@ -95,6 +101,93 @@
 
     // 🔴 ESPORTA RIFERIMENTO
     window.marginAnnualChart = marginChart;
+  })();
+
+  /* ===== Grafico Andamento Storico Margine Mensile ===== */
+  (function () {
+    const el = document.getElementById('marginMonthlyTrend');
+    if (!el) return;
+    // Verifica che esistano etichette per il mese
+    if (!dailyLabels || dailyLabels.length === 0) {
+      el.parentElement.innerHTML = '<div class="loading"><i class="bi bi-exclamation-circle me-2"></i>Dati non disponibili per il periodo selezionato</div>';
+      return;
+    }
+    // Prepara datasets per ciascuna area
+    const datasets = [
+      { label: 'Nord', data: dailyMarginNord, borderColor: C_NORD, backgroundColor: C_NORD + '15' },
+      { label: 'Centro', data: dailyMarginCentro, borderColor: C_CENTRO, backgroundColor: C_CENTRO + '15' },
+      { label: 'Sud', data: dailyMarginSud, borderColor: C_SUD, backgroundColor: C_SUD + '15' }
+    ];
+    // Filtra dataset se l'utente ha selezionato un'area
+    const filtered = filterDatasetsByArea(datasets, areaSel);
+    // Trova minimo e massimo per definire pad
+    const allVals = filtered.flatMap(d => Array.isArray(d.data) ? d.data : []).filter(Number.isFinite);
+    const yMin0 = allVals.length > 0 ? Math.min(...allVals) : 0;
+    const yMax0 = allVals.length > 0 ? Math.max(...allVals) : 0;
+    const span = Math.max(0, yMax0 - yMin0);
+    const pad = span > 0 ? span * 0.10 : (yMax0 || 1) * 0.10;
+    const dailyChart = new Chart(el.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: dailyLabels,
+        datasets: filtered.map(function (d) {
+          return {
+            label: d.label,
+            data: d.data,
+            borderColor: d.borderColor,
+            backgroundColor: d.backgroundColor,
+            pointBackgroundColor: d.borderColor,
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            borderWidth: 3,
+            tension: 0.35,
+            fill: true
+          };
+        })
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            min: yMin0 - pad,
+            max: yMax0 + pad,
+            title: { display: true, text: 'Margine (€/t)', font: { weight: '600', size: 13 } },
+            grid: { color: 'rgba(0,0,0,0.05)' }
+          },
+          x: {
+            ticks: { autoSkip: true, maxTicksLimit: 15 },
+            grid: { display: false }
+          }
+        },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { usePointStyle: true, padding: 15, font: { weight: '500' } }
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            backgroundColor: 'rgba(255,255,255,0.95)',
+            titleColor: '#333',
+            bodyColor: '#666',
+            borderColor: '#ddd',
+            borderWidth: 1,
+            padding: 12,
+            callbacks: {
+              label: function (ctx) {
+                return ctx.dataset.label + ': ' + (+ctx.raw).toFixed(2) + ' €/t';
+              }
+            }
+          }
+        },
+        interaction: { mode: 'index', intersect: false }
+      }
+    });
+    // Espone riferimento globale per eventuali esportazioni
+    window.marginMonthlyChart = dailyChart;
   })();
 
   /* ===== ECharts: Composizione Prezzo di Vendita ===== */

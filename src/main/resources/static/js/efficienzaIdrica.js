@@ -17,6 +17,12 @@
   const yieldCentroT = window.efficienzaData.yieldCentroT;
   const yieldSudT = window.efficienzaData.yieldSudT;
 
+  // Dati per la serie mensile di efficienza idrica (giornaliera)
+  const dailyLabels = window.efficienzaData.dailyLabels;
+  const dailyEfficiencyNord = window.efficienzaData.dailyEfficiencyNord;
+  const dailyEfficiencyCentro = window.efficienzaData.dailyEfficiencyCentro;
+  const dailyEfficiencySud = window.efficienzaData.dailyEfficiencySud;
+
   const formatters = getNumberFormatters();
 
   /* ===== Grafico Andamento Efficienza Idrica Annuale ===== */
@@ -34,7 +40,6 @@
       { label: 'Centro', data: annualEfficiencyCentro, borderColor: C_CENTRO, backgroundColor: C_CENTRO + '15' },
       { label: 'Sud', data: annualEfficiencySud, borderColor: C_SUD, backgroundColor: C_SUD + '15' }
     ];
-
     const filtered = filterDatasetsByArea(datasets, areaSel);
 
     const effChart = new Chart(el.getContext('2d'), {
@@ -96,8 +101,91 @@
       }
     });
 
-    // ESPORTA riferimento globale
     window.efficiencyAnnualTrendChart = effChart;
+  })();
+
+  /* ===== Line Chart: Andamento Efficienza Idrica Mensile ===== */
+  (function () {
+    const el = document.getElementById('efficiencyMonthlyTrend');
+    if (!el) return;
+    if (!dailyLabels || dailyLabels.length === 0) {
+      el.parentElement.innerHTML = '<div class="loading"><i class="bi bi-exclamation-circle me-2"></i>Dati non disponibili per il periodo selezionato</div>';
+      return;
+    }
+    const datasets = [
+      { label: 'Nord', data: dailyEfficiencyNord, borderColor: C_NORD, backgroundColor: C_NORD + '15' },
+      { label: 'Centro', data: dailyEfficiencyCentro, borderColor: C_CENTRO, backgroundColor: C_CENTRO + '15' },
+      { label: 'Sud', data: dailyEfficiencySud, borderColor: C_SUD, backgroundColor: C_SUD + '15' }
+    ];
+    const filtered = filterDatasetsByArea(datasets, areaSel);
+    const allVals = filtered.flatMap(d => Array.isArray(d.data) ? d.data : []).filter(Number.isFinite);
+    const yMin0 = allVals.length > 0 ? Math.min(...allVals) : 0;
+    const yMax0 = allVals.length > 0 ? Math.max(...allVals) : 0;
+    const span = Math.max(0, yMax0 - yMin0);
+    const pad = span > 0 ? span * 0.10 : (yMax0 || 1) * 0.10;
+
+    const dailyChart = new Chart(el.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: dailyLabels,
+        datasets: filtered.map(function (d) {
+          return {
+            label: d.label,
+            data: d.data,
+            borderColor: d.borderColor,
+            backgroundColor: d.backgroundColor,
+            pointBackgroundColor: d.borderColor,
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            borderWidth: 3,
+            tension: 0.35,
+            fill: true
+          };
+        })
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            min: yMin0 - pad,
+            max: yMax0 + pad,
+            title: { display: true, text: 'Efficienza (Kg/m³)', font: { weight: '600', size: 13 } },
+            grid: { color: 'rgba(0,0,0,0.05)' }
+          },
+          x: {
+            ticks: { autoSkip: true, maxTicksLimit: 15 },
+            grid: { display: false }
+          }
+        },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { usePointStyle: true, padding: 15, font: { weight: '500' } }
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            backgroundColor: 'rgba(255,255,255,0.95)',
+            titleColor: '#333',
+            bodyColor: '#666',
+            borderColor: '#ddd',
+            borderWidth: 1,
+            padding: 12,
+            callbacks: {
+              label: function (ctx) {
+                return ctx.dataset.label + ': ' + (+ctx.raw).toFixed(2) + ' Kg/m³';
+              }
+            }
+          }
+        },
+        interaction: { mode: 'index', intersect: false }
+      }
+    });
+
+    window.efficiencyMonthlyTrendChart = dailyChart;
   })();
 
   /* ===== ECharts: Scatter Produzione vs Consumo Idrico ===== */
@@ -200,67 +288,66 @@
       chart.resize();
     });
 
-     (function(){
-        function pad(n){ return n < 10 ? "0"+n : n.toString(); }
+    (function(){
+      function pad(n){ return n < 10 ? "0"+n : n.toString(); }
 
-        function updateExportLink(){
-          const form = document.getElementById("filterForm");
-          if(!form) return;
+      function updateExportLink(){
+        const form = document.getElementById("filterForm");
+        if(!form) return;
 
-          const fromI   = document.getElementById("from");
-          const toI     = document.getElementById("to");
-          const cropSel = document.getElementById("cropSel");
-          const areaSel = document.getElementById("areaSel");
+        const fromI   = document.getElementById("from");
+        const toI     = document.getElementById("to");
+        const cropSel = document.getElementById("cropSel");
+        const areaSel = document.getElementById("areaSel");
 
-          const params = new URLSearchParams();
-          if(fromI && fromI.value) params.set("startDate", fromI.value);
-          if(toI && toI.value)     params.set("endDate", toI.value);
-          if(cropSel && cropSel.value) params.set("crop", cropSel.value);
-          if(areaSel && areaSel.value) params.set("area", areaSel.value);
+        const params = new URLSearchParams();
+        if(fromI && fromI.value) params.set("startDate", fromI.value);
+        if(toI && toI.value)     params.set("endDate", toI.value);
+        if(cropSel && cropSel.value) params.set("crop", cropSel.value);
+        if(areaSel && areaSel.value) params.set("area", areaSel.value);
 
-          const el = document.getElementById("exportLink");
-          if(el){
-            el.href = "/export" + (params.toString() ? ("?" + params.toString()) : "");
-          }
+        const el = document.getElementById("exportLink");
+        if(el){
+          el.href = "/export" + (params.toString() ? ("?" + params.toString()) : "");
         }
+      }
 
-        function updateDateRange(){
-          const yearSel = document.getElementById("yearSel");
-          const monthSel = document.getElementById("monthSel");
-          const fromI = document.getElementById("from");
-          const toI = document.getElementById("to");
+      function updateDateRange(){
+        const yearSel = document.getElementById("yearSel");
+        const monthSel = document.getElementById("monthSel");
+        const fromI = document.getElementById("from");
+        const toI = document.getElementById("to");
 
-          if(!yearSel || !monthSel || !fromI || !toI) return;
+        if(!yearSel || !monthSel || !fromI || !toI) return;
 
-          const y = parseInt(yearSel.value, 10);
-          const m = parseInt(monthSel.value, 10);
-          const lastDay = new Date(y, m, 0).getDate();
+        const y = parseInt(yearSel.value, 10);
+        const m = parseInt(monthSel.value, 10);
+        const lastDay = new Date(y, m, 0).getDate();
 
-          fromI.value = y + "-" + pad(m) + "-01";
-          toI.value   = y + "-" + pad(m) + "-" + pad(lastDay);
+        fromI.value = y + "-" + pad(m) + "-01";
+        toI.value   = y + "-" + pad(m) + "-" + pad(lastDay);
 
-          updateExportLink();
-        }
+        updateExportLink();
+      }
 
-        document.addEventListener("DOMContentLoaded", function(){
-          updateDateRange();
-          updateExportLink();
+      document.addEventListener("DOMContentLoaded", function(){
+        updateDateRange();
+        updateExportLink();
 
-          const form = document.getElementById("filterForm");
-          const monthSel = document.getElementById("monthSel");
-          const yearSel  = document.getElementById("yearSel");
-          const cropSel  = document.getElementById("cropSel");
-          const areaSel  = document.getElementById("areaSel");
+        const form = document.getElementById("filterForm");
+        const monthSel = document.getElementById("monthSel");
+        const yearSel  = document.getElementById("yearSel");
+        const cropSel  = document.getElementById("cropSel");
+        const areaSel  = document.getElementById("areaSel");
 
-          if(monthSel) monthSel.addEventListener("change", updateDateRange);
-          if(yearSel)  yearSel.addEventListener("change", updateDateRange);
-          if(cropSel)  cropSel.addEventListener("change", updateExportLink);
-          if(areaSel)  areaSel.addEventListener("change", updateExportLink);
-          if(form)     form.addEventListener("submit", updateDateRange);
-        });
-      })();
+        if(monthSel) monthSel.addEventListener("change", updateDateRange);
+        if(yearSel)  yearSel.addEventListener("change", updateDateRange);
+        if(cropSel)  cropSel.addEventListener("change", updateExportLink);
+        if(areaSel)  areaSel.addEventListener("change", updateExportLink);
+        if(form)     form.addEventListener("submit", updateDateRange);
+      });
+    })();
 
-    // ESPORTA riferimento globale
     window.echScatterEfficiencyChart = chart;
   })();
 })();
