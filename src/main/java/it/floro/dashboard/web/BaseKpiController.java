@@ -226,17 +226,6 @@ public abstract class BaseKpiController {
      * - area, crop: alias per selectedArea, selectedCrop
      * - periodo: periodo aggregazione selezionato (GIORNO/MESE/TRIMESTRE/ANNO/CUSTOM)
      *
-     * Utilizzo in Thymeleaf:
-     * ```html
-     * <select name="area">
-     *     <option value="">-- Tutte --</option>
-     *     <option th:each="a : ${areasList}" th:value="${a}">[[${a}]]</option>
-     * </select>
-     *
-     * <p>Periodo: [[${periodo}]]</p>
-     * <p>Da [[${from}]] a [[${to}]]</p>
-     * ```
-     *
      * @param model Spring Model per aggiungere attributi
      * @param all Dataset completo (usato per estrarre liste disponibili)
      * @param params FilterParams applicato (contiene valori correnti)

@@ -330,27 +330,7 @@ public class MargineController extends BaseKpiController {
      * - Margine positivo: profitto lordo per tonnellata
      * - Margine negativo: perdita per tonnellata (situazione critica)
      * - Margine zero: break-even (no profitto, no perdita)
-     *
-     * Utilizzo in Thymeleaf:
-     * ```html
-     * <table>
-     *   <tr>
-     *     <th>Area</th>
-     *     <th>Prezzo (€/t)</th>
-     *     <th>Costo (€/t)</th>
-     *     <th>Margine (€/t)</th>
-     *     <th>% Margine</th>
-     *   </tr>
-     *   <tr th:each="row : ${margineRows}">
-     *     <td th:text="${row.area}"></td>
-     *     <td th:text="${#numbers.formatDecimal(row.price, 0, 2)}"></td>
-     *     <td th:text="${#numbers.formatDecimal(row.cost, 0, 2)}"></td>
-     *     <td th:text="${#numbers.formatDecimal(row.margin, 0, 2)}"></td>
-     *     <td th:text="${#numbers.formatDecimal(row.margin / row.price * 100, 0, 1)} + '%'"></td>
-     *   </tr>
-     * </table>
      * ```
-     *
      * Analisi dei dati:
      * - Confrontare margini tra aree rivela disparità di redditività
      * - Margini alti in un'area possono indicare: prezzi alti O costi bassi

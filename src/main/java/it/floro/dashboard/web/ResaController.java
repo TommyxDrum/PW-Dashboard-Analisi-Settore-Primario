@@ -323,24 +323,6 @@ public class ResaController extends BaseKpiController {
      * - surfaceHa: superficie totale in ettari
      * - resa: resa calcolata = yieldT / surfaceHa (t/ha)
      *
-     * Utilizzo in Thymeleaf:
-     * ```html
-     * <table>
-     *   <tr>
-     *     <th>Area</th>
-     *     <th>Produzione (t)</th>
-     *     <th>Superficie (ha)</th>
-     *     <th>Resa (t/ha)</th>
-     *   </tr>
-     *   <tr th:each="row : ${resaRows}">
-     *     <td th:text="${row.area}"></td>
-     *     <td th:text="${#numbers.formatDecimal(row.yieldT, 0, 2)}"></td>
-     *     <td th:text="${#numbers.formatDecimal(row.surfaceHa, 0, 2)}"></td>
-     *     <td th:text="${#numbers.formatDecimal(row.resa, 0, 2)}"></td>
-     *   </tr>
-     * </table>
-     * ```
-     *
      * Interpretazione dei dati:
      * - Resa Nord vs Sud può rivelare differenze climati che, tecniche, qualità terreno
      * - Nord più freddo → potrebbe avere resa più bassa per colture mediterranee

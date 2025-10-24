@@ -436,9 +436,6 @@ public class KpiService {
      * 2. Per ogni anno, calcola la media della metrica (applicando f)
      * 3. Ritorna TreeMap ordinata per anno crescente
      *
-     * @param records Lista di campioni
-     * @param f Funzione di trasformazione record → double
-     * @return TreeMap<Anno, Media> ordinata per anno, vuota se nessun dato
      */
     private static Map<Integer, Double> seriesAnnualAverage(List<SampleRecord> records, ToDoubleFunction<SampleRecord> f) {
         // Raggruppa per anno

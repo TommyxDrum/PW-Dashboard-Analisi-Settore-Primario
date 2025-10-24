@@ -420,26 +420,6 @@ public class RischioClimaticoController extends BaseKpiController {
      * - riskWater: componente acqua/siccità (peso 30%) [0..0.3]
      * - riskFrost: componente gelate (peso 20%) [0..0.2]
      *
-     * Utilizzo in Thymeleaf:
-     * ```html
-     * <table>
-     *   <tr>
-     *     <th>Area</th>
-     *     <th>Rischio Totale</th>
-     *     <th>Temp</th>
-     *     <th>Acqua</th>
-     *     <th>Gelate</th>
-     *   </tr>
-     *   <tr th:each="row : ${rischioRows}">
-     *     <td th:text="${row.area}"></td>
-     *     <td th:text="${#numbers.formatDecimal(row.riskIndex, 0, 2)}"></td>
-     *     <td th:text="${#numbers.formatDecimal(row.riskTemp, 0, 2)}"></td>
-     *     <td th:text="${#numbers.formatDecimal(row.riskWater, 0, 2)}"></td>
-     *     <td th:text="${#numbers.formatDecimal(row.riskFrost, 0, 2)}"></td>
-     *   </tr>
-     * </table>
-     * ```
-     *
      * Interpretazione dei dati:
      * - Nord: rischio temperatura alto (gelate invernali) + rischio acqua moderato
      * - Centro: rischio equilibrato tra tutte le componenti

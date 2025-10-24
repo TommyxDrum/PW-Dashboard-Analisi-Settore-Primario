@@ -359,24 +359,6 @@ public class EfficienzaIdricaController extends BaseKpiController {
      * - waterM3: consumo idrico totale in m³
      * - efficiencyKgM3: efficienza idrica calcolata (kg/m³)
      *
-     * Utilizzo in Thymeleaf:
-     * ```html
-     * <table>
-     *   <tr>
-     *     <th>Area</th>
-     *     <th>Produzione (t)</th>
-     *     <th>Consumo Acqua (m³)</th>
-     *     <th>Efficienza (kg/m³)</th>
-     *   </tr>
-     *   <tr th:each="row : ${efficienzaRows}">
-     *     <td th:text="${row.area}"></td>
-     *     <td th:text="${#numbers.formatDecimal(row.yieldT, 0, 2)}"></td>
-     *     <td th:text="${#numbers.formatDecimal(row.waterM3, 0, 2)}"></td>
-     *     <td th:text="${#numbers.formatDecimal(row.efficiencyKgM3, 0, 2)}"></td>
-     *   </tr>
-     * </table>
-     * ```
-     *
      * Interpretazione:
      * - Area Nord: produce X tonnellate usando Y m³ d'acqua
      *   → Efficienza: Z kg per ogni m³ d'acqua

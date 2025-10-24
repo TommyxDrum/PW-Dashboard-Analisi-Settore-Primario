@@ -203,9 +203,6 @@ public class KpiFilters {
      * 3. Coltura: se specificata, match case- e accent-insensitive (normalizza ambo i lati)
      *
      * Nota: SampleRecord è un record → usare accessor methods come r.date(), r.area(), r.crop()
-     *
-     * @param p FilterParams consolidati
-     * @return Predicate<SampleRecord> che combina tutti i filtri con AND logico
      */
     public Predicate<SampleRecord> predicate(FilterParams p) {
         // Normalizza i valori di filtro una sola volta (al di fuori del predicate)

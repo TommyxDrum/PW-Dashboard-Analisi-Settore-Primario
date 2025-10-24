@@ -329,24 +329,6 @@ public class CostiController extends BaseKpiController {
      * - Contenere i dati aggregati di costo per una singola area
      * - Fornire getter accessibili da Thymeleaf
      * - Facilitare rendering tabellare nel dashboard
-     *
-     * Utilizzo in Thymeleaf:
-     * ```html
-     * <table>
-     *   <tr>
-     *     <th>Area</th>
-     *     <th>Costo Totale (€/t)</th>
-     *     <th>Manodopera (€/t)</th>
-     *     <th>Materiali (€/t)</th>
-     *   </tr>
-     *   <tr th:each="row : ${costiRows}">
-     *     <td th:text="${row.area}"></td>
-     *     <td th:text="${#numbers.formatDecimal(row.totalCost, 0, 2)}"></td>
-     *     <td th:text="${#numbers.formatDecimal(row.laborCost, 0, 2)}"></td>
-     *     <td th:text="${#numbers.formatDecimal(row.materialsCost, 0, 2)}"></td>
-     *   </tr>
-     * </table>
-     * ```
      */
     public static class CostiRow {
 
