@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
+import java.time.YearMonth;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.springframework.format.annotation.DateTimeFormat.ISO;
@@ -40,8 +40,8 @@ import static org.springframework.format.annotation.DateTimeFormat.ISO;
  * 5. Rischio Climatico: indice [0..1]
  *
  * Grafici visualizzati (sotto le card):
- * 1. GRAFICO LINEARE: Resa annuale per area (Nord, Centro, Sud)
- *    - X: anni
+ * 1. GRAFICO LINEARE: Resa giornaliera per area nel mese selezionato (MODIFICATO DA ANNUALE A MENSILE)
+ *    - X: giorni del mese (1-31)
  *    - Y: resa media (t/ha)
  *    - Serie: 3 linee (Nord, Centro, Sud)
  *
@@ -108,7 +108,7 @@ public class IndexController extends BaseKpiController {
      *
      * Esempio URL:
      * GET / → dashboard con tutti i dati
-     * GET /dashboard?area=Nord&periodo=anno&year=2024 → dashboard Nord 2024
+     * GET /dashboard?area=Nord&periodo=mese&year=2024&month=5 → dashboard Nord maggio 2024
      * GET /?crop=Vite → dashboard solo Vite, tutte le aree e periodi
      *
      * Flusso:
@@ -166,12 +166,13 @@ public class IndexController extends BaseKpiController {
      * - Resa media, efficienza idrica, costo, margine, rischio climatico
      * - Visualizzati come card numeriche in alto
      *
-     * SEZIONE 2: GRAFICO LINEARE - RESA ANNUALE PER AREA
-     * - Serie temporale annuale di resa (t/ha) per area
-     * - X: anni (estratti dal dataset filtrato)
+     * SEZIONE 2: GRAFICO LINEARE - RESA GIORNALIERA PER AREA NEL MESE SELEZIONATO [MODIFICATO]
+     * - Serie temporale giornaliera di resa (t/ha) per area nel mese specificato
+     * - X: giorni del mese (1-31, solo giorni con dati)
      * - Y: resa media (t/ha)
      * - Serie: 3 linee (Nord, Centro, Sud)
-     * - Utilizzo: analizzare trend pluriennale di resa per area
+     * - Utilizzo: analizzare trend giornaliero di resa per area nel mese selezionato
+     * - Nota: Se non è specificato mese/anno, usa il mese corrente
      *
      * SEZIONE 3: GRAFICO POLARE - EFFICIENZA IDRICA PER AREA
      * - Visualizzazione radar/spider plot dell'efficienza
@@ -226,42 +227,101 @@ public class IndexController extends BaseKpiController {
         List<SampleRecord> centro = filterByArea(filtered, "Centro");
         List<SampleRecord> sud = filterByArea(filtered, "Sud");
 
-        // ===== SEZIONE 2: GRAFICO LINEARE - RESA ANNUALE PER AREA =====
+        // ===== SEZIONE 2: GRAFICO LINEARE - RESA GIORNALIERA PER AREA NEL MESE SELEZIONATO [MODIFICATO] =====
         // Prepara dati per grafico lineare multi-serie (Chart.js Line Chart)
+        // MODIFICATO: ora usa serie giornaliera filtrata per mese anziché serie annuale
 
-        // Calcola serie annuale di resa per ogni area
-        Map<Integer, Double> resaNord = kpiService.serieResaAnnuale(nord);
-        Map<Integer, Double> resaCentro = kpiService.serieResaAnnuale(centro);
-        Map<Integer, Double> resaSud = kpiService.serieResaAnnuale(sud);
+        // Determina il mese/anno per il filtro
+        // Se non specificati, usa il mese corrente
+        LocalDate today = LocalDate.now();
+        int tempYear = today.getYear();
+        int tempMonth = today.getMonthValue();
 
-        // Estrai tutti gli anni presenti nel dataset filtrato
-        // (utile se il filtro restringe a un sottoperiodo)
-        List<Integer> years = extractYears(filtered);
+        // Estrai i giorni del dataset filtrato
+        List<LocalDate> daysInFiltered = filtered.stream()
+                .map(SampleRecord::date)
+                .filter(Objects::nonNull)
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
 
-        // Converti anni in stringhe per labels Chart.js (es. ["2020", "2021", "2022"])
-        List<String> labels = years.stream()
+        // Se ci sono dati filtrati, usa il mese/anno del primo dato disponibile
+        if (!daysInFiltered.isEmpty()) {
+            LocalDate firstDate = daysInFiltered.get(0);
+            tempYear = firstDate.getYear();
+            tempMonth = firstDate.getMonthValue();
+        }
+
+        // Dichiara come final per uso in lambda expression
+        final int selectedYear = tempYear;
+        final int selectedMonth = tempMonth;
+
+        // Crea il YearMonth per filtrare
+        YearMonth selectedYearMonth = YearMonth.of(selectedYear, selectedMonth);
+
+        // Calcola serie GIORNALIERA di resa per ogni area
+        Map<LocalDate, Double> resaGiornNord = kpiService.serieResaGiornaliera(nord);
+        Map<LocalDate, Double> resaGiornCentro = kpiService.serieResaGiornaliera(centro);
+        Map<LocalDate, Double> resaGiornSud = kpiService.serieResaGiornaliera(sud);
+
+        // Filtra solo il mese selezionato per ogni area
+        Map<LocalDate, Double> resaMeseNord = filterByYearMonth(resaGiornNord, selectedYearMonth);
+        Map<LocalDate, Double> resaMeseCentro = filterByYearMonth(resaGiornCentro, selectedYearMonth);
+        Map<LocalDate, Double> resaMeseSud = filterByYearMonth(resaGiornSud, selectedYearMonth);
+
+        // Estrai tutti i giorni presenti nei dati del mese (union di tutte e tre le aree)
+        Set<Integer> giorniSet = new TreeSet<>();
+        resaMeseNord.keySet().forEach(d -> giorniSet.add(d.getDayOfMonth()));
+        resaMeseCentro.keySet().forEach(d -> giorniSet.add(d.getDayOfMonth()));
+        resaMeseSud.keySet().forEach(d -> giorniSet.add(d.getDayOfMonth()));
+
+        // Se il mese non ha dati, aggiungi almeno il primo giorno per evitare grafico vuoto
+        if (giorniSet.isEmpty()) {
+            giorniSet.add(1);
+        }
+
+        // Converti giorni in stringhe per labels Chart.js (es. ["1", "2", "3", ...])
+        List<String> labels = giorniSet.stream()
                 .map(String::valueOf)
                 .collect(Collectors.toList());
 
-        // Allinea i valori di resa agli anni
-        // Per ogni anno nella lista years, recupera il valore dalla mappa
-        // Se l'anno non è presente nella mappa, usa 0.0 (nessun dato per quell'anno)
-        // Questo assicura che le tre serie abbiano sempre la stessa lunghezza
-        List<Double> yieldsNord = years.stream()
-                .map(y -> resaNord.getOrDefault(y, 0.0))
+        // Allinea i valori di resa ai giorni del mese
+        // Per ogni giorno nella lista giorniSet, recupera il valore dalla mappa
+        // Se il giorno non è presente nella mappa, usa 0.0 (nessun dato per quel giorno)
+        List<Double> yieldsNord = giorniSet.stream()
+                .map(g -> {
+                    LocalDate d = LocalDate.of(selectedYear, selectedMonth, g);
+                    return resaMeseNord.getOrDefault(d, 0.0);
+                })
                 .collect(Collectors.toList());
-        List<Double> yieldsCentro = years.stream()
-                .map(y -> resaCentro.getOrDefault(y, 0.0))
+
+        List<Double> yieldsCentro = giorniSet.stream()
+                .map(g -> {
+                    LocalDate d = LocalDate.of(selectedYear, selectedMonth, g);
+                    return resaMeseCentro.getOrDefault(d, 0.0);
+                })
                 .collect(Collectors.toList());
-        List<Double> yieldsSud = years.stream()
-                .map(y -> resaSud.getOrDefault(y, 0.0))
+
+        List<Double> yieldsSud = giorniSet.stream()
+                .map(g -> {
+                    LocalDate d = LocalDate.of(selectedYear, selectedMonth, g);
+                    return resaMeseSud.getOrDefault(d, 0.0);
+                })
                 .collect(Collectors.toList());
 
         // Aggiungi al Model per rendering del grafico
-        model.addAttribute("labels", labels);           // X-axis: anni
+        model.addAttribute("labels", labels);           // X-axis: giorni del mese
         model.addAttribute("yieldsNord", yieldsNord);   // Linea Nord
         model.addAttribute("yieldsCentro", yieldsCentro); // Linea Centro
         model.addAttribute("yieldsSud", yieldsSud);     // Linea Sud
+
+        // Aggiungi areaLabels per il grafico Efficienza Idrica (legenda aree)
+        model.addAttribute("areaLabels", Arrays.asList("Nord", "Centro", "Sud"));
+
+        // Aggiungi info sul mese visualizzato per la UI
+        model.addAttribute("selectedMonthYear", selectedYearMonth);
+        model.addAttribute("selectedMonth", selectedMonth);
+        model.addAttribute("selectedYear", selectedYear);
 
         // ===== SEZIONE 3: GRAFICO POLARE - EFFICIENZA IDRICA PER AREA =====
         // Prepara dati per grafico radar/polar (Chart.js Radar Chart)
@@ -321,5 +381,27 @@ public class IndexController extends BaseKpiController {
         model.addAttribute("riskNord", riskNord);
         model.addAttribute("riskCentro", riskCentro);
         model.addAttribute("riskSud", riskSud);
+    }
+
+    // ========================================================================
+    // METODI HELPER PRIVATI - NUOVI PER FILTRO MENSILE
+    // ========================================================================
+
+    /**
+     * Filtra una mappa di serie temporale per includere solo un mese/anno specifico.
+     *
+     * @param timeSeries Mappa <LocalDate, Double> con serie temporale giornaliera
+     * @param yearMonth YearMonth per filtrare (es. 2024-05)
+     * @return Mappa filtrata con solo i giorni del mese specificato
+     */
+    private Map<LocalDate, Double> filterByYearMonth(Map<LocalDate, Double> timeSeries, YearMonth yearMonth) {
+        return timeSeries.entrySet().stream()
+                .filter(e -> YearMonth.from(e.getKey()).equals(yearMonth))
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (a, b) -> a,  // merge function (non dovrebbe capitare)
+                        TreeMap::new   // mantiene ordinamento per data
+                ));
     }
 }

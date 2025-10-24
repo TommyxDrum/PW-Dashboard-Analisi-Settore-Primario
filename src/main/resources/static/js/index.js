@@ -163,7 +163,24 @@
   // (opzionale) salva un riferimento sul canvas
   el._chart = chart;
 
-  // ... resto della tua logica (legenda ecc.) ...
+  // Crea legenda HTML come nel grafico Resa
+  let legendContainer = document.getElementById('effLegend');
+
+  // Se non esiste, lo crea dinamicamente dopo il canvas
+  if (!legendContainer) {
+    legendContainer = document.createElement('div');
+    legendContainer.id = 'effLegend';
+    el.parentElement.appendChild(legendContainer);
+  }
+
+  legendContainer.innerHTML =
+    `<div class="chart-legend" role="list" aria-label="Legenda aree geografiche">
+      ${L.map((label, idx) => (
+        `<span class="item ${label.toLowerCase()}" role="listitem">
+          <span class="legend-dot" style="background-color: ${C[idx]}"></span><span>${label}</span>
+        </span>`
+      )).join('')}
+    </div>`;
 })();
 
 
