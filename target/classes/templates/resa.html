@@ -87,9 +87,9 @@
                 <span>Applica</span>
             </button>
 
-            <input type="hidden" id="from" name="from"
+            <input type="hidden" id="from" name="startDate"
                    th:value="${from != null ? #temporals.format(from,'yyyy-MM-dd') : ''}"/>
-            <input type="hidden" id="to" name="to"
+            <input type="hidden" id="to" name="endDate"
                    th:value="${to != null ? #temporals.format(to,'yyyy-MM-dd') : ''}"/>
         </form>
     </div>

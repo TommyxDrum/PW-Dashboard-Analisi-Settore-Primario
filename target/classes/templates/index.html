@@ -169,8 +169,7 @@
                 action="/"
                 method="get"
                 class="filters-bar"
-                aria-label="Filtri avanzati per la dashboard"
-        >
+                aria-label="Filtri avanzati per la dashboard">
             <div class="form-group">
                 <label for="monthSel" class="form-label small text-muted mb-1 fw-semibold">Mese</label>
                 <select id="monthSel" class="form-select" aria-label="Seleziona mese">
@@ -238,8 +237,8 @@
                 <span>Applica</span>
             </button>
 
-            <input type="hidden" id="from" name="from" th:value="${#temporals.format(from,'yyyy-MM-dd')}"/>
-            <input type="hidden" id="to" name="to" th:value="${#temporals.format(to,'yyyy-MM-dd')}"/>
+            <input type="hidden" id="from" name="startDate" th:value="${#temporals.format(from,'yyyy-MM-dd')}"/>
+            <input type="hidden" id="to" name="endDate" th:value="${#temporals.format(to,'yyyy-MM-dd')}"/>
         </form>
     </div>
 
