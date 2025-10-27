@@ -22,6 +22,10 @@
   const riskCentro = data.riskCentro;
   const riskSud = data.riskSud;
 
+  // ====== INIZIALIZZAZIONE DI latestKpiSnapshot ======
+  // 🔴 CORREZIONE: Inizializza come placeholder, verrà riempito al primo SSE o da fetch
+  let latestKpiSnapshot = null;
+
   // ====== COLORI (da common.js) ======
   const colors = (typeof getAreaColors === 'function') ? getAreaColors() : { NORD: '#0d6efd', CENTRO: '#D96D00', SUD: '#10b981' };
   const C_NORD = colors.NORD, C_CENTRO = colors.CENTRO, C_SUD = colors.SUD;
@@ -122,66 +126,66 @@
   })();
 
   // ====== GRAFICO EFFICIENZA POLARE (Chart.js polarArea) ======
-(function buildEffPolar() {
-  const el = document.getElementById('effPolar');
-  if (!el) return;
+  (function buildEffPolar() {
+    const el = document.getElementById('effPolar');
+    if (!el) return;
 
-  // 1) Se esiste già un chart su questo canvas, distruggilo
-  const existing = Chart.getChart(el); // funziona da Chart.js v3+
-  if (existing) existing.destroy();
+    // 1) Se esiste già un chart su questo canvas, distruggilo
+    const existing = Chart.getChart(el); // funziona da Chart.js v3+
+    if (existing) existing.destroy();
 
-  // ... prepara labels, values, colors come già fai ...
-  const L = ['Nord', 'Centro', 'Sud'];
-  const V = [effNordKgM3, effCentroKgM3, effSudKgM3].map(x => +x);
-  const C = colorsAll.slice(0, 3);
-  const vmax = Math.max(...V.filter(Number.isFinite), 100);
+    // ... prepara labels, values, colors come già fai ...
+    const L = ['Nord', 'Centro', 'Sud'];
+    const V = [effNordKgM3, effCentroKgM3, effSudKgM3].map(x => +x);
+    const C = colorsAll.slice(0, 3);
+    const vmax = Math.max(...V.filter(Number.isFinite), 100);
 
-  // 2) Crea il nuovo chart passando direttamente il canvas (non il context)
-  const chart = new Chart(el, {
-    type: 'polarArea',
-    data: {
-      labels: L,
-      datasets: [{
-        data: V,
-        backgroundColor: C.map(c => c.match(/^#([0-9a-f]{6})$/i) ? `${c}40` : c),
-        borderColor: C,
-        borderWidth: 3
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        r: {
-          suggestedMin: 0, suggestedMax: vmax * 1.15,
-          ticks: { stepSize: Math.max(5, Math.round(vmax / 5)), callback: v => v + ' Kg/m³' }
+    // 2) Crea il nuovo chart passando direttamente il canvas (non il context)
+    const chart = new Chart(el, {
+      type: 'polarArea',
+      data: {
+        labels: L,
+        datasets: [{
+          data: V,
+          backgroundColor: C.map(c => c.match(/^#([0-9a-f]{6})$/i) ? `${c}40` : c),
+          borderColor: C,
+          borderWidth: 3
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          r: {
+            suggestedMin: 0, suggestedMax: vmax * 1.15,
+            ticks: { stepSize: Math.max(5, Math.round(vmax / 5)), callback: v => v + ' Kg/m³' }
+          }
         }
       }
+    });
+
+    // (opzionale) salva un riferimento sul canvas
+    el._chart = chart;
+
+    // Crea legenda HTML come nel grafico Resa
+    let legendContainer = document.getElementById('effLegend');
+
+    // Se non esiste, lo crea dinamicamente dopo il canvas
+    if (!legendContainer) {
+      legendContainer = document.createElement('div');
+      legendContainer.id = 'effLegend';
+      el.parentElement.appendChild(legendContainer);
     }
-  });
 
-  // (opzionale) salva un riferimento sul canvas
-  el._chart = chart;
-
-  // Crea legenda HTML come nel grafico Resa
-  let legendContainer = document.getElementById('effLegend');
-
-  // Se non esiste, lo crea dinamicamente dopo il canvas
-  if (!legendContainer) {
-    legendContainer = document.createElement('div');
-    legendContainer.id = 'effLegend';
-    el.parentElement.appendChild(legendContainer);
-  }
-
-  legendContainer.innerHTML =
-    `<div class="chart-legend" role="list" aria-label="Legenda aree geografiche">
-      ${L.map((label, idx) => (
-        `<span class="item ${label.toLowerCase()}" role="listitem">
-          <span class="legend-dot" style="background-color: ${C[idx]}"></span><span>${label}</span>
-        </span>`
-      )).join('')}
-    </div>`;
-})();
+    legendContainer.innerHTML =
+      `<div class="chart-legend" role="list" aria-label="Legenda aree geografiche">
+        ${L.map((label, idx) => (
+          `<span class="item ${label.toLowerCase()}" role="listitem">
+            <span class="legend-dot" style="background-color: ${C[idx]}"></span><span>${label}</span>
+          </span>`
+        )).join('')}
+      </div>`;
+  })();
 
 
 
@@ -315,6 +319,9 @@
 
   // ====== FUNZIONI DI AGGIORNAMENTO LIVE ======
   function updateKpiCards(dto) {
+    // 🔴 CORREZIONE: Aggiorna latestKpiSnapshot con i nuovi dati SSE
+    latestKpiSnapshot = dto;
+
     const map = [
       { selector: '[th\\:text*="avgYieldHa"]', value: dto.resaMedia },
       { selector: '[th\\:text*="avgEff"]',     value: dto.efficienzaIdrica },
@@ -360,7 +367,7 @@
       const gauge = document.querySelector(`.risk-gauge[data-area="${area}"]`) || null;
       // versioni correnti usano CSS puro; qui potresti aggiungere
       // data-area="{area}" se vuoi aggiornamenti granulari
-      // per ora aggiorniamo solo l’aria “visiva” principale:
+      // per ora aggiorniamo solo l'aria "visiva" principale:
       if (!gauge) return;
       gauge.style.setProperty('--risk', value);
       const valueSpan = gauge.querySelector('.risk-value');
@@ -432,17 +439,77 @@
   function showAlertNotification(alerts) {
     const container = document.getElementById('alertContainer');
     if (!container) return;
+
+    // Svuoto eventuali alert precedenti
     container.innerHTML = '';
+
     alerts.forEach(alert => {
-      const div = document.createElement('div');
-      div.className = 'alert alert-warning alert-dismissible fade show';
-      div.innerHTML = `
-        ${alert.message || 'Segnalazione'}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-      `;
-      container.appendChild(div);
+        let msg;
+
+        // Caso specifico: alert sulla Resa Media
+        if (alert.kpiType === 'Resa Media') {
+            // 🔴 CORREZIONE: Leggi il valore direttamente dalla card nel DOM
+            // La card Resa ha: <span class="kpi-value text-success">0,00</span>
+            // Cerco il primo .kpi-value che è nella card Resa
+            let valoreCorrente = null;
+
+            const kpiValues = document.querySelectorAll('.kpi-value');
+
+            if (kpiValues && kpiValues.length > 0) {
+              // Il primo .kpi-value è sempre la card Resa
+              const text = kpiValues[0].textContent.trim();
+              console.log('🔍 Valore dal DOM:', text); // Debug
+
+              // Converte "4,25" (formato italiano) a numero
+              // Rimuove il punto (separatore migliaia) e sostituisce virgola con punto
+              valoreCorrente = parseFloat(text.replace(/\./g, '').replace(',', '.'));
+
+              console.log('✅ Valore convertito:', valoreCorrente); // Debug
+            }
+
+            // Se non trovo il valore nel DOM, prova dal latestKpiSnapshot (fallback)
+            if (valoreCorrente === null || isNaN(valoreCorrente)) {
+              console.warn('⚠️ Valore non trovato nel DOM, uso fallback'); // Debug
+
+              if (latestKpiSnapshot && typeof latestKpiSnapshot.resaMedia === 'number') {
+                valoreCorrente = latestKpiSnapshot.resaMedia;
+              } else {
+                valoreCorrente = 0;
+              }
+            }
+
+            const soglia = alert.threshold;
+
+            // Formattiamo in stile italiano con due decimali, come nella card KPI
+            const valoreFormattato = valoreCorrente.toLocaleString('it-IT', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+
+            const sogliaFormattata = Number(soglia).toLocaleString('it-IT', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+
+            const verbo = alert.condition === 'ABOVE' ? 'supera' : 'scende sotto';
+
+            msg = `⚠️ Resa Media: valore ${valoreFormattato} t/ha ${verbo} soglia ${sogliaFormattata} t/ha`;
+        } else {
+            // fallback: per altri tipi di alert uso il messaggio pronto del backend
+            msg = alert.message || 'Segnalazione';
+        }
+
+        // Creo l'alert visivo Bootstrap
+        const div = document.createElement('div');
+        div.className = 'alert alert-warning alert-dismissible fade show';
+        div.innerHTML = `
+          ${msg}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        container.appendChild(div);
     });
   }
+
 
   // ====== METEO MINI-WIDGET (SSE dedicato) ======
   function connectMiniWeatherWidget() {
@@ -493,7 +560,8 @@
       default:           return '🌤️';
     }
   }
-   <!-- Script per aggiornamento dinamico link export -->
+
+  // ====== AGGIORNAMENTO DINAMICO LINK EXPORT ======
   (function () {
       function updateExportLink() {
         const form = document.getElementById('filterForm');

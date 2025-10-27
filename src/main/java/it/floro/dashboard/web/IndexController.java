@@ -131,7 +131,7 @@ public class IndexController extends BaseKpiController {
      * @param model Spring Model per aggiungere attributi view
      * @return Nome della view Thymeleaf ("index")
      */
-    @GetMapping({"/", "/dashboard"})
+    @GetMapping({"/index"})
     public String dashboard(
             @RequestParam(required = false) String area,
             @RequestParam(required = false) String crop,

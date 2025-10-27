@@ -85,6 +85,7 @@ public class RischioClimaticoController extends BaseKpiController {
         model.addAttribute("totalAvgRiskIndex", totalAvgRiskIndex);
         model.addAttribute("totalAvgRiskTemp", totalAvgRiskTemp);
         model.addAttribute("totalAvgRiskWater", totalAvgRiskWater);
+        model.addAttribute("totalAvgRiskFrost", totalAvgRiskFrost);
 
         // ===== SEZIONE 3: SERIE ANNUALI PER AREA =====
         List<SampleRecord> all = sampleDataService.getAll();
