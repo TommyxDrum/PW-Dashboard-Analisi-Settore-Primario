@@ -29,7 +29,7 @@ public record Alert(
 
         // Costruisce il messaggio di alert con l'operazione in linguaggio naturale
         String msg = String.format(
-                "⚠️ Alert %s: valore %.2f t/ha %s soglia %.2f t/ha",
+                "⚠️ Alert %s valore %.2f t/ha %s soglia %.2f t/ha",
                 kpiType,
                 currentValue,
                 condition.equals("ABOVE") ? "supera" : "sotto",  // Traduce la condizione

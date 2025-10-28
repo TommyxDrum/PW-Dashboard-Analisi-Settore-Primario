@@ -447,8 +447,7 @@
         let msg;
 
         // Caso specifico: alert sulla Resa Media
-        if (alert.kpiType === 'Resa Media') {
-            // 🔴 CORREZIONE: Leggi il valore direttamente dalla card nel DOM
+        if (alert.kpiType === 'Resa media del terreno') {
             // La card Resa ha: <span class="kpi-value text-success">0,00</span>
             // Cerco il primo .kpi-value che è nella card Resa
             let valoreCorrente = null;

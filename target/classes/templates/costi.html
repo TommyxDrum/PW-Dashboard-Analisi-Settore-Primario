@@ -158,8 +158,8 @@
           </div>
         </div>
         <p class="subtitle mb-3">
-          Evoluzione del <strong>costo di produzione unitario (€/t)</strong>
-          per area geografica nel mese selezionato (valori giornalieri).
+          Questo grafico mostra come <strong>cambia il costo per produrre 1 tonnellata</strong>
+          in ciascuna regione (Nord, Centro, Sud) durante il mese selezionato.
         </p>
         <div class="chart-container">
           <canvas id="costMonthlyTrend" role="img"
@@ -181,8 +181,10 @@
           </div>
         </div>
         <p class="subtitle mb-3">
-          Analisi delle <strong>componenti di costo</strong> (manodopera, materiali)
-          per ogni area nel periodo selezionato.
+          Il grafico suddivide il costo totale in due parti:
+          <strong>quanto costa la manodopera</strong> (dipendenti) e
+          <strong>quanto costano i materiali</strong> (sementi, fertilizzanti, ecc.)
+          per ogni regione nel mese/anno scelto.
         </p>
         <div id="echBarCostComposition" class="chart-container"
              role="img" aria-label="Grafico a barre impilate dei costi per area."></div>
@@ -205,8 +207,9 @@
       </div>
     </div>
     <p class="subtitle mb-3">
-      Evoluzione del <strong>costo di produzione unitario (€/t)</strong>
-      per area geografica nel corso degli anni.
+      <i class="bi bi-trend-chart me-2"></i>
+      Questo grafico mostra l'<strong>andamento storico</strong> del costo per tonnellata
+      in ogni regione dal 2015 ad oggi. Utile per capire se il costo è aumentato o diminuito nel tempo.
     </p>
     <div class="chart-container">
       <canvas id="costAnnualTrend" role="img"

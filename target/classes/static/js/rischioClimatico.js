@@ -211,19 +211,22 @@
         name: 'Nord',
         value: [riskTempNord, riskWaterNord, riskFrostNord],
         lineStyle: { color: C_NORD, width: 2 },
-        areaStyle: { color: C_NORD + '40' }
+        areaStyle: { color: C_NORD + '40' },
+        itemStyle: { color: C_NORD }
       },
       {
         name: 'Centro',
         value: [riskTempCentro, riskWaterCentro, riskFrostCentro],
         lineStyle: { color: C_CENTRO, width: 2 },
-        areaStyle: { color: C_CENTRO + '40' }
+        areaStyle: { color: C_CENTRO + '40' },
+        itemStyle: { color: C_CENTRO }
       },
       {
         name: 'Sud',
         value: [riskTempSud, riskWaterSud, riskFrostSud],
         lineStyle: { color: C_SUD, width: 2 },
-        areaStyle: { color: C_SUD + '40' }
+        areaStyle: { color: C_SUD + '40' },
+        itemStyle: { color: C_SUD }
       }
     ];
     let filteredData = data;
@@ -260,8 +263,13 @@
       },
       legend: {
         data: filteredData.map(function (d) { return d.name; }),
-        bottom: 0,
-        textStyle: { fontWeight: '500' }
+        top: '5%',
+        left: 'center',
+        icon: 'circle',
+        symbolSize: 8,
+        textStyle: { fontWeight: '500', fontSize: 13 },
+        itemGap: 25,
+        padding: 15
       },
       radar: {
         indicator: [
@@ -270,8 +278,8 @@
           { name: 'Rischio\nGelo',    max: 1 }
         ],
         shape: 'circle',
-        center: ['50%', '45%'],
-        radius: '60%',
+        center: ['50%', '55%'],
+        radius: '55%',
         splitNumber: 5,
         axisName: {
           color: '#666',

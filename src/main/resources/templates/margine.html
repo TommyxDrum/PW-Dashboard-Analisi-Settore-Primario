@@ -157,8 +157,8 @@
                     </div>
                 </div>
                 <p class="subtitle mb-3">
-                    Evoluzione del <strong>margine di profitto unitario (€/t)</strong> per area geografica
-                    nel mese selezionato (valori giornalieri).
+                    Il grafico mostra il <strong>profitto o la perdita per ogni tonnellata venduta</strong>
+                    in ciascuna regione (Nord, Centro, Sud) durante il mese selezionato.
                 </p>
                 <div class="chart-container">
                     <canvas id="marginMonthlyTrend" role="img"
@@ -180,8 +180,11 @@
                     </div>
                 </div>
                 <p class="subtitle mb-3">
-                    Scomposizione del prezzo di vendita in <strong>costo e margine</strong>
-                    per ogni area nel periodo selezionato.
+                    Il grafico mostra come si divide il <strong>prezzo di vendita</strong> in due parti:
+                    <br>
+                    • <strong>Costo</strong>: Quanto hai speso per produrre (materie prime, manodopera, acqua, ecc.)
+                    <br>
+                    • <strong>Margine</strong>: Quanto rimane di profitto dopo aver pagato i costi
                 </p>
                 <div id="echBarMarginComposition" class="chart-container"
                      role="img" aria-label="Grafico a barre impilate costo vs margine per area."></div>
@@ -204,8 +207,16 @@
             </div>
         </div>
         <p class="subtitle mb-3">
-            Evoluzione del <strong>margine di profitto unitario (€/t)</strong>
-            per area geografica nel corso degli anni.
+            Il grafico mostra l'<strong>andamento storico del profitto per tonnellata</strong>
+            in ogni regione dal 2015 ad oggi.
+            <br>
+            Utile per capire:
+            <br>
+            • Se il margine è <strong>in crescita</strong> (affari migliorano)
+            <br>
+            • Se è <strong>in calo</strong> (attenzione: o i prezzi calano o i costi salgono)
+            <br>
+            • Quale regione ha <strong>maggior redditività</strong> nel tempo
         </p>
         <div class="chart-container">
             <canvas id="marginAnnualTrend" role="img"

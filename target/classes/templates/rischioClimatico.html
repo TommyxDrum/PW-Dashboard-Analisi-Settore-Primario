@@ -121,7 +121,7 @@
           <i class="bi bi-thermometer-half kpi-icon" style="color: var(--kpi-temp-border)"></i>
           RISCHIO TERMICO
         </p>
-        <div class="d-flex alignments-baseline">
+        <div class="d-flex align-items-baseline">
           <span class="kpi-value" style="color: var(--kpi-temp-border)"
                 th:text="${#numbers.formatDecimal(totalAvgRiskTemp,1,'POINT',2,'COMMA')}">0,00</span>
           <span class="ms-2 text-muted fw-medium">(0-1)</span>
@@ -134,7 +134,7 @@
           <i class="bi bi-cloud-drizzle-fill kpi-icon" style="color: var(--kpi-water-border)"></i>
           STRESS IDRICO
         </p>
-        <div class="d-flex alignments-baseline">
+        <div class="d-flex align-items-baseline">
           <span class="kpi-value" style="color: var(--kpi-water-border)"
                 th:text="${#numbers.formatDecimal(totalAvgRiskWater,1,'POINT',2,'COMMA')}">0,00</span>
           <span class="ms-2 text-muted fw-medium">(0-1)</span>
@@ -161,8 +161,13 @@
           </div>
         </div>
         <p class="subtitle mb-3">
-          Evoluzione dell'<strong>indice di rischio climatico</strong> (0=basso, 1=alto)
-          per area geografica nel mese selezionato (valori giornalieri).
+          Il grafico mostra il <strong>livello di rischio climatico</strong> in ogni regione.
+          <br>
+          <strong>Vicino a 0</strong> = Condizioni favorevoli, pochi rischi.
+          <br>
+          <strong>Vicino a 1</strong> = Condizioni difficili (troppo caldo, siccità, gelate).
+          <br>
+          Consulta il grafico radar per capire quale fattore è il principale problema.
         </p>
         <div class="chart-container">
           <canvas id="riskMonthlyTrend" role="img"
@@ -184,8 +189,15 @@
           </div>
         </div>
         <p class="subtitle mb-3">
-          Scomposizione del rischio nei suoi <strong>fattori principali</strong>
-          per ciascuna area nel periodo selezionato.
+          Il grafico mostra i <strong>tre fattori principali</strong> che causano il rischio climatico:
+          <br>
+          • <strong>Rischio termico:</strong> Problemi legati a temperature troppo alte o basse.
+          <br>
+          • <strong>Stress idrico:</strong> Troppa pioggia (alluvioni) o troppo poca (siccità).
+          <br>
+          • <strong>Rischio gelo:</strong> Temperature sottozero che danneggiano le colture.
+          <br>
+          Ogni punta del grafico a stella rappresenta una regione.
         </p>
         <div id="echRadarRiskProfile" class="chart-container"
              role="img" aria-label="Grafico a radar sui fattori di rischio per area."></div>
@@ -255,7 +267,7 @@
               th:text="${#numbers.formatDecimal(r.riskFrost,1,'POINT',2,'COMMA')}">0,00</td>
         </tr>
         </tbody>
-        <!-- 🔴 RIGA DEL TOTALE AGGIUNTA -->
+        <!--RIGA DEL TOTALE AGGIUNTA -->
         <tfoot class="table-light">
         <tr>
           <th scope="row">

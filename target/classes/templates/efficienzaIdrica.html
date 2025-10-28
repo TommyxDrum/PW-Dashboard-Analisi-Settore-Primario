@@ -169,8 +169,9 @@
         </div>
 
         <p class="subtitle mb-3">
-          Evoluzione dell'<strong>efficienza idrica (Kg/m³)</strong> per area geografica
-          nel mese selezionato (valori giornalieri).
+          Il grafico mostra <strong>quanto prodotto ricevi per ogni metro cubo d'acqua usato</strong>.
+          Un valore più alto significa che l'acqua viene usata meglio (minori sprechi).
+          I numeri cambiano ogni giorno durante il mese selezionato.
         </p>
         <div class="chart-container">
           <canvas id="efficiencyMonthlyTrend" role="img"
@@ -183,7 +184,7 @@
         <div class="section-header header-line">
           <div class="left">
             <h3 class="h6 mb-0 fw-bold text-primary">
-              <i class="bi bi-scatter-chart me-2"></i>
+              <i class="bi bi-diagram-2 me-2"></i>
               Produzione vs Consumo idrico - Mensile
             </h3>
             <span class="badge bg-primary bg-opacity-10 text-primary"
@@ -192,9 +193,11 @@
             </span>
           </div>
         </div>
-        <p class="subtitle mb-3">
-          Posizionamento delle aree in base a <strong>produzione (t)</strong> e
-          <strong>consumo idrico (m³)</strong> nel periodo filtrato.
+        <p class="subtitle mb-2">
+          Il grafico confronta il <strong>volume di produzione</strong> e il <strong>consumo d'acqua</strong>
+          di ogni regione. Visualizza quale regione produce più (asse orizzontale)
+          e quale consuma più acqua (asse verticale).
+          <strong>L'ideale è produrre molto usando poca acqua</strong> (angolo in alto a sinistra).
         </p>
         <div id="echScatterEfficiency" class="chart-container"
              role="img" aria-label="Grafico a dispersione produzione vs consumo idrico."></div>
@@ -217,8 +220,7 @@
       </div>
     </div>
     <p class="subtitle mb-3">
-      Evoluzione dell'<strong>efficienza idrica (Kg/m³)</strong> per area geografica
-      nel corso degli anni.
+      Andamento dell'efficienza idrica per area geografica: <strong>quanti chilogrammi di prodotto per ogni metro cubo d'acqua consumato</strong> nel corso degli anni.
     </p>
     <div class="chart-container">
       <canvas id="efficiencyAnnualTrend" role="img"

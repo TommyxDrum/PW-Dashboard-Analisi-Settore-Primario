@@ -43,9 +43,9 @@ public class AlertService {
 
         configuredAlerts.put("1", new Alert(
                 "1",
-                "Resa Media",           // KPI monitorato
-                5.0,                    // Soglia: tonnellate per ettaro
-                "BELOW",                // Trigger se la resa scende sotto 5 t/ha
+                "Resa media del terreno",     // KPI monitorato
+                5.0,                                  // Soglia: tonnellate per ettaro
+                "BELOW",                              // Trigger se la resa scende sotto 5 t/ha
                 "Tutte",
                 true,                   // Alert attivo
                 ""
