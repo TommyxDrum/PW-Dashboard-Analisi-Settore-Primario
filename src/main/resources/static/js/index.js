@@ -447,7 +447,7 @@
         let msg;
 
         // Caso specifico: alert sulla Resa Media
-        if (alert.kpiType === 'Resa media del terreno') {
+        if (alert.kpiType === 'Produttività del suolo') {
             // La card Resa ha: <span class="kpi-value text-success">0,00</span>
             // Cerco il primo .kpi-value che è nella card Resa
             let valoreCorrente = null;
@@ -492,7 +492,7 @@
 
             const verbo = alert.condition === 'ABOVE' ? 'supera' : 'scende sotto';
 
-            msg = `⚠️ Resa Media: valore ${valoreFormattato} t/ha ${verbo} soglia ${sogliaFormattata} t/ha`;
+            msg = `⚠️ Alert:  Produttività del suolo ${valoreFormattato} t/ha ${verbo} soglia ${sogliaFormattata} t/ha`;
         } else {
             // fallback: per altri tipi di alert uso il messaggio pronto del backend
             msg = alert.message || 'Segnalazione';
