@@ -2,7 +2,7 @@
  * Funzioni comuni per tutte le dashboard
  */
 
-// Gestione filtri data (mese/anno)
+// Gestione filtri data (mese/anno) con persistenza via sessionStorage
 function initializeDateFilters() {
   const form = document.getElementById('filterForm');
   if (!form) return;
@@ -11,6 +11,8 @@ function initializeDateFilters() {
   const yearSel = document.getElementById('yearSel');
   const fromEl = document.getElementById('from');
   const toEl = document.getElementById('to');
+  const cropSel = document.getElementById('cropSel');
+  const areaSel = document.getElementById('areaSel');
 
   function pad(n) {
     return n < 10 ? '0' + n : n.toString();
@@ -20,18 +22,66 @@ function initializeDateFilters() {
     return new Date(y, m, 0).getDate();
   }
 
+  // Carica i filtri da sessionStorage se disponibili
+  function restoreFiltersFromSession() {
+    const saved = sessionStorage.getItem('dashboardFilters');
+    if (saved) {
+      try {
+        const filters = JSON.parse(saved);
+        if (filters.year && yearSel) yearSel.value = filters.year;
+        if (filters.month && monthSel) monthSel.value = filters.month;
+        if (filters.crop && cropSel) cropSel.value = filters.crop;
+        if (filters.area && areaSel) areaSel.value = filters.area;
+        return true; // Indica che c'erano filtri salvati
+      } catch (e) {
+        console.error('Errore nel ripristino filtri:', e);
+        return false;
+      }
+    }
+    return false;
+  }
+
+  // Salva i filtri in sessionStorage
+  function saveFiltersToSession() {
+    const filters = {
+      year: yearSel.value,
+      month: monthSel.value,
+      crop: cropSel ? cropSel.value : '',
+      area: areaSel ? areaSel.value : ''
+    };
+    sessionStorage.setItem('dashboardFilters', JSON.stringify(filters));
+  }
+
   function setRange() {
     const y = parseInt(yearSel.value || new Date().getFullYear(), 10);
     const m = parseInt(monthSel.value || (new Date().getMonth() + 1), 10);
     const d = lastDay(y, m);
     fromEl.value = y + '-' + pad(m) + '-01';
     toEl.value = y + '-' + pad(m) + '-' + pad(d);
+
+    // Salva i filtri dopo aver impostato le date
+    saveFiltersToSession();
   }
+
+  // Ripristina i filtri dal sessionStorage
+  const hadSavedFilters = restoreFiltersFromSession();
 
   setRange();
   monthSel.addEventListener('change', setRange);
   yearSel.addEventListener('change', setRange);
+  if (cropSel) cropSel.addEventListener('change', saveFiltersToSession);
+  if (areaSel) areaSel.addEventListener('change', saveFiltersToSession);
   form.addEventListener('submit', setRange);
+
+  // Se c'erano filtri salvati e il form è vuoto di parametri URL,
+  // auto-submit per ricaricare i dati dal server con i filtri applicati
+  if (hadSavedFilters && !window.location.search) {
+    // Aspetta che il DOM sia completamente pronto
+    setTimeout(() => {
+      console.log('Auto-submit form con filtri salvati');
+      form.submit();
+    }, 100);
+  }
 }
 
 // Utility per ottenere variabili CSS
