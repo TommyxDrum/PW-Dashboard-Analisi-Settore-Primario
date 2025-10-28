@@ -38,7 +38,7 @@
         <i class="bi bi-list" aria-hidden="true"></i>
     </button>
 
-    <h1 class="header-logo display-6 fs-3">AgrItalia</h1>
+    <h1 class="header-logo display-6 fs-3">AgrItalia S.p.A.</h1>
 
     <div class="d-flex align-items-center ms-auto gap-2">
         <a
@@ -106,12 +106,12 @@
 
                 <li class="nav-item">
                     <a href="/resa" class="nav-link">
-                        <i class="bi bi-graph-up-arrow me-3"></i>Resa del terreno per ettaro
+                        <i class="bi bi-graph-up-arrow me-3"></i>Produttività del suolo
                     </a>
                 </li>
                 <li class="nav-item">
                     <a href="/efficienzaIdrica" class="nav-link">
-                        <i class="bi bi-droplet-fill me-3"></i>Efficienza Idrica
+                        <i class="bi bi-droplet-fill me-3"></i>Efficienza idrica
                     </a>
                 </li>
                 <li class="nav-item">
@@ -139,11 +139,11 @@
 
         <div class="card-footer text-center small text-muted">
             <small class="text-muted d-block text-center">
-            &copy; <span th:text="${#temporals.year(#temporals.createNow())}">2025</span> AgrItalia S.p.A.
+                &copy; <span th:text="${#temporals.year(#temporals.createNow())}">2025</span> AgrItalia S.p.A.
             </small>
         </div>
     </div>
-    </div>
+</div>
 </div>
 
 <!-- 🔸 Mini widget meteo -->
@@ -154,14 +154,14 @@
                 <div class="d-flex align-items-center gap-2">
                     <h3 class="h6 mb-0 fw-bold">
                         <i class="bi bi-cloud-sun-fill me-2 text-warning"></i>
-                        Condizioni Meteo Attuali
+                        Condizioni meteo attuali
                     </h3>
                     <div class="live-indicator">
                         <span class="badge bg-success" id="liveBadge">
                           <span class="pulse-dot"></span> LIVE
                         </span>
                         <small class="text-muted ms-2" style="font-size: 0.75rem">
-                            Aggiornato: <span id="lastUpdateTime">--:--:--</span>
+                            Ultimo aggiornamento ore: <span id="lastUpdateTime">--:--:--</span>
                         </small>
                     </div>
                 </div>
@@ -216,9 +216,9 @@
                 </select>
             </div>
             <div class="form-group" style="min-width:180px">
-                <label class="form-label small text-muted mb-1 fw-semibold" for="areaSel">Area</label>
+                <label class="form-label small text-muted mb-1 fw-semibold" for="areaSel">Area geografica</label>
                 <select id="areaSel" name="area" class="form-select" aria-label="Seleziona area">
-                    <option value="">Tutte le aree</option>
+                    <option value="">Tutte le aree geografiche</option>
                     <option th:each="a : ${areasList}" th:value="${a}" th:text="${a}"
                             th:selected="${a == area}">Area</option>
                 </select>
@@ -238,10 +238,10 @@
     <div class="row g-4 mb-4">
         <div class="col-12 col-sm-6 col-lg-4 col-xl" role="region" aria-labelledby="kpiYield">
             <div class="kpi-box">
-                <h2 id="kpiYield" class="visually-hidden">Resa Media</h2>
+                <h2 id="kpiYield" class="visually-hidden">Produttività del suolo</h2>
                 <p class="small text-muted mb-2 fw-semibold">
                     <i class="bi bi-bar-chart-line-fill text-success kpi-icon" aria-hidden="true"></i>
-                    RESA MEDIA
+                    PRODUTTIVITÀ DEL SUOLO
                 </p>
                 <div class="d-flex align-items-baseline">
               <span
@@ -327,7 +327,7 @@
                       th:text="${#numbers.formatDecimal(risk,1,'POINT',2,'COMMA')}"
               >0,00</span
               >
-                    <span class="ms-2 text-muted fw-medium">Indice</span>
+                    <span class="ms-2 text-muted fw-medium">Indice [0-1]</span>
                 </div>
             </div>
         </div>
@@ -339,7 +339,7 @@
             <div class="dashboard-card p-4">
                 <div class="d-flex flex-wrap justify-content-between align-items-center section-header success-border mb-3">
                     <div class="d-flex align-items-center gap-2">
-                        <h2 class="h6 mb-0 fw-bold text-success">Resa del terreno per ettaro (t/ha)</h2>
+                        <h2 class="h6 mb-0 fw-bold text-success">Produttività del suolo (t/ha)</h2>
                         <span
                                 class="badge bg-success bg-opacity-10 text-success"
                                 th:text="${crop != null && !crop.isEmpty() ? crop : 'Tutte le Colture'}"
@@ -350,7 +350,7 @@
                             href="/resa"
                             class="btn btn-sm btn-detail-link"
                             style="border-color: var(--primary-green)"
-                            aria-label="Vai alla pagina Resa"
+                            aria-label="Vai alla pagina produttività del suolo"
                     >
                         Dettagli <i class="bi bi-arrow-right ms-1"></i>
                     </a>
@@ -359,7 +359,7 @@
                     <canvas
                             id="yieldMinMax"
                             role="img"
-                            aria-label="Grafico a linee che mostra l'andamento della resa per ettaro nel tempo."
+                            aria-label="Grafico a linee che mostra l'andamento della produttività del suolo nel tempo."
                     ></canvas>
                 </div>
                 <div id="yieldLegend"></div>
@@ -370,7 +370,7 @@
             <div class="dashboard-card p-4">
                 <div class="d-flex flex-wrap justify-content-between align-items-center section-header mb-3">
                     <div class="d-flex align-items-center gap-2">
-                        <h2 class="h6 mb-0 fw-bold text-primary">Efficienza Idrica (Kg/m³)</h2>
+                        <h2 class="h6 mb-0 fw-bold text-primary">Efficienza idrica (Kg/m³)</h2>
                         <span
                                 class="badge bg-primary bg-opacity-10 text-primary"
                                 th:text="${crop != null && !crop.isEmpty() ? crop : 'Tutte le Colture'}"
@@ -404,7 +404,7 @@
             <div class="dashboard-card p-4" role="region" aria-label="Indicatori di Rischio Climatico per Area">
                 <div class="d-flex flex-wrap justify-content-between align-items-center section-header warning-border mb-3">
                     <h2 class="h6 mb-0 fw-bold" style="color: var(--warning-accessible)">
-                        <i class="bi bi-cloud-lightning-fill me-2"></i> Rischio Climatico per Area
+                        <i class="bi bi-cloud-lightning-fill me-2"></i> Rischio climatico
                     </h2>
                     <a
                             href="/rischioClimatico"
@@ -439,7 +439,7 @@
             <div class="dashboard-card p-4">
                 <div class="d-flex flex-wrap justify-content-between align-items-center section-header mb-3">
                     <h2 class="h6 mb-0 fw-bold text-info">
-                        <i class="bi bi-graph-up-arrow me-2"></i> Margine per Area (€/t)
+                        <i class="bi bi-graph-up-arrow me-2"></i> Margine di profitto (€/t)
                     </h2>
                     <span
                             class="badge bg-success bg-opacity-10 text-success"
@@ -460,7 +460,7 @@
             <div class="dashboard-card p-4">
                 <div class="d-flex flex-wrap justify-content-between align-items-center section-header purple-border mb-3">
                     <h2 class="h6 mb-0 fw-bold" style="color: var(--purple)">
-                        <i class="bi bi-tag-fill me-2"></i> Costi medi di produzione (€/t)
+                        <i class="bi bi-tag-fill me-2"></i> Costi di produzione (€/t)
                     </h2>
                     <span
                             class="badge bg-success bg-opacity-10 text-success"
@@ -478,9 +478,10 @@
         </div>
     </div>
 
-    <footer class="text-center py-4 mt-5 border-top">
-        <p class="card-footer text-center small text-muted">
-            &copy; <span th:text="${#temporals.year(#temporals.createNow())}">2025</span> AgrItalia S.p.A.
+    <footer class="bg-white border-top shadow-sm py-4 mt-5 text-center">
+        <p class="text-muted small mb-0">
+            &copy; <span th:text="${#temporals.year(#temporals.createNow())}">2025</span>
+            AgrItalia S.p.A. | Dashboard
         </p>
     </footer>
 </div>

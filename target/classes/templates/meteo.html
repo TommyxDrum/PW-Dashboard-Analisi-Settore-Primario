@@ -28,9 +28,18 @@
             <span class="pulse-dot"></span> LIVE
         </span>
         <small class="status-text ms-2">
-            Aggiornato: <span id="lastUpdateTime">--:--:--</span>
+            Ultimo aggiornamento ore: <span id="lastUpdateTime">--:--:--</span>
         </small>
     </div>
+    <form th:action="@{/logout}" method="post" class="m-0 ms-auto">
+        <button type="submit"
+                class="btn btn-outline-danger"
+                title="Esci dalla Dashboard"
+                aria-label="Logout">
+            <i class="bi bi-box-arrow-right me-1"></i>
+            <span class="d-none d-sm-inline">Logout</span>
+        </button>
+    </form>
 </header>
 
 <div class="container-fluid py-4 px-4">
@@ -92,10 +101,10 @@
     </div>
 
 </div>
-<footer class="text-center py-4 mt-5 border-top">
+<footer class="bg-white border-top shadow-sm py-4 mt-5 text-center">
     <p class="text-muted small mb-0">
         &copy; <span th:text="${#temporals.year(#temporals.createNow())}">2025</span>
-        AgrItalia S.p.A. | Dashboard Agronomica
+        AgrItalia S.p.A. | Dashboard
     </p>
 </footer>
 

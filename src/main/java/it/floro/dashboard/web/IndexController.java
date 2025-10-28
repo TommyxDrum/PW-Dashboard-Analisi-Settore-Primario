@@ -96,6 +96,13 @@ public class IndexController extends BaseKpiController {
      * Mapping: / (root) e /dashboard (alias)
      * Risposta: HTML renderizzato (Thymeleaf template "index.html")
      *
+     * DEFAULT INIZIALI (se non forniti):
+     * - periodo: "mese"
+     * - year: 2025
+     * - month: 10 (ottobre)
+     * - area: null (tutte le aree)
+     * - crop: null (tutte le colture)
+     *
      * Parametri query (tutti opzionali, identici al dashboard KPI):
      * - area: area geografica (es. "Nord", "Centro", "Sud")
      * - crop: coltura (es. "Grano duro", "Mais")
@@ -107,26 +114,27 @@ public class IndexController extends BaseKpiController {
      * - quarter: trimestre (es. 2)
      *
      * Esempio URL:
-     * GET / → dashboard con tutti i dati
+     * GET / → dashboard con default ottobre 2025, tutte le aree e colture
      * GET /dashboard?area=Nord&periodo=mese&year=2024&month=5 → dashboard Nord maggio 2024
-     * GET /?crop=Vite → dashboard solo Vite, tutte le aree e periodi
+     * GET /?crop=Vite → dashboard solo Vite, tutte le aree, ottobre 2025
      *
      * Flusso:
-     * 1. Delega a BaseKpiController.processKpiRequest()
-     * 2. processKpiRequest esegue il template method:
+     * 1. Imposta default se i parametri non sono forniti (ottobre 2025)
+     * 2. Delega a BaseKpiController.processKpiRequest()
+     * 3. processKpiRequest esegue il template method:
      *    - Recupera dataset
      *    - Applica filtri (area, crop, date)
      *    - Chiama populateKpiModel() (implementato in questa classe)
      *    - Popola attributi comuni
-     * 3. Ritorna il nome della view "index" da renderizzare
+     * 4. Ritorna il nome della view "index" da renderizzare
      *
-     * @param area Area geografica (opzionale)
-     * @param crop Coltura (opzionale)
+     * @param area Area geografica (opzionale, default: null = tutte le aree)
+     * @param crop Coltura (opzionale, default: null = tutte le colture)
      * @param startDate Data inizio (opzionale)
      * @param endDate Data fine (opzionale)
-     * @param periodo Periodo aggregazione (opzionale)
-     * @param year Anno (opzionale)
-     * @param month Mese (opzionale)
+     * @param periodo Periodo aggregazione (opzionale, default: "mese")
+     * @param year Anno (opzionale, default: 2025)
+     * @param month Mese (opzionale, default: 10 = ottobre)
      * @param quarter Trimestre (opzionale)
      * @param model Spring Model per aggiungere attributi view
      * @return Nome della view Thymeleaf ("index")
@@ -143,6 +151,23 @@ public class IndexController extends BaseKpiController {
             @RequestParam(required = false) Integer quarter,
             Model model
     ) {
+        // ===== IMPOSTA DEFAULT SE NON FORNITI =====
+        // Default: ottobre 2025, periodo mensile, tutte le aree e colture
+
+        if (periodo == null) {
+            periodo = "mese";
+        }
+
+        if (year == null) {
+            year = 2025;
+        }
+
+        if (month == null) {
+            month = 10;  // Ottobre
+        }
+
+        // area e crop rimangono null per "tutte le aree" e "tutte le colture"
+
         return processKpiRequest(area, crop, startDate, endDate, periodo,
                 year, month, quarter, model, "index");
     }
@@ -175,60 +200,49 @@ public class IndexController extends BaseKpiController {
      * - Nota: Se non è specificato mese/anno, usa il mese corrente
      *
      * SEZIONE 3: GRAFICO POLARE - EFFICIENZA IDRICA PER AREA
-     * - Visualizzazione radar/spider plot dell'efficienza
-     * - 3 raggi: Nord, Centro, Sud
-     * - Scala: dinamica basata su max(efficienze) × 1.2
-     * - Utilizzo: comparazione visiva veloce dell'efficienza tra aree
+     * - Visualizza 3 raggi (Nord, Centro, Sud)
+     * - Utile per comparazione visiva tra aree
      *
      * SEZIONE 4: GRAFICO BARRE - COSTO UNITARIO PER AREA
-     * - Valori medi di costo (€/t) per area
      * - X: area (Nord, Centro, Sud)
      * - Y: costo medio (€/t)
-     * - Utilizzo: identificare aree con costi più alti
      *
      * SEZIONE 5: GRAFICO BARRE - MARGINE UNITARIO PER AREA
-     * - Valori medi di margine (€/t) per area
      * - X: area (Nord, Centro, Sud)
      * - Y: margine medio (€/t)
-     * - Interpretazione: margine positivo = profitto, negativo = perdita
-     * - Utilizzo: identificare aree più/meno redditizie
      *
      * SEZIONE 6: GAUGE - RISCHIO CLIMATICO PER AREA
-     * - Tre speedometer/gauge che mostrano rischio [0..1] per area
-     * - Nord, Centro, Sud
-     * - Scala: [0..1] con colori (verde = basso, rosso = alto)
-     * - Utilizzo: alert visivo su rischi meteorologici per area
+     * - Tre gauge (speedometer) che mostrano rischio [0..1]
      *
-     * @param filtered Lista di record post-filtri (area, crop, date)
-     * @param model Spring Model dove aggiungere attributi
+     * @param filtered Lista di record post-filtri (area, crop, date) dal template method
+     * @param model Spring Model per aggiungere attributi view-specific
      */
     @Override
     protected void populateKpiModel(List<SampleRecord> filtered, Model model) {
+        // ===== SEZIONE 1: KPI SINTETICI AGGREGATI =====
+        // Calcola i 5 KPI principali aggregati su tutto il dataset filtrato
 
-        // ===== SEZIONE 1: KPI SINTETICI AGGREGATI (Card numeriche in alto) =====
-        // Calcola i 5 KPI principali su tutto il dataset filtrato
+        double avgYieldHa = kpiService.calcolaResaMedia(filtered);
+        double avgEff = kpiService.calcolaEfficienzaIdrica(filtered);
+        double avgCost = kpiService.calcolaCostoUnitario(filtered);
+        double avgMargin = kpiService.calcolaMargineUnitario(filtered);
+        double avgRisk = kpiService.calcolaRischioClimatico(filtered);
 
-        double resaMedia = kpiService.calcolaResaMedia(filtered);
-        double efficienzaIdrica = kpiService.calcolaEfficienzaIdrica(filtered);
-        double costoUnitario = kpiService.calcolaCostoUnitario(filtered);
-        double margineUnitario = kpiService.calcolaMargineUnitario(filtered);
-        double rischioClimatico = kpiService.calcolaRischioClimatico(filtered);
+        // Aggiungi al Model per rendering delle 5 card sintetiche
+        // ⚠️ NOMI ATTRIBUTI IMPORTANTI: devono corrispondere a quelli attesi dal template HTML
+        model.addAttribute("avgYieldHa", avgYieldHa);   // Resa Media (t/ha)
+        model.addAttribute("avgEff", avgEff);           // Efficienza Idrica (Kg/m³)
+        model.addAttribute("avgCost", avgCost);         // Costo Unitario (€/t)
+        model.addAttribute("avgMargin", avgMargin);     // Margine Unitario (€/t)
+        model.addAttribute("avgRisk", avgRisk);         // Rischio Climatico [0..1]
 
-        model.addAttribute("avgYieldHa", resaMedia);
-        model.addAttribute("avgEff", efficienzaIdrica);
-        model.addAttribute("avgCost", costoUnitario);
-        model.addAttribute("avgMargin", margineUnitario);
-        model.addAttribute("avgRisk", rischioClimatico);
-
-        // ===== PREPARAZIONE COMUNE: FILTRO PER AREA =====
-        // Disaggrega il dataset filtrato per area per tutti i grafici
+        // ===== SEZIONE 2: GRAFICO LINEARE - RESA GIORNALIERA PER AREA NEL MESE SELEZIONATO =====
+        // Separa il dataset filtrato per area geografica
 
         List<SampleRecord> nord = filterByArea(filtered, "Nord");
         List<SampleRecord> centro = filterByArea(filtered, "Centro");
         List<SampleRecord> sud = filterByArea(filtered, "Sud");
 
-        // ===== SEZIONE 2: GRAFICO LINEARE - RESA GIORNALIERA PER AREA NEL MESE SELEZIONATO [MODIFICATO] =====
-        // Prepara dati per grafico lineare multi-serie (Chart.js Line Chart)
         // MODIFICATO: ora usa serie giornaliera filtrata per mese anziché serie annuale
 
         // Determina il mese/anno per il filtro
