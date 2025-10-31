@@ -38,17 +38,14 @@ public class DataSimulator {
      * Stesso seed produce sempre la stessa sequenza di dati simulati.
      */
     private final Random rnd;
-
     /**
      * Data di inizio della simulazione.
      */
     private final LocalDate start;
-
     /**
      * Numero di giorni da simulare.
      */
     private final int days;
-
     /**
      * Numero di campi agricoli da simulare.
      */
@@ -57,7 +54,6 @@ public class DataSimulator {
     // ========================================================================
     // PARAMETRI DI CONFIGURAZIONE GLOBALI
     // ========================================================================
-
     /**
      * Catalogo di colture disponibili per assegnazione casuale ai campi.
      */

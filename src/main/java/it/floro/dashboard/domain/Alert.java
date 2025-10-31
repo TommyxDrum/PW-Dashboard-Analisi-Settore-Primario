@@ -30,10 +30,10 @@ public record Alert(
         // Costruisce il messaggio di alert con l'operazione in linguaggio naturale
         String msg = String.format(
                 "⚠️ Alert %s valore %.2f t/ha %s soglia %.2f t/ha",
-                kpiType,
-                currentValue,
+                kpiType, //Tipo di KPI monitorato
+                currentValue, //Valore misurato attuale
                 condition.equals("ABOVE") ? "supera" : "sotto",  // Traduce la condizione
-                threshold
+                threshold //Valore soglia di confronto
         );
 
         // Istanzia e restituisce un nuovo Alert con ID univoco e stato attivo
