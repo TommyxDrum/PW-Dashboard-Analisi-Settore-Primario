@@ -23,7 +23,6 @@
   const riskSud = data.riskSud;
 
   // ====== INIZIALIZZAZIONE DI latestKpiSnapshot ======
-  // 🔴 CORREZIONE: Inizializza come placeholder, verrà riempito al primo SSE o da fetch
   let latestKpiSnapshot = null;
 
   // ====== COLORI (da common.js) ======
@@ -319,7 +318,6 @@
 
   // ====== FUNZIONI DI AGGIORNAMENTO LIVE ======
   function updateKpiCards(dto) {
-    // 🔴 CORREZIONE: Aggiorna latestKpiSnapshot con i nuovi dati SSE
     latestKpiSnapshot = dto;
 
     const map = [

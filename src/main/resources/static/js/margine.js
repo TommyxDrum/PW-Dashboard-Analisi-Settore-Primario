@@ -99,7 +99,7 @@
       }
     });
 
-    // 🔴 ESPORTA RIFERIMENTO
+    // ESPORTA RIFERIMENTO
     window.marginAnnualChart = marginChart;
   })();
 

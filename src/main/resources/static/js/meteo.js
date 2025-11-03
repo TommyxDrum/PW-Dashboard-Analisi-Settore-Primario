@@ -391,7 +391,7 @@
 
     // Avvia tutto
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('🚀 Inizializzazione dashboard meteo...');
+        console.log('Inizializzazione dashboard meteo...');
         initCharts();
         connectWeatherStream();
     });

@@ -47,7 +47,6 @@
 .legend-mid .swatch{ border-color:var(--risk-mid-accessible); background-color:rgba(224,148,0,.25); }
 .legend-high .swatch{ border-color:var(--risk-red); background-color:rgba(220,53,69,.25); }
 
-/* 🎯 SOLUZIONE EFFICACE: Ridurre spazio tra meteo e filtri */
 body > .row.g-4.mb-4 {
   margin-bottom: 0 !important;
 }
